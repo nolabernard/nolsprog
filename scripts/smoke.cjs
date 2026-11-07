@@ -21,7 +21,7 @@ assert(ctx.NolsEngine.chooseMethod(p)==='upperlower','Upper/Lower doit être sé
 assert(ctx.NolsEngine.chooseMethod({...p,daysCount:'6',method:'ppl'})==='ppl','PPL doit être sélectionné');
 assert(ctx.NolsEngine.chooseMethod({...p,daysCount:'3',method:'fullbody'})==='fullbody','Full body doit être sélectionné');
 assert(vm.runInContext('formatRest(90)',ctx)==='1 min 30','Le repos de 90 secondes doit être formaté');
-assert(vm.runInContext('formatRest(60)',ctx)==='1 min','Le repos de 60 secondes doit être formaté');
+assert(vm.runInContext('formatRest(60)',ctx)==='60 s','Le repos de 60 secondes doit être formaté');
 assert(vm.runInContext('formatRest(45)',ctx)==='45 s','Le repos court doit être en secondes');
 click('day',{day:'0'});
 const firstDate=vm.runInContext('selectedDate(0).getDate()',ctx);
