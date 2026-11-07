@@ -58,7 +58,24 @@
    if(volume[muscle]>range[1]*1.5)warnings.push({code:'HIGH_DIRECT_VOLUME',muscle,sets:volume[muscle],reference:range});
    if(exposures[muscle]<2)warnings.push({code:'LOW_FREQUENCY',muscle,exposures:exposures[muscle]});
   }
-  return {valid:!warnings.some(w=>['INVALID_SETS','INVALID_REST','DUPLICATE_EXERCISE','DURATION_EXCEEDED'].includes(w.code)),sessions,volume,exposures,warnings,referenceRange:range,method:profile?.method||'auto'};
+  // Check individual patterns, not just the broad muscle category.
+  // Quad and hamstring work should not be treated as interchangeable.
+  const patternSets={};
+  for(const session of plan)for(const e of session.ex){
+   const pattern=index?.get(e.name)?.pattern;
+   if(pattern)patternSets[pattern]=(patternSets[pattern]||0)+(Number(e.sets)||0);
+  }
+  const movementFamilies={
+   horizontalPush:['pushH','chestIso'],horizontalPull:['pullH'],verticalPull:['pullV'],
+   kneeDominant:['squat','quadIso'],hipDominant:['hinge','hamIso']
+  };
+  const movementVolume=Object.fromEntries(Object.entries(movementFamilies).map(([name,parts])=>[name,parts.reduce((sum,p)=>sum+(patternSets[p]||0),0)]));
+  for(const [family,sets] of Object.entries(movementVolume)){
+   if(sets===0)warnings.push({code:'MISSING_MOVEMENT_FAMILY',family});
+  }
+  const workingSets=sessions.reduce((sum,s)=>sum+s.sets,0);
+  const totalMinutes=sessions.reduce((sum,s)=>sum+s.minutes,0);
+  return {valid:!warnings.some(w=>['INVALID_SETS','INVALID_REST','DUPLICATE_EXERCISE','DURATION_EXCEEDED'].includes(w.code)),sessions,volume,exposures,movementVolume,workingSets,totalMinutes,warnings,referenceRange:range,method:profile?.method||'auto'};
  }
  return Object.freeze({MUSCLES,patterns,catalogueIndex,audit});
 });
