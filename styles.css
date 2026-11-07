@@ -408,3 +408,27 @@ body{background:#0d1420;color:#fff}
 .is-auth .auth-or:before,.is-auth .auth-or:after{background:#596257}
 .is-auth .auth-guest{background:#ffffff0c;border:1px solid #a0ada0;color:#fff;border-radius:100px;min-height:52px;justify-content:center;gap:12px;font-weight:700}
 .is-auth .auth-guest span{font-size:18px}
+
+/* Legibility audit — explicit opaque surfaces and contrast-safe text */
+.fit-entry-bottom,.fit-entry-bottom button,.fit-onboard-footer,.fit-onboard-footer button{width:100%;max-width:100%;box-sizing:border-box}
+.fit-quiet{display:flex;align-items:center;justify-content:center;text-align:center;padding:0 16px;margin-left:auto;margin-right:auto}
+.fit-action,.fit-outline{display:flex;align-items:center;justify-content:center;text-align:center;position:relative;padding-left:22px;padding-right:22px}
+.fit-action span{position:absolute;right:24px;top:50%;transform:translateY(-50%)}
+.fit-entry .fit-quiet{color:#fff;font-size:14px;font-weight:750}
+.fit-entry-bottom p,.fit-question p,.fit-coach-line{color:#f1f4ec;opacity:1}
+.fit-overline,.fit-step-count,.fit-kicker,.fit-onboard .field-label{color:#f4f8ed;opacity:1}
+.fit-onboard .answer-card:not(.selected),.fit-onboard .choice:not(.selected),.fit-onboard .method:not(.selected){background:#252c27;border-color:#7a877b;color:#fff}
+.fit-onboard .method:not(.selected) small{color:#f1f5ed}
+.fit-onboard .answer-chevron,.fit-onboard .choice-end{color:#f4f8ef}
+.fit-onboard .answer-card.selected .answer-chevron,.fit-onboard .choice.selected .choice-end{color:#101409}
+.fit-onboard .fit-coach-line{font-size:12px}
+.fit-onboard .select{border-color:#9aa99a;background:#202a22;color:#fff}
+.fit-onboard .select::placeholder{color:#e0e9dd}
+.fit-onboard .fit-step-progress span:not(.active){background:#86947f}
+.is-auth .auth-headline p,.is-auth .auth-switch,.is-auth .auth-forgot,.is-auth .auth-or{color:#fff}
+.is-auth .auth-glass input{border-color:#9fae9e;background:#202823;color:#fff}
+.is-auth .auth-glass input::placeholder{color:#d6e1d3}
+.is-auth .auth-guest{color:#fff;border-color:#c2d0be;background:#202823}
+.shell:not(.immersive-shell) .hint,.shell:not(.immersive-shell) .ex-name small,.shell:not(.immersive-shell) .stat small{color:#fff}
+.shell:not(.immersive-shell) .field-label,.shell:not(.immersive-shell) .section-title small{color:#f1f5fa}
+.shell:not(.immersive-shell) input::placeholder{color:#d5e0ea}
