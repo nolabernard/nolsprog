@@ -541,3 +541,82 @@ body{background-image:none!important}
 .immersive-shell .brand{color:#006039}
 .shell:not(.immersive-shell) .legal{color:#43584c}
 .shell:not(.immersive-shell) .delete{color:#8d2323}
+
+
+/* STÉROÏDE | Identité visuelle 2026 — source : planche de marque fournie.
+   Palette: Rolex #0B4D3B, crème #F5E8D5, sauge #78A893, anthracite #1A1A1A.
+   Un seul système de design pour accueil, compte, onboarding, séances et statistiques. */
+:root{
+ color-scheme:light;
+ --brand:#0B4D3B;--brand-strong:#073D2F;--cream:#F5E8D5;--sage:#78A893;--anthracite:#1A1A1A;
+ --bg:#FAF5EC;--surface:#FFFCF7;--raised:#F5E8D5;--line:#D9CBB7;
+ --text:#1A1A1A;--muted:#53645A;--accent:#0B4D3B;--accent-text:#FFF8ED;--danger:#A42B2B;
+ font-family:"Montserrat","Avenir Next","Century Gothic",Arial,sans-serif;
+ background:var(--bg);color:var(--text);font-synthesis:none;
+}
+html,body{background:#FAF5EC;color:var(--anthracite)}
+button,input,select,textarea{font-family:inherit}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--brand);outline-offset:3px}
+.shell,.immersive-shell,.shell:not(.immersive-shell){--bg:#FAF5EC;--surface:#FFFCF7;--raised:#F5E8D5;--line:#D9CBB7;--text:#1A1A1A;--muted:#53645A;--accent:#0B4D3B;--accent-text:#FFF8ED;color:var(--text);background:#FAF5EC}
+.shell:not(.immersive-shell){background:linear-gradient(160deg,#F5E8D54A 0%,#FAF5EC 45%,#FAF5EC 100%)}
+.topbar{border-bottom:1px solid #D6C6B0}
+.brand,.immersive-shell .brand{font-family:"Montserrat","Avenir Next",Arial,sans-serif;font-weight:850;font-style:italic;letter-spacing:-1.15px;color:var(--brand);display:inline-flex;align-items:center;gap:9px}
+.brand:before{content:"";display:inline-block;flex:0 0 29px;width:29px;height:29px;background:var(--brand) url("./steroid-icon.svg") center/cover no-repeat;border-radius:9px}
+.eyebrow,.fit-kicker,.fit-overline{color:var(--brand);letter-spacing:2px;font-weight:800}
+.hero-title,.fit-entry h1,.fit-question h1{font-family:"Montserrat","Avenir Next",Arial,sans-serif;letter-spacing:-1.2px;font-weight:800}
+.hero-title em{color:var(--brand)}
+.icon-btn,.week button{background:#FFFCF7;color:var(--brand);border-color:#D6C6B0;box-shadow:0 2px 9px #0B4D3B0B}
+.days button{background:#FFFCF7;border:1px solid #DCCDB9;color:#54665A}
+.days button.active{background:var(--brand);color:#FFF8ED;border-color:var(--brand);box-shadow:0 3px 13px #0B4D3B24}
+.hero{background:linear-gradient(138deg,#0B4D3B 0%,#073B2E 76%,#0B4D3B 100%);border:1px solid #0B4D3B;color:var(--cream);position:relative;overflow:hidden;box-shadow:0 12px 32px #0B4D3B16}
+.hero:before{content:"";position:absolute;width:210px;height:210px;border:32px solid #78A8931D;border-radius:50%;right:-128px;top:-133px;pointer-events:none}
+.hero .eyebrow,.hero h2,.hero p,.hero .space small,.hero .space strong{color:var(--cream)}
+.hero .track{background:#FFFFFF30}
+.hero .track i{background:#D9B98E}
+.section-title h3,.edit-day h3{color:var(--anthracite)}
+.section-title button,.rest button{background:#E8F0E8;color:var(--brand);border:1px solid #B6CABB;border-radius:11px}
+.exercise,.edit-day,.stat,.chart{background:#FFFCF7;border:1px solid #D9CBB7;box-shadow:0 4px 18px #0B4D3B0A}
+.ex-head,.ex-name strong,.chevron,.edit-day h3,.stat strong{color:var(--anthracite)}
+.ex-name small,.edit-day h3 span,.field-label,.hint,.previous{color:#53645A}
+.num,.count{color:var(--brand)}
+.sets{background:#F8F1E6;border-color:#D9CBB7}
+.set-row.labels{color:#53645A}
+.set-row input,.edit-fields input,.edit-name,.select,.auth-input{background:#FFFCF7;color:#1A1A1A;border:1px solid #B7C4B5}
+.set-row input::placeholder{color:#78877C}
+.set-row input:focus,.edit-fields input:focus,.edit-name:focus{border-color:var(--brand);outline:2px solid #78A89388}
+.check{background:#FFFCF7;color:var(--brand);border-color:#9CB5A5}
+.check.checked{background:var(--brand);border-color:var(--brand);color:var(--cream)}
+.rest{background:#FFFCF7;border:1px dashed #A9C1B0;color:#53645A}
+.rest h3{color:var(--brand)}
+.tabbar{background:#FFFCF7;border-top:1px solid #D9CBB7;box-shadow:0 -7px 25px #0B4D3B0D}
+.tabbar button{color:#52695B}
+.tabbar button.active{background:var(--brand);color:var(--cream)}
+.seg{background:#F5E8D5;border-color:#D9CBB7}
+.seg button{color:#315444}
+.seg button.active{background:var(--brand);color:var(--cream)}
+.stat small{color:#53645A}
+.primary,.save,.fit-action,.shell:not(.immersive-shell) .primary,.shell:not(.immersive-shell) .save{background:var(--brand);color:var(--cream);border-color:var(--brand);box-shadow:none}
+.primary:hover,.save:hover,.fit-action:hover{background:var(--brand-strong)}
+.immersive-shell.is-welcome,.immersive-shell.is-onboard,.immersive-shell.is-auth,.fit-entry,.fit-onboard{background:#FAF5EC;color:#1A1A1A;--text:#1A1A1A;--muted:#53645A;--accent:#0B4D3B;--accent-text:#FFF8ED}
+.fit-entry{background:radial-gradient(ellipse 75% 38% at 60% 0%,#E2EEDF 0%,transparent 75%),#FAF5EC}
+.fit-entry h1,.fit-entry h1 em,.fit-wordmark,.fit-question h1,.fit-overline,.fit-question p,.fit-kicker,.fit-step-count,.fit-onboard .field-label,.fit-coach-line,.fit-entry-bottom p{color:#1A1A1A!important}
+.steroid-mark,.fit-entry .fit-quiet{color:var(--brand)}
+.fit-outline,.fit-onboard .fit-back{background:#FFFCF7;color:var(--brand);border-color:#A9C1B0}
+.fit-step-progress span.active{background:var(--brand)}
+.fit-step-progress span:not(.active){background:#B9CBBE}
+.fit-onboard .answer-card:not(.selected),.fit-onboard .choice:not(.selected),.fit-onboard .method:not(.selected){background:#FFFCF7;color:#1A1A1A;border-color:#C5D0C2}
+.fit-onboard .answer-icon{background:#E5EFE6;color:var(--brand)}
+.fit-onboard .answer-card.selected,.fit-onboard .choice.selected,.fit-onboard .method.selected{background:var(--brand);color:var(--cream);border-color:var(--brand)}
+.fit-onboard .answer-card.selected .answer-icon{background:var(--cream);color:var(--brand)}
+.fit-onboard .answer-card.selected .answer-label,.fit-onboard .answer-card.selected .answer-chevron,.fit-onboard .choice.selected .choice-end,.fit-onboard .method.selected small,.fit-onboard .method.selected strong{color:var(--cream)}
+.fit-onboard .select,.immersive-shell.is-auth .auth-glass input{background:#FFFCF7;color:#1A1A1A;border-color:#B7C4B5}
+.immersive-shell.is-auth .auth-headline h1,.immersive-shell.is-auth .auth-headline p,.immersive-shell.is-auth .auth-switch,.immersive-shell.is-auth .auth-forgot,.immersive-shell.is-auth .auth-or,.immersive-shell.is-auth .auth-glass .field-label{color:#1A1A1A}
+.immersive-shell.is-auth .auth-switch button{color:var(--brand)}
+.immersive-shell.is-auth .auth-guest{background:#FFFCF7;color:var(--brand);border-color:var(--brand)}
+.rest-timer,.rest-timer.timer-done{background:var(--brand)!important;border-color:var(--brand)!important;color:var(--cream)!important}
+.rest-timer .timer-actions button{background:var(--cream)!important;color:var(--brand)!important;border-color:var(--cream)!important}
+.rest-timer .timer-copy small,.rest-timer .timer-copy strong{color:var(--cream)!important}
+.fit-onboard-footer{background:linear-gradient(180deg,#FAF5EC00,#FAF5ECF5 25%)}
+.fit-onboard-footer .fit-action{background:var(--brand);color:var(--cream);border-color:var(--brand)}
+.boot{color:var(--brand);font-style:italic}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
