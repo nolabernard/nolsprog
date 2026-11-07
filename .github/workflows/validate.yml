@@ -1,7 +1,7 @@
 name: Validate NolsProg
 on:
   push:
-    branches: [main, 'feature/visual-identity-2026']
+    branches: [main, 'feature/visual-logo-correction']
   workflow_dispatch:
 permissions:
   contents: read
