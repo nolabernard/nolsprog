@@ -1,0 +1,16 @@
+name: Validate NolsProg
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: node --check app.js
+      - name: Verify required files
+        run: test -s index.html && test -s app.js && test -s styles.css && test -s manifest.webmanifest
