@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict');const fs=require('node:fs');const p=require('../sport-import.js');
+const text='Lundi : Pectoraux\nDéveloppé couché — 4 x 8 — 70 kg\nDéveloppé incliné — 3 x 10\nMardi : Dos\nTirage vertical — 3 x 12';
+const r=p.read(text);assert.equal(r.sessions.length,2);assert.equal(r.count,3);assert.equal(r.sessions[0].ex[0].sets,4);assert.equal(r.sessions[0].ex[0].weight,70);
+const csv='jour;seance;exercice;series;repetitions;repos;charge\nLundi;Push;Développé couché;4;8;120;70\nMardi;Pull;Rowing;3;10;90;50';const c=p.read(csv);assert.equal(c.sessions.length,2);assert.equal(c.sessions[1].ex[0].rest,90);
+assert.equal(p.read('Curl biceps - 3 x 12').sessions[0].ex[0].name,'Curl biceps');
+assert.throws(()=>p.read('Curl biceps — 0 x 12'),/séries/);
+assert.throws(()=>p.read('texte incohérent'),/non reconnue/);
+const html=fs.readFileSync('index.html','utf8'),app=fs.readFileSync('app.js','utf8');
+assert(html.includes('sport-import.js'));assert(html.indexOf('sport-import.js')<html.indexOf('src="./app.js"'));assert(app.includes('function applyImport()'));assert(app.includes('data-action="import-preview"'));
+console.log('Workout import tests passed');
