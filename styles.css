@@ -114,3 +114,61 @@ body{background:#f7f9f6;color:var(--text)}
 .timer-actions{display:flex;gap:5px;flex-shrink:0}.timer-actions button{height:39px;min-width:39px;border-radius:11px;border:1px solid #5b9872;background:#21543a;color:#fff;font-size:15px;font-weight:800}.timer-actions button:active{transform:scale(.95)}.rest-timer.timer-done{background:#006039}
 @media(max-width:390px){.rest-timer{padding:9px;bottom:calc(79px + env(safe-area-inset-bottom))}.timer-copy small{max-width:120px}.timer-actions button{min-width:36px;height:36px}}
 @media(prefers-reduced-motion:reduce){.onboard-stage,.rest-timer,.check.checked{animation:none}.choice,.method,.primary,.check,.progress-steps i{transition:none}}
+
+/* FITPULSE-INSPIRED CINEMATIC DESIGN — P'TITE 💩 */
+:root{font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.immersive-shell{--text:#f6f9ff;--muted:#c2cde0;--accent:#a9e7ff;--line:#ffffff25;--surface:#ffffff18;--raised:#ffffff20;--accent-text:#0b1b36;max-width:620px;min-height:100dvh;padding:0;position:relative;isolation:isolate;color:#fff;background:#101b32;overflow:hidden}
+.immersive-shell .topbar{display:none}
+.immersive-shell main{min-height:100dvh}
+.cinema-welcome{min-height:100dvh;position:relative;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;background:#0b1830}
+.cinema-photo{position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,15,32,.12) 0%,rgba(8,20,43,.05) 35%,rgba(7,17,38,.74) 68%,#071329 100%),url('https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=1100&q=85') center 23%/cover no-repeat;transform:scale(1.03);animation:cinema-reveal 1.1s cubic-bezier(.16,1,.3,1) both}
+.cinema-welcome:before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,#07132b50,transparent 65%);pointer-events:none}
+.cinema-top,.cinema-content{position:relative;z-index:2}
+.cinema-top{padding:calc(28px + env(safe-area-inset-top)) 26px 0;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.cinema-mark{font-size:23px;font-weight:950;letter-spacing:-1px}.cinema-mark b{font-size:24px}.cinema-topline{font-size:9px;letter-spacing:2px;font-weight:800;color:#d6e9fa}
+.cinema-content{padding:26px 22px calc(30px + env(safe-area-inset-bottom));animation:cinema-rise .7s .15s both}
+.cinema-tag{display:flex;align-items:center;gap:9px;font-size:10px;letter-spacing:2px;font-weight:800;color:#d5e7f7;margin-bottom:17px}
+.pulse-dot{width:7px;height:7px;border-radius:50%;background:#a4f2bf;box-shadow:0 0 15px #a4f2bf}
+.cinema-content h1{font-size:clamp(40px,11vw,64px);font-weight:850;line-height:1.02;letter-spacing:-2.7px;margin:0 0 13px;color:#fff}
+.cinema-content h1 em{font-style:normal;color:#bcd8f6}
+.cinema-content>p:not(.cinema-footnote){font-size:14px;line-height:1.65;color:#e0e9f5;max-width:37ch;margin:0 0 25px}
+.cinema-glass,.auth-glass,.onboard-glass{background:linear-gradient(145deg,rgba(151,183,222,.31),rgba(109,140,181,.16));border:1px solid #ffffff55;box-shadow:0 15px 48px #0005,inset 0 1px #ffffff40;backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border-radius:28px;padding:23px}
+.cinema-glass-top{display:flex;justify-content:space-between;align-items:center;font-size:10px;letter-spacing:1.4px;font-weight:800;color:#e7f2ff;margin-bottom:18px}
+.cinema-glass-top span:last-child{font-size:19px}
+.cinema-cta{width:100%;border:0;border-radius:50px;background:#fff;color:#091a33;display:flex;align-items:center;justify-content:space-between;padding:8px 8px 8px 23px;font-weight:850;min-height:58px;font-size:15px}
+.cinema-cta span{display:grid;place-items:center;background:#0b1a33;color:#fff;width:44px;height:44px;border-radius:50%;font-size:23px}
+.cinema-login,.cinema-guest{display:block;width:100%;background:transparent;border:0;color:#fff;font-weight:750;font-size:13px;padding:17px 8px 6px}
+.cinema-separator{display:flex;align-items:center;gap:12px;color:#cfdbed;font-size:10px;margin-top:8px}.cinema-separator:before,.cinema-separator:after{content:"";height:1px;background:#ffffff40;flex:1}
+.cinema-guest{padding-top:11px;color:#c8e7ff}
+.cinema-footnote{font-size:9px;letter-spacing:1.1px;color:#b4c9df;text-align:center;margin:22px 0 0}
+.is-auth,.is-onboard{background:linear-gradient(180deg,#0b1b38,#1b3152 48%,#101c36);min-height:100dvh}
+.is-auth:before,.is-onboard:before{content:"";position:absolute;inset:0 0 auto;height:54vh;z-index:-1;background:linear-gradient(180deg,#08172c25,#0d2046aa 75%,#15284a),url('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1100&q=80') center 38%/cover no-repeat}
+.is-auth main,.is-onboard main{padding:calc(85px + env(safe-area-inset-top)) 22px calc(45px + env(safe-area-inset-bottom))}
+.auth-hero,.onboard-visual{margin-bottom:24px;animation:cinema-rise .45s ease both}
+.auth-overline,.onboard-eyebrow{font-size:10px;font-weight:850;letter-spacing:2px;color:#c2e4ff;margin-bottom:17px}
+.immersive-shell .hero-title{color:#fff;font-size:clamp(35px,9vw,49px);line-height:1.05;letter-spacing:-1.9px;margin-bottom:14px}
+.immersive-shell .hint,.immersive-shell .coach-subtitle{color:#d1dff0}
+.immersive-shell .auth-form{margin-top:8px}
+.immersive-shell .field-label{color:#e8f2ff;font-size:11px;letter-spacing:.7px}
+.immersive-shell .auth-form input,.immersive-shell .profile-field .select{background:#ffffffef;color:#11213c;border:1px solid #ffffffbb;border-radius:14px;min-height:52px}
+.immersive-shell .auth-form input::placeholder{color:#74849b}
+.immersive-shell .primary{background:#fff;color:#0c2040;border-radius:16px;min-height:54px;font-weight:850;box-shadow:0 7px 20px #00152d25}
+.immersive-shell .add{background:#ffffff15;color:#fff;border:1px solid #ffffff30;border-radius:14px;min-height:44px}
+.immersive-shell .coach-note{background:#ffffff18;border:1px solid #ffffff30;color:#eaf4ff;border-radius:16px;padding:14px;margin:22px 0}
+.immersive-shell .coach-note strong{color:#aee2ff}
+.immersive-shell .progress-steps{display:flex;gap:6px;margin:8px 0 24px}
+.immersive-shell .progress-steps i{height:5px;flex:1;border-radius:20px;background:#ffffff36}
+.immersive-shell .progress-steps i.done{background:#a8e3ff}
+.progress-caption{display:flex;justify-content:space-between;font-size:10px;font-weight:800;letter-spacing:1px;color:#d6eafa}
+.immersive-shell .profile-field{margin:17px 0}
+.immersive-shell .choice,.immersive-shell .method{background:#ffffff19;color:#fff;border:1px solid #ffffff4a;border-radius:14px;min-height:49px}
+.immersive-shell .choice.selected,.immersive-shell .method.selected{background:#d6eaff;color:#0d2341;border-color:#fff;box-shadow:0 4px 18px #0002}
+.immersive-shell .choice.selected small,.immersive-shell .method.selected small{color:#3a5b79}
+.immersive-shell .wizard-actions .secondary{background:#ffffff25;color:#fff;border:1px solid #ffffff55;border-radius:15px}
+.immersive-shell .wizard-actions{gap:9px;margin-top:25px}
+.immersive-shell .auth-glass .hint{font-size:12px;line-height:1.6}
+@keyframes cinema-reveal{from{opacity:.55;transform:scale(1.11)}to{opacity:1;transform:scale(1.03)}}
+@keyframes cinema-rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@media(min-width:650px){.immersive-shell{box-shadow:0 0 70px #06122950}.cinema-welcome{min-height:100dvh}}
+@media(max-height:740px){.cinema-content{padding-bottom:15px}.cinema-content h1{font-size:clamp(37px,10vw,52px)}.cinema-glass{padding:17px}.cinema-content>p:not(.cinema-footnote){margin-bottom:16px}}
+@media(prefers-reduced-motion:reduce){.cinema-photo,.cinema-content,.auth-hero,.onboard-visual{animation:none!important}.cinema-cta,.cinema-cta span{transition:none!important}}
