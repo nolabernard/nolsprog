@@ -6,6 +6,7 @@ assert.equal(S.calories(75,52*60,12,12),Math.round((3.8*75*52/60)/5)*5);
 assert.equal(S.calories(0,3600,10,10),null);
 assert.match(S.motivation({done:2,total:5}),/avancé/);
 const app=fs.readFileSync('app.js','utf8'),engine=fs.readFileSync('program-engine.js','utf8');
+const html=fs.readFileSync('index.html','utf8');assert(html.includes('<script src="./sport-session.js"></script>'),'Missing workout module: guided mode crashes');assert(html.indexOf('sport-session.js')<html.indexOf('src="./app.js"'),'Workout module must load before app');
 for(const name of ['guidedWorkoutUI','finishWorkout','workoutSummaryUI','workout-request-finish','workout-jump'])assert(app.includes(name),name);
 assert(engine.includes('method===\'fullbody\'?Number(p.duration)<=30?5'),'30 min full body at least 5 exercises');
 const ctx={crypto:{randomUUID:()=>Math.random().toString(36).slice(2)}};ctx.globalThis=ctx;vm.runInNewContext(engine,ctx);
