@@ -7,8 +7,8 @@ const defaults=context.NolsEngine.defaults;
 const cases=[
  ['split',2,['Pectoraux + dos','Jambes + épaules']],
  ['split',3,['Pectoraux + dos','Jambes','Épaules + bras']],
- ['ppl',2,['Push + jambes','Pull + jambes']],
- ['ppl',4,['Push','Pull','Legs','Rappel global']],
+ ['ppl',2,['Push','Pull']],
+ ['ppl',4,['Push','Pull','Legs','Push']],
  ['hybrid',2,['Full body dominante haut','Full body dominante bas']],
  ['upperlower',3,['Upper','Lower','Upper']]
 ];
@@ -26,3 +26,19 @@ const profile={...defaults,method:'split',daysCount:'2',days:[0,1,2,3,4,5,6],equ
 assert.equal(context.NolsEngine.chooseMethod(profile),'split');
 assert.equal(context.NolsEngine.buildProgram(profile).filter(s=>s.ex.length).length,2);
 console.log('Phase 2 engine integration OK: méthodes conservées et adaptations vérifiées.');
+
+function titles(method,n,week){
+ const p={...defaults,method,daysCount:String(n),days:[0,1,2,3,4,5,6]};
+ return context.NolsEngine.buildProgram(p,week).filter(s=>s.ex.length).map(s=>s.title.replace(/ [A-F]$/,''));
+}
+assert.equal(JSON.stringify(titles('ppl',2,0)),JSON.stringify(['Push','Pull']));
+assert.equal(JSON.stringify(titles('ppl',2,1)),JSON.stringify(['Legs','Push']));
+assert.equal(JSON.stringify(titles('ppl',2,2)),JSON.stringify(['Pull','Legs']));
+assert.equal(JSON.stringify(titles('ppl',4,0)),JSON.stringify(['Push','Pull','Legs','Push']));
+assert.equal(JSON.stringify(titles('ppl',4,1)),JSON.stringify(['Pull','Legs','Push','Pull']));
+assert.equal(JSON.stringify(titles('upperlower',3,0)),JSON.stringify(['Upper','Lower','Upper']));
+assert.equal(JSON.stringify(titles('upperlower',3,1)),JSON.stringify(['Lower','Upper','Lower']));
+assert.equal(JSON.stringify(titles('split',2,1)),JSON.stringify(['Pectoraux + dos','Jambes + épaules']));
+assert.throws(()=>context.NolsEngine.buildProgram({...defaults},-1),/Semaine/);
+assert.throws(()=>context.NolsEngine.buildProgram({...defaults},1.5),/Semaine/);
+console.log('Phase 3 rotation OK : PPL 2/4 et Upper-Lower 3, sans réinitialisation hebdomadaire.');
