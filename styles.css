@@ -216,3 +216,68 @@ body{background:#f7f9f6;color:var(--text)}
 @media(min-width:650px){.is-auth main{align-items:center}.cinema-content{padding-bottom:40px}}
 @media(max-height:710px){.is-auth main{align-items:flex-end;padding-top:20px}.auth-headline{padding-bottom:10px}.auth-glass{padding:16px}.auth-glass .auth-form input{margin-bottom:10px}.auth-switch{margin-top:12px}.auth-or{margin-top:8px}}
 @media(prefers-reduced-motion:reduce){.auth-panel{animation:none}.cinema-cta{transition:none}}
+
+/* STÉROÏDE — unified visual system, 2026 */
+:root{color-scheme:dark;--bg:#101722;--surface:#1b2634;--raised:#273747;--line:#405164;--text:#f6f8fa;--muted:#bac7d3;--accent:#d6f36b;--accent-text:#15210d;--danger:#ffb5b5;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg)}
+body{background:radial-gradient(ellipse at 50% -10%,#25384a 0%,#101722 55%) fixed}
+.shell{width:min(100%,560px);padding:0 18px calc(120px + env(safe-area-inset-bottom))}
+.topbar{height:72px;border-bottom:1px solid #ffffff22}
+.brand{font-size:23px;letter-spacing:-1.1px;font-weight:900}
+.header-actions{display:flex;align-items:center;gap:9px}
+.icon-btn{width:46px;height:46px;border-radius:14px;background:#ffffff12;border:1px solid #ffffff2b;backdrop-filter:blur(16px);color:#f5f8fb}
+.eyebrow{color:var(--accent);letter-spacing:1.4px}
+.hero-title{font-size:clamp(32px,8.3vw,43px);line-height:1.06;letter-spacing:-1.5px;margin-bottom:21px}
+.hero-title em{color:var(--accent)}
+.primary,.save{min-height:52px;border-radius:15px;font-size:15px;display:flex;align-items:center;justify-content:center;gap:9px;padding:13px 18px}
+.primary:active,.icon-btn:active,.tabbar button:active,.choice:active,.method:active{transform:scale(.98)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #e4f9a5;outline-offset:3px}
+button{touch-action:manipulation}
+.week{margin-top:20px}.week button{border-radius:14px;background:#ffffff10;border:1px solid #ffffff28}
+.days{gap:6px}.days button{border-radius:13px;background:#ffffff0d;border:1px solid #ffffff20;min-height:65px}
+.days button.active{background:var(--accent);border-color:var(--accent);color:var(--accent-text)}
+.hero{background:linear-gradient(135deg,#31455aee,#1c2b3ddf);border:1px solid #ffffff3b;box-shadow:inset 0 1px #ffffff28,0 14px 38px #00000025;backdrop-filter:blur(16px);border-radius:24px}
+.exercise,.edit-day,.stat,.chart{background:linear-gradient(150deg,#ffffff12,#ffffff07);border:1px solid #ffffff24;box-shadow:inset 0 1px #ffffff0d;border-radius:19px;backdrop-filter:blur(14px)}
+.ex-head{min-height:76px;padding:15px 16px}
+.ex-name strong{font-size:15px;line-height:1.35}
+.ex-name small{color:#b9c8d8}
+.num,.count{color:var(--accent)}
+.section-title h3{font-size:20px}
+.statsgrid{gap:11px}.stat{padding:19px}.stat strong{color:#f6f9ff}
+.select,.auth-input,.edit-fields input,.edit-name{background:#ffffff10;border:1px solid #ffffff34;color:#f8fbff;border-radius:13px;min-height:48px}
+.select option{color:#142235;background:#f6f8fb}
+.seg{border-radius:15px;background:#ffffff10;border:1px solid #ffffff22;overflow:hidden}
+.seg button{min-height:44px}
+.tabbar{width:min(560px,100%);height:calc(78px + env(safe-area-inset-bottom));background:#182434ed;backdrop-filter:blur(26px) saturate(145%);-webkit-backdrop-filter:blur(26px) saturate(145%);border-top:1px solid #ffffff2b;gap:9px;padding:7px 15px env(safe-area-inset-bottom)}
+.tabbar button{min-height:56px;border-radius:15px}
+.tabbar button.active{background:#d6f36b;color:#15210d}
+.rest-timer{bottom:calc(87px + env(safe-area-inset-bottom));width:min(510px,calc(100% - 28px));border:1px solid #ffffff35;background:#263c4de8;backdrop-filter:blur(22px);box-shadow:0 14px 38px #0007}
+.timer-actions button{background:#ffffff20;border:1px solid #ffffff3d}
+.toast{max-width:min(520px,calc(100vw - 30px));background:#263c4d;border:1px solid #ffffff32;box-shadow:0 12px 35px #0005}
+.immersive-shell{--text:#f6f9ff;--muted:#d1deed;--accent:#d6f36b;--line:#ffffff32;--surface:#ffffff16;--raised:#ffffff1d;--accent-text:#15210d;background:#111d2b}
+.cinema-welcome{background:#0d1825}
+.cinema-photo{background-image:linear-gradient(180deg,#08121d22 0%,#08121d11 26%,#07111f80 53%,#07111ff0 82%,#07111f 100%),url('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1400&q=90');background-position:center,center 37%;filter:saturate(.9) contrast(1.06)}
+.cinema-top{padding-left:24px;padding-right:24px}
+.cinema-mark{font-size:24px;font-weight:900;letter-spacing:-1px}
+.cinema-topline{font-size:9px;letter-spacing:1.3px}
+.cinema-content h1{font-size:clamp(43px,11vw,66px);font-weight:900;letter-spacing:-2.8px}
+.cinema-content h1 em{color:#e1f4ad}
+.cinema-glass,.auth-glass,.onboard-glass{background:linear-gradient(135deg,#ffffff34,#ffffff15 70%);border:1px solid #ffffff5c;box-shadow:inset 0 1px #ffffff58,0 18px 45px #0005;backdrop-filter:blur(26px) saturate(135%);-webkit-backdrop-filter:blur(26px) saturate(135%);border-radius:27px}
+.cinema-cta{background:#d6f36b;color:#15210d}
+.cinema-cta span{background:#19271e;color:#f7ffdd}
+.cinema-login{border-bottom:1px solid #ffffff2c}
+.is-auth,.is-onboard{background:linear-gradient(180deg,#101e2d,#1d3446 52%,#142231)}
+.is-auth:before,.is-onboard:before{background-image:linear-gradient(180deg,#08152233,#0c1c2cbb 60%,#172b3b),url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1300&q=90')}
+.auth-headline h1{font-weight:850}
+.auth-glass .primary.save,.auth-panel>.primary.save{background:#d6f36b;color:#14210d}
+.auth-glass .auth-form input{background:#f7fafded;border:1px solid #ffffffa8;color:#152433}
+.auth-guest{background:#ffffff13;border:1px solid #ffffff38}
+.auth-switch button,.auth-forgot{min-height:44px}
+.immersive-shell .onboard-glass .primary{background:#d6f36b;color:#15210d}
+.immersive-shell .choice.selected,.immersive-shell .method.selected{background:#d6f36b;color:#15210d;border-color:#e6ffa1}
+.immersive-shell .progress-steps i.done{background:#d6f36b}
+.immersive-shell .profile-field .select{background:#f8fbf9;color:#152433;border-color:#ffffffb8}
+.immersive-shell .profile-field .select option{color:#152433}
+.immersive-shell .coach-note strong{color:#e2f5a6}
+@media(max-width:390px){.shell{padding-left:13px;padding-right:13px}.cinema-content{padding-left:17px;padding-right:17px}.cinema-top{padding-left:19px;padding-right:19px}.days{gap:4px}.days button{min-height:60px}.tabbar{padding-left:9px;padding-right:9px}.rest-timer{bottom:calc(85px + env(safe-area-inset-bottom))}}
+@media(min-width:650px){.shell{box-shadow:0 0 55px #0002}.immersive-shell{max-width:620px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
