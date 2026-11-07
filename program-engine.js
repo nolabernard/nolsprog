@@ -189,6 +189,8 @@ function buildProgram(p,weekIndex=0){
    // Full body = au moins une poussée, un tirage et une dominante jambes, même en 30 min.
    // Réduire les séries plutôt que supprimer des groupes musculaires.
    for(const item of items)item.sets=Math.min(item.sets,Number(p.duration)<=45?2:3);
+   // Les cinq patrons fondamentaux restent présents ; adapter la récupération à 30 min.
+   if(Number(p.duration)<=30){for(const item of items)item.rest=Math.min(item.rest,75)}
   }else fitDuration(items,p);
   const types={fullbody:'Full body',upperlower:continuous?(rotationIndex%2?'Lower':'Upper'):(i%2?'Lower':'Upper'),ppl:continuous?['Push','Pull','Legs'][rotationIndex]:['Push','Pull','Legs'][i%3],split:n===2?['Pectoraux + dos','Jambes + épaules'][i]:n===3?['Pectoraux + dos','Jambes','Épaules + bras'][i]:['Pectoraux','Dos','Jambes','Épaules','Upper','Lower'][i%6],hybrid:n===2?['Full body dominante haut','Full body dominante bas'][i]:n===3?['Upper','Lower','Full body'][i]:['Push','Pull','Legs','Upper','Lower','Full body'][i%6]};
   const title=(types[method]||'Séance')+' '+String.fromCharCode(65+Math.floor((sessionOffset+i)/(method==='ppl'?3:method==='upperlower'?2:1))%6);
