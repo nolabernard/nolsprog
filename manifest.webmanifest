@@ -4,7 +4,15 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#101722",
-  "theme_color": "#101722",
-  "description": "Ton entraînement, ton programme, tes progrès"
+  "background_color": "#F5E8D5",
+  "theme_color": "#0B4D3B",
+  "description": "Ton entraînement, ton programme, tes progrès",
+  "icons": [
+    {
+      "src": "./steroid-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
 }

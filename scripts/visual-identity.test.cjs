@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict');const fs=require('node:fs');
+const css=fs.readFileSync('styles.css','utf8'),html=fs.readFileSync('index.html','utf8'),svg=fs.readFileSync('steroid-icon.svg','utf8'),manifest=JSON.parse(fs.readFileSync('manifest.webmanifest','utf8'));
+for(const color of ['#0B4D3B','#F5E8D5','#78A893','#1A1A1A'])assert(css.includes(color),'Missing brand color '+color);
+for(const selector of ['.immersive-shell.is-welcome','.immersive-shell.is-onboard','.immersive-shell.is-auth','.hero','.tabbar','.exercise','.stat','.edit-day','.rest-timer'])assert(css.includes(selector),'Missing view '+selector);
+assert(html.includes('fonts.googleapis.com/css2?family=Montserrat'));
+assert(html.includes('steroid-icon.svg'));
+assert(svg.includes('viewBox="0 0 128 128"'));
+assert.equal(manifest.theme_color,'#0B4D3B');
+assert(manifest.icons.some(x=>x.src==='./steroid-icon.svg'));
+console.log('Visual identity smoke tests passed.');
