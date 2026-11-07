@@ -453,3 +453,80 @@ body{background:#0d1420;color:#fff}
 .rest-timer .timer-actions button:nth-child(2){min-width:52px}
 @media(max-width:370px){.rest-timer{padding:10px!important;gap:7px}.rest-timer .timer-copy{flex-basis:100%;text-align:center}.rest-timer .timer-actions{flex:1 1 100%;justify-content:center}.rest-timer .timer-actions button{min-width:54px}.rest-timer .timer-copy small{white-space:normal}.shell:not(.immersive-shell) .topbar .brand{font-size:19px}}
 @media(max-width:430px){.shell:not(.immersive-shell) .exercise .ex-head{gap:8px;padding:12px 10px}.shell:not(.immersive-shell) .exercise .ex-name small.exercise-meta{font-size:11px}.shell:not(.immersive-shell) .set-row{grid-template-columns:30px minmax(0,1fr) minmax(0,1fr) 44px;gap:6px}.shell:not(.immersive-shell) .sets{padding:13px 9px 17px}.shell:not(.immersive-shell) .set-row .check{width:44px}}
+
+/* STÉROÏDE — crème & vert profond, système de contraste unifié */
+:root{color-scheme:light;--bg:#f7f4ea;--surface:#fffdf6;--raised:#ece9dc;--line:#c9c9b8;--text:#173b2b;--muted:#43584c;--accent:#006039;--accent-text:#fff;background:#f7f4ea;color:#173b2b}
+html,body{background:#f7f4ea!important;color:#173b2b}
+body{background-image:none!important}
+.shell:not(.immersive-shell){background:#f7f4ea;color:#173b2b;--bg:#f7f4ea;--surface:#fffdf6;--raised:#ece9dc;--line:#c9c9b8;--text:#173b2b;--muted:#43584c;--accent:#006039;--accent-text:#fff;box-shadow:none}
+.shell:not(.immersive-shell) .topbar{border-color:#c9c9b8}
+.shell:not(.immersive-shell) .brand,.shell:not(.immersive-shell) .hero-title,.shell:not(.immersive-shell) .section-title h3{color:#173b2b}
+.shell:not(.immersive-shell) .eyebrow{color:#006039}
+.shell:not(.immersive-shell) .hero-title em{color:#006039}
+.shell:not(.immersive-shell) .topbar .icon-btn{background:#006039!important;color:#fff!important;border:2px solid #006039!important}
+.shell:not(.immersive-shell) .week button,.shell:not(.immersive-shell) .days button{background:#fffdf6;color:#173b2b;border:1px solid #b9c4b8}
+.shell:not(.immersive-shell) .days button.active{background:#006039;color:#fff;border-color:#006039}
+.shell:not(.immersive-shell) .days button.is-today:not(.active){border-color:#006039}
+.shell:not(.immersive-shell) .week strong,.shell:not(.immersive-shell) .week small{color:#173b2b}
+.shell:not(.immersive-shell) .hero{background:#006039;border:1px solid #006039;color:#fff;box-shadow:0 8px 25px #173b2b18}
+.shell:not(.immersive-shell) .hero h2,.shell:not(.immersive-shell) .hero p,.shell:not(.immersive-shell) .hero .eyebrow,.shell:not(.immersive-shell) .hero small,.shell:not(.immersive-shell) .hero strong{color:#fff!important}
+.shell:not(.immersive-shell) .hero .track{background:#ffffff50}
+.shell:not(.immersive-shell) .hero .track i{background:#d3edac}
+.shell:not(.immersive-shell) .exercise,.shell:not(.immersive-shell) .edit-day,.shell:not(.immersive-shell) .stat,.shell:not(.immersive-shell) .chart{background:#fffdf6;border:1px solid #c9c9b8;box-shadow:0 3px 14px #173b2b0b;color:#173b2b}
+.shell:not(.immersive-shell) .ex-head{background:#fffdf6;color:#173b2b}
+.shell:not(.immersive-shell) .ex-name strong,.shell:not(.immersive-shell) .ex-head .chevron{color:#173b2b}
+.shell:not(.immersive-shell) .ex-head .num,.shell:not(.immersive-shell) .ex-head .count{color:#006039}
+.shell:not(.immersive-shell) .exercise .ex-name small.exercise-meta{display:flex;flex-wrap:wrap;gap:5px 9px;margin-top:8px;color:#173b2b!important;font-size:12px;font-weight:700;line-height:1.4}
+.shell:not(.immersive-shell) .exercise-meta span{display:inline-flex;align-items:center;border-radius:7px;padding:4px 7px;background:#e9f1e9;color:#174531}
+.shell:not(.immersive-shell) .exercise-meta .rest-label{background:#006039;color:#fff!important;font-weight:850;white-space:normal;margin:0}
+.shell:not(.immersive-shell) .sets{background:#f2f0e7;border-top:1px solid #c9c9b8}
+.shell:not(.immersive-shell) .set-row.labels{color:#173b2b!important}
+.shell:not(.immersive-shell) .set-row strong.set-index{background:#006039!important;color:#fff!important;border-color:#006039}
+.shell:not(.immersive-shell) .set-row input{background:#fff;color:#173b2b;border:1px solid #879e90}
+.shell:not(.immersive-shell) .set-row input::placeholder{color:#586e60}
+.shell:not(.immersive-shell) .set-row .check:not(.checked){background:#fff!important;color:#006039!important;border-color:#006039!important}
+.shell:not(.immersive-shell) .set-row .check.checked{background:#006039!important;color:#fff!important;border-color:#006039!important}
+.shell:not(.immersive-shell) .previous,.shell:not(.immersive-shell) .hint,.shell:not(.immersive-shell) .ex-name small,.shell:not(.immersive-shell) .stat small,.shell:not(.immersive-shell) .field-label,.shell:not(.immersive-shell) .section-title small{color:#43584c!important}
+.shell:not(.immersive-shell) .section-title button,.shell:not(.immersive-shell) .add{color:#006039}
+.shell:not(.immersive-shell) .stat strong,.shell:not(.immersive-shell) .stat sup{color:#173b2b}
+.shell:not(.immersive-shell) .rest{background:#fffdf6;border-color:#9bb0a1;color:#43584c}
+.shell:not(.immersive-shell) .rest h3{color:#173b2b}
+.shell:not(.immersive-shell) .tabbar{background:#fffdf6;border-top:1px solid #bdc9be;box-shadow:0 -4px 18px #173b2b10}
+.shell:not(.immersive-shell) .tabbar button{color:#315543}
+.shell:not(.immersive-shell) .tabbar button.active{background:#006039;color:#fff}
+.shell:not(.immersive-shell) .select,.shell:not(.immersive-shell) .edit-fields input,.shell:not(.immersive-shell) .edit-name{background:#fff;color:#173b2b;border:1px solid #839f8c}
+.shell:not(.immersive-shell) .edit-day h3,.shell:not(.immersive-shell) .edit-day h3 span{color:#173b2b}
+.shell:not(.immersive-shell) .primary,.shell:not(.immersive-shell) .save{background:#006039;color:#fff;border-color:#006039}
+.shell:not(.immersive-shell) .seg{background:#e8eadf;border-color:#c3cbbb}
+.shell:not(.immersive-shell) .seg button{color:#173b2b}
+.shell:not(.immersive-shell) .seg button.active{background:#006039;color:#fff}
+.rest-timer,.rest-timer.timer-done{background:#006039!important;border:2px solid #006039!important;color:#fff!important}
+.rest-timer .timer-actions button{background:#fff!important;color:#006039!important;border:1px solid #fff!important}
+.rest-timer .timer-copy small,.rest-timer .timer-copy strong{color:#fff!important}
+.immersive-shell.is-welcome,.immersive-shell.is-onboard,.immersive-shell.is-auth{background:#f7f4ea;color:#173b2b;--text:#173b2b;--muted:#43584c;--accent:#006039;--accent-text:#fff}
+.immersive-shell.is-welcome:before,.immersive-shell.is-onboard:before,.immersive-shell.is-auth:before{display:none}
+.fit-entry,.fit-onboard{background:radial-gradient(ellipse 70% 30% at 50% 0%,#e4eddb,transparent 80%),#f7f4ea;color:#173b2b}
+.fit-entry h1,.fit-entry h1 em,.fit-wordmark,.fit-question h1,.fit-overline,.fit-question p,.fit-kicker,.fit-step-count,.fit-onboard .field-label,.fit-coach-line,.fit-entry-bottom p{color:#173b2b!important}
+.steroid-mark{color:#006039;filter:none}
+.fit-entry .fit-quiet{color:#006039}
+.fit-action{background:#006039;color:#fff;border-color:#006039;box-shadow:none}
+.fit-outline{background:#fffdf6;color:#006039;border-color:#006039}
+.fit-onboard .fit-back{background:#fffdf6;color:#006039;border-color:#b6c8b7}
+.fit-step-progress span.active{background:#006039}
+.fit-step-progress span:not(.active){background:#afc2b0}
+.fit-onboard .answer-card:not(.selected),.fit-onboard .choice:not(.selected),.fit-onboard .method:not(.selected){background:#fffdf6;color:#173b2b;border-color:#9caf9e}
+.fit-onboard .answer-icon{background:#e4ede1;color:#006039}
+.fit-onboard .answer-chevron,.fit-onboard .choice-end,.fit-onboard .method:not(.selected) small{color:#315543}
+.fit-onboard .answer-card.selected,.fit-onboard .choice.selected,.fit-onboard .method.selected{background:#006039;color:#fff;border-color:#006039}
+.fit-onboard .answer-card.selected .answer-icon{background:#fff;color:#006039}
+.fit-onboard .answer-card.selected .answer-chevron,.fit-onboard .choice.selected .choice-end,.fit-onboard .method.selected small{color:#fff}
+.fit-onboard .select{background:#fff;color:#173b2b;border-color:#839f8c}
+.fit-onboard .select::placeholder{color:#526a5a}
+.immersive-shell.is-auth .auth-headline h1,.immersive-shell.is-auth .auth-headline p,.immersive-shell.is-auth .auth-switch,.immersive-shell.is-auth .auth-forgot,.immersive-shell.is-auth .auth-or,.immersive-shell.is-auth .auth-glass .field-label{color:#173b2b}
+.immersive-shell.is-auth .auth-glass input{background:#fff;color:#173b2b;border-color:#839f8c}
+.immersive-shell.is-auth .auth-glass input::placeholder{color:#526a5a}
+.immersive-shell.is-auth .auth-glass .primary.save{background:#006039;color:#fff}
+.immersive-shell.is-auth .auth-switch button{color:#006039}
+.immersive-shell.is-auth .auth-guest{background:#fffdf6;color:#006039;border-color:#006039}
+.immersive-shell.is-auth .auth-or:before,.immersive-shell.is-auth .auth-or:after{background:#a8bba9}
+@media(max-width:390px){.shell:not(.immersive-shell) .exercise .ex-name small.exercise-meta{font-size:11px;gap:4px}.shell:not(.immersive-shell) .exercise-meta span{padding:4px 6px}}
