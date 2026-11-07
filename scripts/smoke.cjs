@@ -29,3 +29,18 @@ click('week',{step:'1'});
 const secondDate=vm.runInContext('selectedDate(0).getDate()',ctx);
 assert(vm.runInContext('(selectedDate(0)-new Date(S.start+"T12:00:00"))/86400000',ctx)>=7,'La semaine suivante doit afficher les dates suivantes');
 console.log('Génération de programmes, repos et calendrier : OK');
+
+const allDays={...ctx.NolsEngine.defaults,daysCount:'3',method:'auto',days:[0,1,2,3,4,5,6],equipment:'gym'};
+const spread=ctx.NolsEngine.buildProgram(allDays);
+const training=spread.map((x,i)=>x.ex.length?i:-1).filter(i=>i>=0);
+assert(training.length===3,'Sept jours disponibles ne doivent produire que trois séances');
+assert(training.join(',')!=='0,1,2','Les séances doivent être réparties sur la semaine');
+assert(new Set(spread.filter(x=>x.ex.length).map(x=>x.ex.map(e=>e.name).join('|'))).size===3,'Les trois full body doivent être différents');
+assert(spread.filter(x=>!x.ex.length).length===4,'Quatre jours de récupération sont nécessaires');
+const onlyThree=ctx.NolsEngine.buildProgram({...allDays,days:[0,2,4]});
+assert(onlyThree[0].ex.length&&onlyThree[2].ex.length&&onlyThree[4].ex.length,'Respecter les trois seuls jours disponibles');
+assert(onlyThree[1].ex.length===0,'Ne pas programmer un jour indisponible');
+const home=ctx.NolsEngine.buildProgram({...allDays,equipment:'none'});
+assert(home.filter(x=>x.ex.length).every(x=>x.ex.every(e=>!/machine|haltère|barre EZ|presse à cuisses/i.test(e.name))),'Le programme sans matériel ne doit pas exiger de machines');
+assert.throws(()=>ctx.NolsEngine.buildProgram({...allDays,days:[0,2]}),/jours disponibles/,'Refuser les calendriers incompatibles');
+console.log('Personnalisation vérifiée : disponibilité, répartition, variété A/B/C et matériel.');
