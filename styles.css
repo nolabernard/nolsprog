@@ -387,3 +387,24 @@ body{background:#0d1420;color:#fff}
 @media(max-height:740px){.fit-entry{padding-top:calc(32px + env(safe-area-inset-top));gap:12px}.fit-logo{min-height:105px}.steroid-mark{width:clamp(100px,27vw,170px)}.fit-entry-bottom p{margin-bottom:12px}.fit-onboard-body{padding-top:18px}.fit-question{margin-bottom:16px}}
 @media(max-width:360px){.fit-onboard{padding-left:15px;padding-right:15px}.fit-entry{padding-left:18px;padding-right:18px}.fit-onboard-body{padding-top:22px}.answer-card{min-height:55px}.answer-icon{width:37px;height:37px}}
 @media(prefers-reduced-motion:reduce){.fit-action,.fit-outline,.answer-card{transition:none!important}}
+
+/* Authentication aligned to the same black/lime design language */
+.immersive-shell.is-auth{background:radial-gradient(ellipse 70% 32% at 5% 0%,#2d5416,transparent 72%),radial-gradient(ellipse 65% 30% at 100% 100%,#294b12,transparent 72%),#0d0f10}
+.immersive-shell.is-auth main{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:calc(35px + env(safe-area-inset-top)) 20px calc(35px + env(safe-area-inset-bottom))}
+.is-auth .auth-panel{max-width:420px}
+.is-auth .auth-headline{text-align:center;padding:0 0 27px}
+.is-auth .auth-headline h1{font-size:clamp(29px,8vw,39px);font-weight:800;letter-spacing:-1px;color:#fff}
+.is-auth .auth-headline p{font-size:14px;color:#d5ddd0;margin:10px auto 0;max-width:30ch}
+.is-auth .auth-glass{background:transparent;border:0;box-shadow:none;padding:0;border-radius:0}
+.is-auth .auth-glass .field-label{font-size:12px;color:#e9eee5;font-weight:650}
+.is-auth .auth-glass input{background:#252a28;color:#fff;border:1px solid #5c665d;border-radius:17px;height:56px;padding:0 16px}
+.is-auth .auth-glass input::placeholder{color:#bbc7b7}
+.is-auth .auth-glass input:focus{border-color:#b9f62b;outline:2px solid #b9f62b}
+.is-auth .auth-glass .primary.save,.is-auth .auth-panel>.primary.save{background:#b9f62b;color:#101409;border-radius:100px;justify-content:center;min-height:56px;margin-top:12px;font-size:15px}
+.is-auth .auth-switch{color:#d8e1d5;font-size:13px;text-align:center;margin:20px 0 0}
+.is-auth .auth-switch button{color:#c9f784;font-weight:800}
+.is-auth .auth-forgot{color:#d5ddd0}
+.is-auth .auth-or{margin:17px 0 10px;color:#bfcab9}
+.is-auth .auth-or:before,.is-auth .auth-or:after{background:#596257}
+.is-auth .auth-guest{background:#ffffff0c;border:1px solid #a0ada0;color:#fff;border-radius:100px;min-height:52px;justify-content:center;gap:12px;font-weight:700}
+.is-auth .auth-guest span{font-size:18px}
