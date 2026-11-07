@@ -101,3 +101,16 @@ body{background:#f7f9f6;color:var(--text)}
 .coach-note strong{color:#006039}
 @keyframes poop-enter{from{transform:translateY(14px) rotate(-12deg) scale(.8);opacity:0}to{transform:none;opacity:1}}
 @media(prefers-reduced-motion:reduce){.welcome-poop{animation:none}}
+
+/* Onboarding immersif et chronomètre non bloquant */
+.onboard-stage{animation:stage-enter .32s cubic-bezier(.2,.8,.2,1) both}
+@keyframes stage-enter{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.choice,.method,.primary,.check,.progress-steps i{transition:background-color .22s ease,border-color .22s ease,transform .2s ease,box-shadow .22s ease}
+.choice.selected,.method.selected{box-shadow:0 0 0 2px #00603918;transform:translateY(-1px)}
+.check.checked{animation:check-pop .24s ease}
+@keyframes check-pop{50%{transform:scale(1.12)}}
+.rest-timer{position:fixed;z-index:30;bottom:calc(84px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(450px,calc(100% - 24px));background:#103a28;color:white;border:1px solid #347554;border-radius:18px;box-shadow:0 8px 30px #002c1c30;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;animation:stage-enter .25s ease both}
+.timer-copy{min-width:0;display:flex;flex-direction:column;gap:3px}.timer-copy small{font-size:9px;letter-spacing:.6px;color:#c4e6d1;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.timer-copy strong{font-size:24px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:.5px}
+.timer-actions{display:flex;gap:5px;flex-shrink:0}.timer-actions button{height:39px;min-width:39px;border-radius:11px;border:1px solid #5b9872;background:#21543a;color:#fff;font-size:15px;font-weight:800}.timer-actions button:active{transform:scale(.95)}.rest-timer.timer-done{background:#006039}
+@media(max-width:390px){.rest-timer{padding:9px;bottom:calc(79px + env(safe-area-inset-bottom))}.timer-copy small{max-width:120px}.timer-actions button{min-width:36px;height:36px}}
+@media(prefers-reduced-motion:reduce){.onboard-stage,.rest-timer,.check.checked{animation:none}.choice,.method,.primary,.check,.progress-steps i{transition:none}}
