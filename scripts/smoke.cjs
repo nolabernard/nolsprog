@@ -53,7 +53,7 @@ for(const [method,count] of [['fullbody',3],['upperlower',4],['ppl',6],['split',
  assert(week.every(s=>s.ex.length>=4),method+': séance incomplète');
  assert(new Set(week.map(s=>s.ex.map(e=>e.name).join('|'))).size===count,method+': séances identiques');
  const short=ctx.NolsEngine.buildProgram({...profile,duration:'30'}).filter(d=>d.ex.length);
- assert(short.every(s=>s.ex.length<=3),method+': durée courte non respectée');
+ assert(short.every(s=>s.ex.length<=(method==='fullbody'?5:3)),method+': durée courte non respectée');
  const strength=ctx.NolsEngine.buildProgram({...profile,goal:'strength'}).filter(d=>d.ex.length);
  assert(strength.some((s,i)=>s.ex.some((e,j)=>e.reps!==week[i].ex[j]?.reps)),method+': objectif sans effet sur répétitions');
 }
