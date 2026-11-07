@@ -530,3 +530,14 @@ body{background-image:none!important}
 .immersive-shell.is-auth .auth-guest{background:#fffdf6;color:#006039;border-color:#006039}
 .immersive-shell.is-auth .auth-or:before,.immersive-shell.is-auth .auth-or:after{background:#a8bba9}
 @media(max-width:390px){.shell:not(.immersive-shell) .exercise .ex-name small.exercise-meta{font-size:11px;gap:4px}.shell:not(.immersive-shell) .exercise-meta span{padding:4px 6px}}
+
+/* Final contrast guard for fixed footer and selected controls */
+.fit-onboard-footer{background:linear-gradient(180deg,#f7f4ea00,#f7f4eaf2 25%)}
+.fit-onboard-footer .fit-action{background:#006039;color:#fff;border-color:#006039}
+.fit-onboard .method.selected strong,.fit-onboard .choice.selected span{color:#fff}
+.fit-onboard .method.selected .method-chevron{color:#fff}
+.fit-onboard .answer-card.selected .answer-label{color:#fff}
+.immersive-shell .topbar{color:#173b2b;border-color:#d0d6c9}
+.immersive-shell .brand{color:#006039}
+.shell:not(.immersive-shell) .legal{color:#43584c}
+.shell:not(.immersive-shell) .delete{color:#8d2323}
