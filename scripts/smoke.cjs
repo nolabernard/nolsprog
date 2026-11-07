@@ -1,8 +1,8 @@
 const fs=require('fs');const vm=require('vm');const assert=require('assert');
 const source=fs.readFileSync('app.js','utf8');
-const listeners={};const store={};const root={innerHTML:'',addEventListener:(type,fn)=>listeners[type]=fn};
+const listeners={};const store={'nolsprog-onboarding-seen':'1'};const root={innerHTML:'',addEventListener:(type,fn)=>listeners[type]=fn};
 const ctx={document:{getElementById:id=>id==='app'?root:null},localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>{store[k]=v}},crypto:require('crypto').webcrypto,Date,console,Math,Number,String,Array,JSON,Intl,setTimeout:()=>0,URL,Blob,structuredClone,globalThis:null};ctx.globalThis=ctx;
-vm.createContext(ctx);vm.runInContext(source,ctx);
+vm.createContext(ctx);vm.runInContext(fs.readFileSync('program-engine.js','utf8'),ctx);vm.runInContext(source,ctx);
 assert(root.innerHTML.includes('Développé incliné machine')===false);
 assert(root.innerHTML.includes('Exercices'));
 assert(root.innerHTML.includes('Push')||root.innerHTML.includes('Upper')||root.innerHTML.includes('Repos'));
@@ -13,3 +13,11 @@ click('open',{id:'invalid'});click('day',{day:'2'});assert(root.innerHTML.includ
 click('day',{day:'3'});assert(root.innerHTML.includes('Repos actif'),'Le jeudi repos actif est absent');
 click('day',{day:'4'});assert(root.innerHTML.includes('Développé incliné machine'),'La séance Upper est absente');
 console.log('NolsProg smoke test OK: écran, 5 séances, repos actif et saisie des séries.');
+const p={...ctx.NolsEngine.defaults,daysCount:'4',method:'upperlower',days:[0,1,3,5],level:'advanced',duration:'75'};
+const generated=ctx.NolsEngine.buildProgram(p);
+assert(generated.length===7,'Le programme doit couvrir 7 jours');
+assert(generated.filter(x=>x.ex.length).length===4,'Quatre séances doivent être générées');
+assert(ctx.NolsEngine.chooseMethod(p)==='upperlower','Upper/Lower doit être sélectionné');
+assert(ctx.NolsEngine.chooseMethod({...p,daysCount:'6',method:'ppl'})==='ppl','PPL doit être sélectionné');
+assert(ctx.NolsEngine.chooseMethod({...p,daysCount:'3',method:'fullbody'})==='fullbody','Full body doit être sélectionné');
+console.log('Génération de programmes : OK');
