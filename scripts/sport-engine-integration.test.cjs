@@ -19,7 +19,7 @@ for(const [method,n,titles] of cases){
  assert.equal(context.NolsEngine.chooseMethod(profile),method);
  const sessions=context.NolsEngine.buildProgram(profile).filter(s=>s.ex.length);
  assert.equal(sessions.length,n);
- assert.deepEqual(sessions.map(s=>s.title.split(' A')[0].split(' B')[0].split(' C')[0]),titles);
+ assert.equal(JSON.stringify(sessions.map(s=>s.title.replace(/ [A-F]$/,''))),JSON.stringify(titles));
  assert(sessions.every(s=>s.ex.length>0));
 }
 const profile={...defaults,method:'split',daysCount:'2',days:[0,1,2,3,4,5,6],equipment:'none'};
