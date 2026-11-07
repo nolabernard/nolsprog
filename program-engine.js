@@ -109,7 +109,8 @@ function parameters(x,p,index,sessionIndex){
  const rest=compound?(p.goal==='strength'?150:120):x.pattern==='core'?60:75;
  return ex(x.name,sets,reps,rest);
 }
-function buildProgram(p){
+function buildProgram(p,weekIndex=0){
+ if(!Number.isInteger(weekIndex)||weekIndex<0||weekIndex>51)throw Error('Semaine de programmation invalide.');
  const n=Math.max(2,Math.min(6,Number(p.daysCount)||3));
  const days=selectTrainingDays(Array.isArray(p.days)?p.days:[],n);
  if(!days)throw Error('Choisis au moins '+n+' jours disponibles pour tes '+n+' séances.');
@@ -125,16 +126,19 @@ function buildProgram(p){
     3:[['pushH','pullH','chestIso','biceps','core'],['squat','hinge','quadIso','hamIso','calves'],['pushV','pullV','side','triceps','rear']]
   },
   ppl:{
-    2:[['pushH','pushV','squat','triceps','side'],['pullV','pullH','hinge','biceps','core']],
-    4:[...plans.ppl.slice(0,3),['pushH','pullH','squat','side','core']],
+    2:plans.ppl.slice(0,3),
+    4:plans.ppl.slice(0,3),
     5:[...plans.ppl.slice(0,3),['pushH','pullH','pushV','biceps'],['squat','hinge','hamIso','core']]
   },
-  upperlower:{2:plans.upperlower.slice(0,2),3:plans.upperlower.slice(0,3)},
+  upperlower:{2:plans.upperlower.slice(0,2),3:plans.upperlower.slice(0,2)},
   hybrid:{2:plans.fullbody.slice(0,2),3:[plans.upperlower[0],plans.upperlower[1],plans.fullbody[2]]}
  };
  const schedule=adaptive[method]?.[n]||plans[method]||plans.fullbody;
+ const continuous=(method==='ppl'&&n<=5)||(method==='upperlower'&&n===3);
+ const sessionOffset=continuous?(weekIndex*n)%schedule.length:0;
  const sessions=days.map((day,i)=>{
-  let patterns=[...schedule[i%schedule.length]];
+  const rotationIndex=(sessionOffset+i)%schedule.length;
+  let patterns=[...schedule[rotationIndex]];
   if(equipment!=='gym'){
    // Preserve the training split where possible; use viable substitutions for limited equipment.
    patterns=patterns.map(pattern=>patternMap(pattern,equipment));
@@ -155,8 +159,8 @@ function buildProgram(p){
    items.push(parameters(x,p,items.length,i));
   }
   if(!items.length)throw Error('Aucun exercice compatible avec tes contraintes. Modifie les exercices à éviter ou ton équipement.');
-  const types={fullbody:'Full body',upperlower:i%2?'Lower':'Upper',ppl:n===2?['Push + jambes','Pull + jambes'][i]:n===4&&i===3?'Rappel global':['Push','Pull','Legs'][i%3],split:n===2?['Pectoraux + dos','Jambes + épaules'][i]:n===3?['Pectoraux + dos','Jambes','Épaules + bras'][i]:['Pectoraux','Dos','Jambes','Épaules','Upper','Lower'][i%6],hybrid:n===2?['Full body dominante haut','Full body dominante bas'][i]:n===3?['Upper','Lower','Full body'][i]:['Push','Pull','Legs','Upper','Lower','Full body'][i%6]};
-  const title=(types[method]||'Séance')+' '+String.fromCharCode(65+Math.floor(i/(method==='ppl'?3:method==='upperlower'?2:1)));
+  const types={fullbody:'Full body',upperlower:continuous?(rotationIndex%2?'Lower':'Upper'):(i%2?'Lower':'Upper'),ppl:continuous?['Push','Pull','Legs'][rotationIndex]:['Push','Pull','Legs'][i%3],split:n===2?['Pectoraux + dos','Jambes + épaules'][i]:n===3?['Pectoraux + dos','Jambes','Épaules + bras'][i]:['Pectoraux','Dos','Jambes','Épaules','Upper','Lower'][i%6],hybrid:n===2?['Full body dominante haut','Full body dominante bas'][i]:n===3?['Upper','Lower','Full body'][i]:['Push','Pull','Legs','Upper','Lower','Full body'][i%6]};
+  const title=(types[method]||'Séance')+' '+String.fromCharCode(65+Math.floor((sessionOffset+i)/(method==='ppl'?3:method==='upperlower'?2:1))%6);
   return {day:names[day],title,focus:definitions[method].name,ex:items};
  });
  return names.map(day=>sessions.find(s=>s.day===day)||{day,title:'Récupération',focus:'Repos / marche douce',ex:[]});
