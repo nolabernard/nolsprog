@@ -142,7 +142,7 @@ function buildProgram(p,weekIndex=0){
  if(!days)throw Error('Choisis au moins '+n+' jours disponibles pour tes '+n+' séances.');
  const method=chooseMethod(p),equipment=p.equipment||'gym',names=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
  const short=Number(p.duration)<=45;
- const maxMoves=Number(p.duration)<=30?3:short?4:Number(p.duration)>=75?7:6;
+ const maxMoves=method==='fullbody'?Number(p.duration)<=30?5:short?6:Number(p.duration)>=75?8:7:Number(p.duration)<=30?3:short?4:Number(p.duration)>=75?7:6;
  const avoid=String(p.avoid||'').toLowerCase().split(/[,;\n]+/).map(x=>x.trim()).filter(x=>x.length>=3);
  const history=new Map(catalogue.map(x=>[x.name,0]));
  const priorities=Array.isArray(p.priority)?p.priority:[];
@@ -170,7 +170,7 @@ function buildProgram(p,weekIndex=0){
    patterns=patterns.map(pattern=>patternMap(pattern,equipment));
   }
   if(method==='fullbody'){
-   patterns=[...plans.fullbody[i%3]].map(pattern=>patternMap(pattern,equipment));
+   patterns=[...([['squat','pushH','pullH','hinge','pushV','core','biceps','calves'],['hinge','pullV','pushH','squat','side','core','triceps','hamIso'],['squat','pullH','pushV','hinge','pushH','core','biceps','calves']][(weekIndex*n+i)%3])].map(pattern=>patternMap(pattern,equipment));
   }
   // Promote requested muscle groups within the relevant session, without removing primary movement coverage.
   const musclesFor={Pectoraux:['pushH','chestIso'],Dos:['pullH','pullV'],Épaules:['side','pushV'],Bras:['biceps','triceps'],Jambes:['squat','hinge'],Abdominaux:['core']};
@@ -185,7 +185,11 @@ function buildProgram(p,weekIndex=0){
    items.push(parameters(x,p,items.length,i));
   }
   if(!items.length)throw Error('Aucun exercice compatible avec tes contraintes. Modifie les exercices à éviter ou ton équipement.');
-  fitDuration(items,p);
+  if(method==='fullbody'){
+   // Full body = au moins une poussée, un tirage et une dominante jambes, même en 30 min.
+   // Réduire les séries plutôt que supprimer des groupes musculaires.
+   for(const item of items)item.sets=Math.min(item.sets,Number(p.duration)<=45?2:3);
+  }else fitDuration(items,p);
   const types={fullbody:'Full body',upperlower:continuous?(rotationIndex%2?'Lower':'Upper'):(i%2?'Lower':'Upper'),ppl:continuous?['Push','Pull','Legs'][rotationIndex]:['Push','Pull','Legs'][i%3],split:n===2?['Pectoraux + dos','Jambes + épaules'][i]:n===3?['Pectoraux + dos','Jambes','Épaules + bras'][i]:['Pectoraux','Dos','Jambes','Épaules','Upper','Lower'][i%6],hybrid:n===2?['Full body dominante haut','Full body dominante bas'][i]:n===3?['Upper','Lower','Full body'][i]:['Push','Pull','Legs','Upper','Lower','Full body'][i%6]};
   const title=(types[method]||'Séance')+' '+String.fromCharCode(65+Math.floor((sessionOffset+i)/(method==='ppl'?3:method==='upperlower'?2:1))%6);
   return {day:names[day],title,focus:definitions[method].name,ex:items};
