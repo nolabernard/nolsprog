@@ -109,6 +109,32 @@ function parameters(x,p,index,sessionIndex){
  const rest=compound?(p.goal==='strength'?150:120):x.pattern==='core'?60:75;
  return ex(x.name,sets,reps,rest);
 }
+// Conservative time budget: warm-up, working sets, inter-set rest and transitions.
+function estimatedMinutes(items){
+ let minutes=6;
+ for(const item of items){
+  const compound=/squat|presse|soulevé|développé|rowing|tirage|traction|fente|hip thrust/i.test(item.name);
+  minutes+=(item.sets*(compound?50:40)+Math.max(0,item.sets-1)*item.rest)/60+0.75;
+ }
+ return Math.ceil(minutes);
+}
+function fitDuration(items,p){
+ const limit=Number(p.duration);
+ if(!Number.isFinite(limit)||limit<=0)return items;
+ const budget=limit*1.1;
+ // Preserve at least two sets per movement; remove the least important accessory
+ // before shortening the primary movement. Never silently change method.
+ while(estimatedMinutes(items)>budget){
+  let candidate=-1;
+  for(let i=items.length-1;i>=0;i--){
+   if(items[i].sets>2){candidate=i;break}
+  }
+  if(candidate>=0){items[candidate].sets--;continue}
+  if(items.length>2){items.pop();continue}
+  break;
+ }
+ return items;
+}
 function buildProgram(p,weekIndex=0){
  if(!Number.isInteger(weekIndex)||weekIndex<0||weekIndex>51)throw Error('Semaine de programmation invalide.');
  const n=Math.max(2,Math.min(6,Number(p.daysCount)||3));
@@ -159,6 +185,7 @@ function buildProgram(p,weekIndex=0){
    items.push(parameters(x,p,items.length,i));
   }
   if(!items.length)throw Error('Aucun exercice compatible avec tes contraintes. Modifie les exercices à éviter ou ton équipement.');
+  fitDuration(items,p);
   const types={fullbody:'Full body',upperlower:continuous?(rotationIndex%2?'Lower':'Upper'):(i%2?'Lower':'Upper'),ppl:continuous?['Push','Pull','Legs'][rotationIndex]:['Push','Pull','Legs'][i%3],split:n===2?['Pectoraux + dos','Jambes + épaules'][i]:n===3?['Pectoraux + dos','Jambes','Épaules + bras'][i]:['Pectoraux','Dos','Jambes','Épaules','Upper','Lower'][i%6],hybrid:n===2?['Full body dominante haut','Full body dominante bas'][i]:n===3?['Upper','Lower','Full body'][i]:['Push','Pull','Legs','Upper','Lower','Full body'][i%6]};
   const title=(types[method]||'Séance')+' '+String.fromCharCode(65+Math.floor((sessionOffset+i)/(method==='ppl'?3:method==='upperlower'?2:1))%6);
   return {day:names[day],title,focus:definitions[method].name,ex:items};
@@ -191,4 +218,4 @@ const steps=[
 ];
 const defaults={sex:'',age:'',height:'',weight:'',job:'mixed',activity:'medium',sleep:'7-8',goal:'muscle',level:'intermediate',currentSessions:'2',daysCount:'3',duration:'60',equipment:'gym',priority:[],days:[0,1,2,3,4,5],method:'auto',avoid:'',limitations:'no'};
 
-globalThis.NolsEngine={methods,chooseMethod,buildProgram,steps,defaults,exerciseCatalogue:catalogue.map(x=>({name:x.name,pattern:x.pattern,muscle:x.muscle,compound:x.compound}))};
+globalThis.NolsEngine={methods,chooseMethod,buildProgram,steps,defaults,estimatedMinutes,exerciseCatalogue:catalogue.map(x=>({name:x.name,pattern:x.pattern,muscle:x.muscle,compound:x.compound}))};
