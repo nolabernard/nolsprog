@@ -1,0 +1,15 @@
+const fs=require('fs');const vm=require('vm');const assert=require('assert');
+const source=fs.readFileSync('app.js','utf8');
+const listeners={};const store={};const root={innerHTML:'',addEventListener:(type,fn)=>listeners[type]=fn};
+const ctx={document:{getElementById:id=>id==='app'?root:null},localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>{store[k]=v}},crypto:require('crypto').webcrypto,Date,console,Math,Number,String,Array,JSON,Intl,setTimeout:()=>0,URL,Blob,structuredClone,globalThis:null};ctx.globalThis=ctx;
+vm.createContext(ctx);vm.runInContext(source,ctx);
+assert(root.innerHTML.includes('Développé incliné machine')===false);
+assert(root.innerHTML.includes('Exercices'));
+assert(root.innerHTML.includes('Push')||root.innerHTML.includes('Upper')||root.innerHTML.includes('Repos'));
+const click=(action,fields={})=>listeners.click({target:{closest:()=>({dataset:{action,...fields}})}});
+click('day',{day:'0'});assert(root.innerHTML.includes('Développé couché barre'),'La séance de lundi est absente');
+assert(root.innerHTML.includes('data-field="weight"'),'Les séries du premier exercice doivent être visibles');
+click('open',{id:'invalid'});click('day',{day:'2'});assert(root.innerHTML.includes('Hack squat'),'La séance jambes est absente');
+click('day',{day:'3'});assert(root.innerHTML.includes('Repos actif'),'Le jeudi repos actif est absent');
+click('day',{day:'4'});assert(root.innerHTML.includes('Développé incliné machine'),'La séance Upper est absente');
+console.log('NolsProg smoke test OK: écran, 5 séances, repos actif et saisie des séries.');
