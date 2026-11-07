@@ -191,4 +191,4 @@ const steps=[
 ];
 const defaults={sex:'',age:'',height:'',weight:'',job:'mixed',activity:'medium',sleep:'7-8',goal:'muscle',level:'intermediate',currentSessions:'2',daysCount:'3',duration:'60',equipment:'gym',priority:[],days:[0,1,2,3,4,5],method:'auto',avoid:'',limitations:'no'};
 
-globalThis.NolsEngine={methods,chooseMethod,buildProgram,steps,defaults};
+globalThis.NolsEngine={methods,chooseMethod,buildProgram,steps,defaults,exerciseCatalogue:catalogue.map(x=>({name:x.name,pattern:x.pattern,muscle:x.muscle,compound:x.compound}))};
