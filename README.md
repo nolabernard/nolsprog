@@ -1,6 +1,6 @@
-# NolsProg
+# Petite merde 💩 (anciennement NolsProg)
 
-Application mobile-first et publique de suivi de musculation, en **mode invité sans connexion**.
+Application mobile-first de suivi de musculation, avec comptes Supabase ou mode invité. Ton de coach volontairement provocateur et humoristique.
 
 ## Fonctionnement
 - Accès libre à l'interface : pas d'identifiant ou de mot de passe.
