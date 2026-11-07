@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const app=fs.readFileSync('app.js','utf8');
+assert(app.includes('function currentPlan()'),'Current weekly plan accessor');
+assert(app.includes('function ensureWeekPlan(week)'),'Weekly snapshots creator');
+assert(app.includes('S.plan[0].weeklyPlans[week]=generated'),'Snapshots persisted on base plan');
+assert(app.includes("generated[day].ex[i].id='w'+week+'-d'+day+'-e'+i"),'Week-scoped IDs');
+assert(app.includes('const p=currentPlan()[S.day]'),'Session display uses selected week');
+assert(app.includes('const item=currentPlan()[S.day]'),'Timer uses selected week');
+assert(app.includes('currentPlan()[S.day].ex[0]?.id'),'Open exercise uses selected week');
+assert(app.includes('ensureWeekPlan(S.week)'),'Week navigation creates snapshots');
+assert(app.includes('answers:A.answers||A.profile?.answers||null'),'Guest profile persistence');
+assert(app.includes('const sameName=weekPlan?.[Number(d)]?.ex.find'),'Stats match exercise names');
+console.log('Phase 5 weekly calendar wiring OK (static integration assertions).');
