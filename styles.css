@@ -74,3 +74,17 @@ body{background:#f7f9f6;color:var(--text)}
 :focus-visible{outline-color:#006039}
 @media(min-width:650px){body{background:#eaf1eb}.shell{background:#fff;box-shadow:0 0 60px #12422912}}
 @media(max-width:360px){.shell{padding-left:12px;padding-right:12px}.days{gap:3px}.days button{min-height:60px}.days strong{font-size:17px}}
+
+/* Identité Petite 💩 : coach drôle, musculation sérieuse */
+.brand{display:flex;align-items:center;gap:5px;font-size:22px;font-weight:950;letter-spacing:-.9px;white-space:nowrap}
+.poop-brand{font-size:29px;line-height:1;display:inline-block;transform:rotate(-8deg)}
+.welcome-poop{font-size:76px;line-height:1.15;margin:38px 0 20px;filter:drop-shadow(0 10px 12px #2b40211e);animation:poop-enter .65s cubic-bezier(.2,1.2,.5,1) both}
+.coach-kicker{display:flex;align-items:center;gap:10px;color:#006039;font-size:11px;font-weight:900;letter-spacing:1px;margin:26px 0 16px}
+.poop-mini{font-size:26px;line-height:1}
+.coach-subtitle{font-size:15px;line-height:1.7;max-width:46ch;margin-bottom:20px}
+.coach-note{border-left:4px solid #006039;background:#edf7ef;border-radius:0 13px 13px 0;padding:16px 18px;margin:18px 0 27px;color:#254b33;font-size:14px;line-height:1.6}
+.coach-note strong{color:#005d36;font-size:11px;letter-spacing:.5px;display:block;margin-bottom:3px}
+.profile-field{margin:24px 0}
+.profile-field .field-label{font-weight:800}
+@keyframes poop-enter{from{opacity:0;transform:translateY(18px) rotate(-12deg) scale(.8)}to{opacity:1;transform:translateY(0) rotate(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){.welcome-poop{animation:none}}
