@@ -23,7 +23,11 @@ split:{name:'Split musculaire',description:'Séances centrées sur certains grou
 hybrid:{name:'Hybride',description:'Combine Push/Pull/Legs et haut du corps ou séances spécialisées. Utile sur 5 jours.'}
 };
 const methods=definitions;
-function chooseMethod(p){const n=Number(p.daysCount||3);if(p.method&&p.method!=='auto'){if(p.method==='upperlower'&&n===4)return 'upperlower';if(p.method==='ppl'&&(n===3||n===6))return 'ppl';if(p.method==='split'&&n>=4)return 'split';if(p.method==='fullbody'&&n<=3)return 'fullbody';if(p.method==='hybrid'&&n>=4)return 'hybrid'}return n<=3?'fullbody':n===4?'upperlower':n===5?'hybrid':'ppl'}
+function chooseMethod(p){
+ const n=Number(p.daysCount||3);
+ if(p.method&&p.method!=='auto'&&Object.hasOwn(definitions,p.method))return p.method;
+ return n<=3?'fullbody':n===4?'upperlower':n===5?'hybrid':'ppl';
+}
 
 /* Catalogue de mouvements : équipement, patron moteur, priorité musculaire.
    Les choix restent reproductibles pour un profil donné, sans tirage aléatoire. */
@@ -115,14 +119,27 @@ function buildProgram(p){
  const avoid=String(p.avoid||'').toLowerCase().split(/[,;\n]+/).map(x=>x.trim()).filter(x=>x.length>=3);
  const history=new Map(catalogue.map(x=>[x.name,0]));
  const priorities=Array.isArray(p.priority)?p.priority:[];
- const schedule=plans[method]||plans.fullbody;
+ const adaptive={
+  split:{
+    2:[['pushH','pullH','squat','chestIso','biceps','core'],['hinge','pullV','pushV','hamIso','side','triceps']],
+    3:[['pushH','pullH','chestIso','biceps','core'],['squat','hinge','quadIso','hamIso','calves'],['pushV','pullV','side','triceps','rear']]
+  },
+  ppl:{
+    2:[['pushH','pushV','squat','triceps','side'],['pullV','pullH','hinge','biceps','core']],
+    4:[...plans.ppl.slice(0,3),['pushH','pullH','squat','side','core']],
+    5:[...plans.ppl.slice(0,3),['pushH','pullH','pushV','biceps'],['squat','hinge','hamIso','core']]
+  },
+  upperlower:{2:plans.upperlower.slice(0,2),3:plans.upperlower.slice(0,3)},
+  hybrid:{2:plans.fullbody.slice(0,2),3:[plans.upperlower[0],plans.upperlower[1],plans.fullbody[2]]}
+ };
+ const schedule=adaptive[method]?.[n]||plans[method]||plans.fullbody;
  const sessions=days.map((day,i)=>{
   let patterns=[...schedule[i%schedule.length]];
   if(equipment!=='gym'){
    // Preserve the training split where possible; use viable substitutions for limited equipment.
    patterns=patterns.map(pattern=>patternMap(pattern,equipment));
   }
-  if(method==='fullbody'||(equipment!=='gym'&&n<=3)){
+  if(method==='fullbody'){
    patterns=[...plans.fullbody[i%3]].map(pattern=>patternMap(pattern,equipment));
   }
   // Promote requested muscle groups within the relevant session, without removing primary movement coverage.
@@ -138,7 +155,7 @@ function buildProgram(p){
    items.push(parameters(x,p,items.length,i));
   }
   if(!items.length)throw Error('Aucun exercice compatible avec tes contraintes. Modifie les exercices à éviter ou ton équipement.');
-  const types={fullbody:'Full body',upperlower:i%2?'Lower':'Upper',ppl:['Push','Pull','Legs'][i%3],split:['Pectoraux','Dos','Jambes','Épaules','Upper','Lower'][i%6],hybrid:['Push','Pull','Legs','Upper','Lower','Full body'][i%6]};
+  const types={fullbody:'Full body',upperlower:i%2?'Lower':'Upper',ppl:n===2?['Push + jambes','Pull + jambes'][i]:n===4&&i===3?'Rappel global':['Push','Pull','Legs'][i%3],split:n===2?['Pectoraux + dos','Jambes + épaules'][i]:n===3?['Pectoraux + dos','Jambes','Épaules + bras'][i]:['Pectoraux','Dos','Jambes','Épaules','Upper','Lower'][i%6],hybrid:n===2?['Full body dominante haut','Full body dominante bas'][i]:n===3?['Upper','Lower','Full body'][i]:['Push','Pull','Legs','Upper','Lower','Full body'][i%6]};
   const title=(types[method]||'Séance')+' '+String.fromCharCode(65+Math.floor(i/(method==='ppl'?3:method==='upperlower'?2:1)));
   return {day:names[day],title,focus:definitions[method].name,ex:items};
  });
