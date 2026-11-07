@@ -652,3 +652,32 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .coherence-footer{position:relative;padding-top:12px;background:#FAF5EC}
 .coherence-footer .fit-outline{margin:0;background:#FFFCF7;color:#0B4D3B;border-color:#A9C1B0}
 @media(min-width:700px){.coherence-body{padding-top:38px}.coherence-choice{grid-template-columns:1fr 135px;align-items:center}.coherence-choice button{justify-content:center}}
+
+/* STÉROÏDE — logo net : typographie native + O kettlebell vectoriel, aucun tracé pixelisé. */
+.crisp-brand,.fit-logo .crisp-wordmark{font-family:"Montserrat","Avenir Next",Arial,sans-serif;font-style:italic;font-weight:900;letter-spacing:-.055em;color:#0B4D3B;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap}
+.brand.crisp-brand{font-size:clamp(19px,5vw,25px)!important;line-height:1.1!important;letter-spacing:-.055em!important;gap:0!important;min-height:40px}
+.brand.crisp-brand:before,.brand.crisp-brand:after{content:none!important;display:none!important}
+.crisp-brand img{width:1.05em;height:1.05em;object-fit:contain;display:block;margin:0 -.06em 0 -.09em}
+.fit-logo .crisp-wordmark{width:auto;height:auto;max-width:100%;font-size:clamp(30px,9vw,49px);line-height:1.1;gap:0;filter:none}
+.fit-logo .crisp-wordmark img{width:1.07em;height:1.07em;object-fit:contain;margin:0 -.05em 0 -.08em}
+.fit-logo .steroid-mark{image-rendering:auto;filter:none}
+.answer-brand-icon{display:block;width:21px;height:21px;object-fit:contain;flex:none}
+.fit-onboard .answer-card.selected .answer-brand-icon{filter:brightness(0) saturate(100%) invert(100%)}
+.fit-onboard .answer-card .answer-icon{display:flex;align-items:center;justify-content:center}
+.fit-onboard .answer-card.selected .answer-icon{background:#F5E8D5}
+.fit-onboard .answer-card.selected .answer-brand-icon{filter:none}
+/* Réduire les espaces sans compromettre les cibles tactiles ni la lisibilité. */
+.fit-onboard-body{padding-top:13px;padding-bottom:8px}
+.fit-question{margin-bottom:11px}
+.fit-question h1{margin-bottom:7px}
+.fit-question p{margin-bottom:0;line-height:1.45}
+.fit-answers{gap:10px}
+.fit-answers .profile-field{margin:0!important;padding:0!important}
+.fit-answers .field-label{display:block;margin-bottom:7px}
+.fit-answers .answer-options,.fit-answers .method-list{display:grid;gap:7px}
+.fit-answers .choice-grid{gap:7px}
+.fit-answers .answer-card{min-height:54px}
+.fit-answers .method{padding-top:14px;padding-bottom:14px}
+.fit-coach-line{margin-top:11px;margin-bottom:0}
+.fit-onboard-footer{padding-top:9px}
+@media(max-width:480px){.fit-onboard{padding-left:20px;padding-right:20px}.fit-onboard-body{padding-top:11px}.fit-question{margin-bottom:9px}.fit-answers{gap:9px}.fit-coach-line{margin-top:9px}}
