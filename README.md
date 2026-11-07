@@ -1,30 +1,24 @@
 # NolsProg
 
-Application mobile-first de suivi de musculation, synchronisée avec le projet Supabase NolsProg.
+Application mobile-first et publique de suivi de musculation, en **mode invité sans connexion**.
 
-## Fonctionnalités
-- Programme préconfiguré : 5 séances, 1 repos actif (jeudi), 1 repos complet.
+## Fonctionnement
+- Accès libre à l'interface : pas d'identifiant ou de mot de passe.
+- Programme préconfiguré : 5 séances, jeudi repos actif, dimanche repos complet.
 - Modification des exercices, séries, répétitions et repos.
-- Saisie des charges, répétitions et validation des séries par semaine.
-- Historique des performances et graphiques par exercice.
-- Authentification sécurisée par e-mail ; chaque compte ne voit que ses données grâce aux règles RLS de Supabase.
+- Suivi hebdomadaire des charges et répétitions et graphiques de progression.
+- Données enregistrées uniquement en `localStorage` dans le navigateur de chaque appareil.
+- Export JSON personnel via l'icône ↓ dans la barre supérieure pour sauvegarder ses données.
 
-## Hébergement
-Ce dépôt est une application statique sans compilation. Elle se déploie via le workflow `.github/workflows/deploy.yml`.
+## Confidentialité et sécurité
+Le site statique **ne contacte pas Supabase** et ne publie aucune clé API ou jeton d'accès dans sa version actuelle. Chaque navigateur a sa propre copie locale des données, inaccessible à un autre utilisateur depuis l'application. Une politique CSP restrictive interdit les connexions réseau depuis le JavaScript de la page, les scripts tiers, les cadres et le chargement de ressources distantes. Le projet GitHub reste **public** : le code HTML/CSS/JS n'est pas secret. Ne jamais y enregistrer de clé confidentielle.
 
-**Activation initiale nécessaire par le propriétaire du dépôt** : GitHub > nolsprog > Settings > Pages > Build and deployment > Source : GitHub Actions. La connexion GitHub utilisée pour publier le code ne dispose pas des droits administratifs permettant de créer le site Pages. Une fois activé, relancer le workflow "Deploy NolsProg" depuis Actions ou pousser un nouveau commit.
+Limites : le stockage local n'est **ni chiffré ni synchronisé**. Une personne ayant accès au téléphone ou au profil navigateur peut consulter les données ; vider les données du site ou changer d'appareil peut supprimer le suivi. Ce dispositif ne constitue pas un audit exhaustif, ni une garantie d'absence de faille. Le stockage sur le projet Supabase des comptes déjà créés n'est pas effacé par cette mise à jour : l'ancien projet conserve ses politiques RLS.
 
-Adresse attendue après déploiement : https://nolabernard.github.io/nolsprog/
+## Déploiement
+Le projet est un site statique sans compilation, hébergé sur GitHub Pages et publié via `.github/workflows/deploy.yml`.
 
-## Configuration de connexion Supabase
-Dans https://supabase.com/dashboard/project/femtfigampvaeetcuoxe/auth/url-configuration :
-- Site URL : `https://nolabernard.github.io/nolsprog/`
-- Redirect URLs : ajouter `https://nolabernard.github.io/nolsprog/`
-
-Le site nécessite cette configuration pour que les liens de connexion par e-mail reviennent vers l'application.
-
-## Données
-Tables : `public.user_programs` et `public.workout_sets`, avec RLS. Les clés présentes dans `app.js` sont uniquement des clés publiques (publishable), jamais une service-role key.
+URL : https://nolabernard.github.io/nolsprog/
 
 ## Installer sur iPhone
-Ouvrir l'URL dans Safari > Partager > Sur l'écran d'accueil.
+Dans Safari : ouvrir le site, Partager → Sur l'écran d'accueil.
