@@ -5,7 +5,8 @@
  const STAGES={daysCount:3,days:5,method:6,level:2,currentSessions:2,limitations:6,duration:3,equipment:4};
  const relevantCodes=new Set(['METHOD_DISCOURAGED','BEGINNER_HIGH_FREQUENCY','FREQUENCY_JUMP']);
  function assess(p){return rules.assess(p)}
- function change(p,patch){const next={...p,...patch};if('daysCount'in patch){const n=Number(next.daysCount);if(Array.isArray(next.days)&&next.days.length<n){const days=[...next.days];for(let d=0;d<7&&days.length<n;d++)if(!days.includes(d))days.push(d);next.days=days.sort((a,b)=>a-b)}}return next}
+ function change(p,patch){return {...p,...patch}}
+
  function diagnostic(p){
   const result=assess(p),issues=[];
   for(const e of result.errors)issues.push({code:e.code,field:e.field,title:'Une information est à corriger',reason:e.message,stage:STAGES[e.field]??6});
@@ -30,13 +31,13 @@
   }
   if(result.warnings.some(w=>w.code==='BEGINNER_HIGH_FREQUENCY'||w.code==='FREQUENCY_JUMP'||w.code==='METHOD_DISCOURAGED')){
    for(let count=2;count<=6;count++){
-    if(count===n)continue;
+    if(count===n||count>(Array.isArray(p.days)?p.days.length:0))continue;
     if(level==='beginner'&&count>=5)continue;
     if(Number.isFinite(current)&&count-current>=3)continue;
-    propose({daysCount:String(count)},'Passer à '+count+' séances','Adapter le rythme à ton expérience et à tes séances actuelles. Les jours disponibles seront conservés ou complétés.');
+    propose({daysCount:String(count)},'Passer à '+count+' séances','Adapter le rythme à ton expérience et à tes séances actuelles. Les jours disponibles sont conservés : aucun nouveau jour n’est supposé libre.');
    }
   }
-  if(result.errors.some(e=>e.code==='INSUFFICIENT_DAYS')&&Number.isInteger(n)&&n>=2&&n<=6)propose({days:[...new Set([...(p.days||[]),0,1,2,3,4,5,6])].slice(0,n).sort((a,b)=>a-b)},'Compléter les jours disponibles','Sélectionner suffisamment de jours pour ton rythme.');
+
   choices.sort((a,b)=>{const score=x=>(Object.keys(x.patch).includes('method')?0:2)+(x.patch.method==='auto'?-1:0);return score(a)-score(b)});
   return {ok:result.valid&&!result.warnings.some(w=>relevantCodes.has(w.code)),issues,choices:choices.slice(0,5),assessment:result};
  }
