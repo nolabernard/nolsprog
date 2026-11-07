@@ -12,6 +12,9 @@ for(const method of ['fullbody','upperlower','ppl','split','hybrid'])for(let n=2
  assert.equal(result.sessions.length,7);
  assert.equal(result.sessions.filter(x=>!x.rest).length,n);
  assert(result.sessions.every(x=>x.minutes>=0));
+ assert(result.workingSets>0);
+ assert(result.totalMinutes>0);
+ assert(Object.values(result.movementVolume).every(v=>Number.isFinite(v)&&v>=0));
  assert(Object.values(result.volume).every(v=>Number.isFinite(v)&&v>=0));
  assert(Object.values(result.exposures).every(v=>Number.isInteger(v)&&v>=0&&v<=n));
  assert.equal(result.warnings.filter(w=>w.code==='UNKNOWN_EXERCISE').length,0);
@@ -24,4 +27,6 @@ const plan=engine.buildProgram(profile);
 plan[0].ex.push({...plan[0].ex[0]});
 assert(quality.audit(plan,profile,index).warnings.some(w=>w.code==='DUPLICATE_EXERCISE'));
 assert.throws(()=>quality.audit([],profile,index),/invalide/);
+const noPull=plan.map(s=>({...s,ex:s.ex.filter(e=>!['pullH','pullV'].includes(index.get(e.name)?.pattern))}));
+assert(quality.audit(noPull,profile,index).warnings.some(w=>w.code==='MISSING_MOVEMENT_FAMILY'&&w.family==='horizontalPull'));
 console.log('Phase 4 audit OK: '+audits+' profils testés; '+excess+' dépassements de durée détectés (à corriger avant activation stricte).');
