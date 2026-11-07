@@ -38,7 +38,7 @@
   }
   if(result.errors.some(e=>e.code==='INSUFFICIENT_DAYS')&&Number.isInteger(n)&&n>=2&&n<=6)propose({days:[...new Set([...(p.days||[]),0,1,2,3,4,5,6])].slice(0,n).sort((a,b)=>a-b)},'Compléter les jours disponibles','Sélectionner suffisamment de jours pour ton rythme.');
   choices.sort((a,b)=>{const score=x=>(Object.keys(x.patch).includes('method')?0:2)+(x.patch.method==='auto'?-1:0);return score(a)-score(b)});
-  return {ok:result.valid&&!result.warnings.some(w=>w.requiresConfirmation),issues,choices:choices.slice(0,5),assessment:result};
+  return {ok:result.valid&&!result.warnings.some(w=>relevantCodes.has(w.code)),issues,choices:choices.slice(0,5),assessment:result};
  }
  return Object.freeze({diagnostic,change,LABEL,STAGES});
 });
