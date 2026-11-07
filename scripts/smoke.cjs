@@ -20,4 +20,12 @@ assert(generated.filter(x=>x.ex.length).length===4,'Quatre séances doivent êtr
 assert(ctx.NolsEngine.chooseMethod(p)==='upperlower','Upper/Lower doit être sélectionné');
 assert(ctx.NolsEngine.chooseMethod({...p,daysCount:'6',method:'ppl'})==='ppl','PPL doit être sélectionné');
 assert(ctx.NolsEngine.chooseMethod({...p,daysCount:'3',method:'fullbody'})==='fullbody','Full body doit être sélectionné');
-console.log('Génération de programmes : OK');
+assert(vm.runInContext('formatRest(90)',ctx)==='1 min 30','Le repos de 90 secondes doit être formaté');
+assert(vm.runInContext('formatRest(60)',ctx)==='1 min','Le repos de 60 secondes doit être formaté');
+assert(vm.runInContext('formatRest(45)',ctx)==='45 s','Le repos court doit être en secondes');
+click('day',{day:'0'});
+const firstDate=vm.runInContext('selectedDate(0).getDate()',ctx);
+click('week',{step:'1'});
+const secondDate=vm.runInContext('selectedDate(0).getDate()',ctx);
+assert(vm.runInContext('(selectedDate(0)-new Date(S.start+"T12:00:00"))/86400000',ctx)>=7,'La semaine suivante doit afficher les dates suivantes');
+console.log('Génération de programmes, repos et calendrier : OK');
