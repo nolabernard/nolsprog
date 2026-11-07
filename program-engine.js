@@ -24,54 +24,125 @@ hybrid:{name:'Hybride',description:'Combine Push/Pull/Legs et haut du corps ou s
 };
 const methods=definitions;
 function chooseMethod(p){const n=Number(p.daysCount||3);if(p.method&&p.method!=='auto'){if(p.method==='upperlower'&&n===4)return 'upperlower';if(p.method==='ppl'&&(n===3||n===6))return 'ppl';if(p.method==='split'&&n>=4)return 'split';if(p.method==='fullbody'&&n<=3)return 'fullbody';if(p.method==='hybrid'&&n>=4)return 'hybrid'}return n<=3?'fullbody':n===4?'upperlower':n===5?'hybrid':'ppl'}
-const fullVariations=[
- [['Presse à cuisses',3,'8–12',120],['Développé couché haltères',3,'8–12',120],['Tirage vertical prise neutre',3,'8–12',120],['Soulevé de terre roumain',2,'8–10',150],['Élévations latérales haltères',2,'12–20',75],['Crunch machine',2,'12–20',60]],
- [['Hack squat',3,'8–10',150],['Rowing machine appui poitrine',3,'8–12',120],['Développé incliné haltères',3,'8–12',120],['Leg curl assis',3,'10–15',90],['Curl barre EZ',2,'10–15',75],['Gainage',2,'30–45 s',60]],
- [['Fentes arrière',3,'10–12',120],['Développé épaules haltères',3,'8–12',120],['Tirage vertical prise large',3,'8–12',120],['Hip thrust',3,'8–12',120],['Extension triceps corde',2,'10–15',75],['Crunch machine',2,'12–20',60]]
-];
-const homeVariations=[
- moves.home,
- [['Fentes arrière',3,'10–12',90],['Pompes',3,'6–15',90],['Rowing avec sac à dos',3,'10–15',90],['Pont fessier',3,'12–20',75],['Gainage latéral',2,'25–40 s',60]],
- [['Squat tempo',3,'10–15',90],['Pompes inclinées',3,'8–15',90],['Soulevé de terre avec sac à dos',3,'10–15',90],['Fentes latérales',2,'10–12',75],['Crunch',2,'12–20',60]]
-];
-const dumbbellVariations=[
- moves.dumbbells,
- [['Fentes arrière haltères',3,'8–12',120],['Développé épaules haltères',3,'8–12',120],['Rowing haltères buste penché',3,'8–12',120],['Hip thrust haltère',3,'10–15',90],['Curl haltères',2,'10–15',75]],
- [['Goblet squat',3,'10–12',120],['Développé couché au sol haltères',3,'8–12',120],['Rowing unilatéral haltère',3,'10–12',120],['Soulevé de terre roumain haltères',3,'8–12',120],['Extension triceps haltère',2,'10–15',75]]
-];
+
+/* Catalogue de mouvements : équipement, patron moteur, priorité musculaire.
+   Les choix restent reproductibles pour un profil donné, sans tirage aléatoire. */
+const catalogue=[
+ ['Développé couché barre','pushH','Pectoraux','gym',3],['Développé couché haltères','pushH','Pectoraux','gym',2],['Développé incliné machine','pushH','Pectoraux','gym',2],['Développé incliné haltères','pushH','Pectoraux','gym',2],['Développé convergent pectoraux','pushH','Pectoraux','gym',2],['Pec deck','chestIso','Pectoraux','gym',1],
+ ['Tirage vertical prise neutre','pullV','Dos','gym',2],['Tirage vertical prise large','pullV','Dos','gym',2],['Tractions assistées','pullV','Dos','gym',2],['Rowing machine appui poitrine','pullH','Dos','gym',2],['Rowing T-bar appui poitrine','pullH','Dos','gym',2],['Rowing unilatéral haltère','pullH','Dos','gym',2],
+ ['Hack squat','squat','Jambes','gym',2],['Presse à cuisses','squat','Jambes','gym',2],['Squat guidé','squat','Jambes','gym',2],['Fentes arrière','squat','Jambes','gym',2],['Soulevé de terre roumain','hinge','Jambes','gym',2],['Hip thrust','hinge','Jambes','gym',2],['Leg curl assis','hamIso','Jambes','gym',1],['Leg extension','quadIso','Jambes','gym',1],['Mollets debout','calves','Jambes','gym',1],['Mollets assis','calves','Jambes','gym',1],
+ ['Développé épaules haltères','pushV','Épaules','gym',2],['Développé épaules machine','pushV','Épaules','gym',2],['Élévations latérales haltères','side','Épaules','gym',1],['Élévations latérales poulie','side','Épaules','gym',1],['Reverse pec deck','rear','Épaules','gym',1],['Oiseau haltères','rear','Épaules','gym',1],
+ ['Curl barre EZ','biceps','Bras','gym',1],['Curl incliné haltères','biceps','Bras','gym',1],['Curl pupitre','biceps','Bras','gym',1],['Curl marteau haltères','biceps','Bras','gym',1],['Extension triceps corde','triceps','Bras','gym',1],['Extension triceps au-dessus de la tête haltère','triceps','Bras','gym',1],['Pushdown triceps barre','triceps','Bras','gym',1],
+ ['Crunch machine','core','Abdominaux','gym',1],['Gainage','core','Abdominaux','any',1],['Crunch','core','Abdominaux','any',1],['Gainage latéral','core','Abdominaux','any',1],
+ ['Goblet squat','squat','Jambes','dumbbells',2],['Fentes arrière haltères','squat','Jambes','dumbbells',2],['Soulevé de terre roumain haltères','hinge','Jambes','dumbbells',2],['Hip thrust haltère','hinge','Jambes','dumbbells',2],
+ ['Développé couché au sol haltères','pushH','Pectoraux','dumbbells',2],['Développé épaules haltères','pushV','Épaules','dumbbells',2],['Rowing unilatéral haltère','pullH','Dos','dumbbells',2],['Rowing haltères buste penché','pullH','Dos','dumbbells',2],['Élévations latérales haltères','side','Épaules','dumbbells',1],['Curl haltères','biceps','Bras','dumbbells',1],['Extension triceps haltère','triceps','Bras','dumbbells',1],
+ ['Squat au poids du corps','squat','Jambes','none',2],['Squat tempo','squat','Jambes','none',2],['Fentes arrière','squat','Jambes','none',2],['Fentes latérales','squat','Jambes','none',2],['Pont fessier','hinge','Jambes','none',2],['Soulevé de terre avec sac à dos','hinge','Jambes','none',2],['Pompes','pushH','Pectoraux','none',2],['Pompes inclinées','pushH','Pectoraux','none',2],['Rowing avec sac à dos','pullH','Dos','none',2]
+].map(([name,pattern,muscle,equipment,compound])=>({name,pattern,muscle,equipment,compound}));
+const plans={
+ fullbody:[['squat','pushH','pullH','hinge','side','core'],['hinge','pullV','pushH','squat','biceps','core'],['squat','pushV','pullH','hinge','triceps','core']],
+ upperlower:[['pushH','pullH','pullV','pushV','side','biceps','triceps'],['squat','hinge','hamIso','quadIso','calves','core'],['pullV','pushH','pullH','pushV','rear','triceps','biceps'],['hinge','squat','quadIso','hamIso','calves','core']],
+ ppl:[['pushH','pushV','chestIso','side','triceps'],['pullV','pullH','rear','biceps','core'],['squat','hinge','hamIso','calves','core'],['pushH','pushV','side','chestIso','triceps'],['pullH','pullV','rear','biceps','core'],['hinge','squat','quadIso','calves','core']],
+ split:[['pushH','chestIso','pushV','side','triceps'],['pullV','pullH','rear','biceps','core'],['squat','hinge','quadIso','hamIso','calves'],['pushV','side','rear','biceps','triceps'],['pullH','pushH','pullV','side','biceps'],['hinge','squat','hamIso','calves','core']],
+ hybrid:[['pushH','pushV','side','triceps','chestIso'],['pullV','pullH','rear','biceps','core'],['squat','hinge','hamIso','calves','core'],['pushH','pullH','pullV','pushV','side','biceps'],['hinge','squat','quadIso','hamIso','calves','core'],['squat','pushH','pullH','hinge','side','core']]
+};
 function selectTrainingDays(available,n){
  const days=[...new Set(available.map(Number).filter(x=>Number.isInteger(x)&&x>=0&&x<=6))].sort((a,b)=>a-b);
  if(days.length<n)return null;
- // Minimize consecutive training days and maximize spacing within the week, including Sunday->Monday.
- const combos=[];function rec(start,picked){if(picked.length===n){combos.push([...picked]);return}for(let i=start;i<=days.length-(n-picked.length);i++)rec(i+1,[...picked,days[i]])}rec(0,[]);
  let best=null,score=-Infinity;
- for(const combo of combos){const gaps=combo.map((d,i)=>(combo[(i+1)%n]-d+7)%7||7);const minGap=Math.min(...gaps),adjacent=gaps.filter(x=>x===1).length;const spread=gaps.reduce((s,g)=>s+Math.pow(g-7/n,2),0);const candidate=minGap*100-adjacent*35-spread*7-combo.reduce((s,d)=>s+d,0)*.01;if(candidate>score){score=candidate;best=combo}}
- return best;
+ function visit(from,picked){
+  if(picked.length===n){
+   const gaps=picked.map((d,i)=>(picked[(i+1)%n]-d+7)%7||7);
+   const variance=gaps.reduce((s,g)=>s+(g-7/n)**2,0);
+   const candidate=Math.min(...gaps)*100-gaps.filter(g=>g===1).length*35-variance*7-picked.reduce((s,d)=>s+d,0)*.01;
+   if(candidate>score){score=candidate;best=[...picked]}return;
+  }
+  for(let i=from;i<=days.length-(n-picked.length);i++)visit(i+1,[...picked,days[i]]);
+ }
+ visit(0,[]);return best;
+}
+function stableHash(value){let h=2166136261;for(const ch of String(value)){h=Math.imul(h^ch.charCodeAt(0),16777619)}return h>>>0}
+function selectExercise(pattern,p,used,sessionIndex,slotIndex,history,avoid){
+ const equipment=p.equipment||'gym';
+ let candidates=catalogue.filter(x=>x.pattern===pattern&&(x.equipment==='any'||x.equipment===equipment||(equipment==='dumbbells'&&x.equipment==='none'))&&!avoid.some(a=>x.name.toLowerCase().includes(a))&&!used.has(x.name));
+ if(!candidates.length)return null;
+ const profile=[p.goal,p.level,p.equipment,p.priority,p.age,p.job,p.sleep,p.activity].join('|');
+ candidates.sort((a,b)=>{
+  const score=x=>history.get(x.name)*25+(stableHash(profile+'|'+sessionIndex+'|'+slotIndex+'|'+x.name)%101)/101+(p.level==='beginner'&&/barre|tractions|soulevé de terre/i.test(x.name)?3:0);
+  return score(a)-score(b);
+ });
+ return candidates[0];
+}
+function patternMap(pattern,equipment){
+ if(equipment==='gym')return pattern;
+ const fallback={
+  pullV:'pullH',chestIso:'pushH',quadIso:'squat',hamIso:'hinge',calves:'squat',
+  rear:'pullH',side:equipment==='none'?'pushH':'side',
+  biceps:equipment==='none'?'pullH':'biceps',triceps:equipment==='none'?'pushH':'triceps',
+  pushV:equipment==='none'?'pushH':'pushV'
+ };
+ return fallback[pattern]||pattern;
+}
+function parameters(x,p,index,sessionIndex){
+ const beginner=p.level==='beginner'||Number(p.currentSessions)<=1;
+ const fatigue=p.job==='physical'||p.sleep==='under6'||p.activity==='high';
+ const experienced=p.level==='advanced'&&Number(p.currentSessions)>=3;
+ const compound=x.compound===2;
+ const focus=(p.priority||[]).includes(x.muscle);
+ let sets=compound?(experienced?4:3):experienced?3:2;
+ if(beginner||fatigue)sets=Math.max(2,sets-1);
+ if(focus&&!beginner&&!fatigue)sets=Math.min(4,sets+1);
+ if(Number(p.duration)<=30)sets=Math.min(sets,3);
+ const ranges={
+ strength:compound?['4–6','5–8','6–8']:['8–12','10–12','10–15'],
+ muscle:compound?['6–10','8–12','10–12']:['10–15','12–15','12–20'],
+ fatloss:compound?['8–12','10–12','10–15']:['12–15','12–20','10–15'],
+ fitness:compound?['8–12','10–15','12–15']:['10–15','12–20','12–15'],
+ restart:compound?['10–12','10–15','8–12']:['12–15','10–15','12–20']
+ };
+ const list=ranges[p.goal]||ranges.muscle;
+ let reps=list[(sessionIndex+index)%list.length];
+ if(x.pattern==='core')reps=/Gainage/i.test(x.name)?'25–45 s':'12–20';
+ const rest=compound?(p.goal==='strength'?150:120):x.pattern==='core'?60:75;
+ return ex(x.name,sets,reps,rest);
 }
 function buildProgram(p){
- const n=Math.max(2,Math.min(6,Number(p.daysCount)||3)),method=chooseMethod(p);
- const available=Array.isArray(p.days)?p.days:[];
- const days=selectTrainingDays(available,n);
+ const n=Math.max(2,Math.min(6,Number(p.daysCount)||3));
+ const days=selectTrainingDays(Array.isArray(p.days)?p.days:[],n);
  if(!days)throw Error('Choisis au moins '+n+' jours disponibles pour tes '+n+' séances.');
- const schedule={fullbody:['full','full','full','full','full','full'],upperlower:['upper','lower','upper','lower','upper','lower'],ppl:['push','pull','legs','push','pull','legs'],split:['chest','back','legs','shoulders','upper','lower'],hybrid:['push','pull','legs','upper','lower','full']}[method];
- const names=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
- const beginner=p.level==='beginner'||Number(p.currentSessions)===0;
- const highFatigue=p.job==='physical'||p.sleep==='under6';
+ const method=chooseMethod(p),equipment=p.equipment||'gym',names=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
  const short=Number(p.duration)<=45;
  const maxMoves=Number(p.duration)<=30?3:short?4:Number(p.duration)>=75?7:6;
  const avoid=String(p.avoid||'').toLowerCase().split(/[,;\n]+/).map(x=>x.trim()).filter(x=>x.length>=3);
- const priority=Array.isArray(p.priority)?p.priority:[];
+ const history=new Map(catalogue.map(x=>[x.name,0]));
+ const priorities=Array.isArray(p.priority)?p.priority:[];
+ const schedule=plans[method]||plans.fullbody;
  const sessions=days.map((day,i)=>{
-  const type=p.equipment==='none'?'home':p.equipment==='dumbbells'?'dumbbells':schedule[i];
-  let base=type==='full'?fullVariations[i%fullVariations.length]:type==='home'?homeVariations[i%homeVariations.length]:type==='dumbbells'?dumbbellVariations[i%dumbbellVariations.length]:moves[type];
-  base=base.filter(x=>!avoid.some(a=>x[0].toLowerCase().includes(a)));
-  if(priority.includes('Abdominaux')&&!base.some(x=>/crunch|gainage/i.test(x[0])))base=[...base,[type==='home'?'Gainage':'Crunch',2,'12–20',60]];
-  if(priority.includes('Épaules')&&!base.some(x=>/latérales/i.test(x[0]))&&type!=='legs'&&type!=='lower'&&type!=='home')base=[...base,['Élévations latérales haltères',2,'12–20',75]];
-  const items=base.slice(0,maxMoves).map(x=>ex(x[0],Math.max(2,x[1]-(beginner||highFatigue?1:0)),p.goal==='strength'&&/Développé|Rowing|squat|Presse/i.test(x[0])?'5–8':p.goal==='restart'?'10–15':x[2],x[3]));
-  const label=type==='full'?'Full body '+String.fromCharCode(65+i%3):type==='home'?'Maison '+String.fromCharCode(65+i%3):type==='dumbbells'?'Haltères '+String.fromCharCode(65+i%3):titles[type];
-  return {day:names[day],title:label,focus:definitions[method].name,ex:items};
+  let patterns=[...schedule[i%schedule.length]];
+  if(equipment!=='gym'){
+   // Preserve the training split where possible; use viable substitutions for limited equipment.
+   patterns=patterns.map(pattern=>patternMap(pattern,equipment));
+  }
+  if(method==='fullbody'||(equipment!=='gym'&&n<=3)){
+   patterns=[...plans.fullbody[i%3]].map(pattern=>patternMap(pattern,equipment));
+  }
+  // Promote requested muscle groups within the relevant session, without removing primary movement coverage.
+  const musclesFor={Pectoraux:['pushH','chestIso'],Dos:['pullH','pullV'],Épaules:['side','pushV'],Bras:['biceps','triceps'],Jambes:['squat','hinge'],Abdominaux:['core']};
+  const extra=priorities.flatMap(m=>musclesFor[m]||[]).map(pattern=>patternMap(pattern,equipment));
+  if(extra.length&&maxMoves>3){for(const pattern of extra){if(patterns.includes(pattern))continue;if(patterns.length<maxMoves+1)patterns.push(pattern)}}
+  const used=new Set(),items=[];
+  for(let slot=0;slot<patterns.length&&items.length<maxMoves;slot++){
+   const pattern=patterns[slot];
+   const x=selectExercise(pattern,p,used,i,slot,history,avoid);
+   if(!x)continue;
+   used.add(x.name);history.set(x.name,(history.get(x.name)||0)+1);
+   items.push(parameters(x,p,items.length,i));
+  }
+  if(!items.length)throw Error('Aucun exercice compatible avec tes contraintes. Modifie les exercices à éviter ou ton équipement.');
+  const types={fullbody:'Full body',upperlower:i%2?'Lower':'Upper',ppl:['Push','Pull','Legs'][i%3],split:['Pectoraux','Dos','Jambes','Épaules','Upper','Lower'][i%6],hybrid:['Push','Pull','Legs','Upper','Lower','Full body'][i%6]};
+  const title=(types[method]||'Séance')+' '+String.fromCharCode(65+Math.floor(i/(method==='ppl'?3:method==='upperlower'?2:1)));
+  return {day:names[day],title,focus:definitions[method].name,ex:items};
  });
- return names.map((day,i)=>sessions.find(s=>s.day===day)||{day,title:'Récupération',focus:'Repos / marche douce',ex:[]});
+ return names.map(day=>sessions.find(s=>s.day===day)||{day,title:'Récupération',focus:'Repos / marche douce',ex:[]});
 }
 
 const steps=[
