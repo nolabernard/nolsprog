@@ -1,7 +1,7 @@
 name: Validate NolsProg
 on:
   push:
-    branches: [main, 'feature/brand-consistency']
+    branches: [main, 'feature/official-logo-artwork']
   workflow_dispatch:
 permissions:
   contents: read
