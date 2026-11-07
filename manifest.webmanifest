@@ -1,0 +1,10 @@
+{
+  "name": "NolsProg",
+  "short_name": "NolsProg",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0e12",
+  "theme_color": "#0b0e12",
+  "description": "Carnet de musculation NolsProg"
+}
