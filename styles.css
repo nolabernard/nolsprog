@@ -629,3 +629,26 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .fit-logo .steroid-mark{display:block;width:min(36vw,144px);height:min(36vw,144px);object-fit:contain;color:inherit;filter:none}
 .fit-logo img.fit-wordmark{display:block;width:min(74vw,310px);height:auto;max-height:105px;object-fit:contain;filter:none}
 @media(max-width:370px){.brand:after{width:135px;height:42px}}
+
+/* Coach de cohérence — panneau natif à la charte STÉROÏDE, sans popup système. */
+.coherence-screen{background:#FAF5EC;min-height:100dvh}
+.coherence-body{width:100%;max-width:520px;margin:0 auto;padding:27px 0 40px}
+.coherence-body h1{font-size:clamp(28px,7.4vw,39px);line-height:1.12;letter-spacing:-1.1px;color:#1A1A1A;margin:14px 0 13px;font-weight:800}
+.coherence-intro,.coherence-subtitle{font-size:14px;line-height:1.65;color:#53645A;margin:0 0 22px}
+.coherence-issues,.coherence-choices{display:grid;gap:12px}
+.coherence-issue{padding:20px;background:#FFFCF7;border:1px solid #D8C9B6;border-left:4px solid #0B4D3B;border-radius:18px;box-shadow:0 5px 22px #0B4D3B09}
+.coherence-issue-head{display:flex;align-items:center;gap:11px}
+.coherence-index{font-size:11px;letter-spacing:.5px;color:#0B4D3B;font-weight:800;background:#E5EFE7;padding:8px;border-radius:9px}
+.coherence-issue strong{color:#1A1A1A;font-size:15px;line-height:1.35}
+.coherence-issue p,.coherence-choice p{font-size:13px;line-height:1.6;color:#53645A;margin:12px 0}
+.coherence-issue button{min-height:42px;padding:9px 0;background:transparent;color:#0B4D3B;border:0;font-weight:750;text-align:left;font-size:13px}
+.coherence-body h2{font-size:20px;color:#1A1A1A;margin:30px 0 8px}
+.coherence-choice{background:#F5E8D5;border:1px solid #D9C6AC;border-radius:18px;padding:19px;display:grid;gap:15px}
+.coherence-tag{font-size:10px;font-weight:800;letter-spacing:1.4px;color:#0B4D3B}
+.coherence-choice h3{font-size:18px;line-height:1.3;margin:8px 0 0;color:#1A1A1A}
+.coherence-choice button{background:#0B4D3B;color:#F5E8D5;border:0;border-radius:999px;min-height:48px;padding:12px 18px;font-weight:750;display:flex;align-items:center;justify-content:space-between}
+.coherence-choice button:active{transform:scale(.99)}
+.coherence-health{padding:16px;border:1px solid #78A893;border-radius:14px;color:#294638;background:#EAF1E8;font-size:13px;line-height:1.55}
+.coherence-footer{position:relative;padding-top:12px;background:#FAF5EC}
+.coherence-footer .fit-outline{margin:0;background:#FFFCF7;color:#0B4D3B;border-color:#A9C1B0}
+@media(min-width:700px){.coherence-body{padding-top:38px}.coherence-choice{grid-template-columns:1fr 135px;align-items:center}.coherence-choice button{justify-content:center}}
