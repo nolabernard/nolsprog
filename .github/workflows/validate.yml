@@ -20,5 +20,7 @@ jobs:
         run: node scripts/sport-engine-integration.test.cjs
       - name: Audit sports quality phase 4
         run: node scripts/sport-quality.test.cjs
+      - name: Validate calendar integration
+        run: node scripts/calendar-integration.test.cjs
       - name: Verify required files
         run: test -s index.html && test -s app.js && test -s styles.css && test -s manifest.webmanifest
