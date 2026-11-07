@@ -15,6 +15,7 @@ for(const method of ['fullbody','upperlower','ppl','split','hybrid'])for(let n=2
  assert(Object.values(result.volume).every(v=>Number.isFinite(v)&&v>=0));
  assert(Object.values(result.exposures).every(v=>Number.isInteger(v)&&v>=0&&v<=n));
  assert.equal(result.warnings.filter(w=>w.code==='UNKNOWN_EXERCISE').length,0);
+ assert.equal(result.warnings.filter(w=>w.code==='DURATION_EXCEEDED').length,0,'La durée doit respecter la tolérance de 10 % pour '+method+'/'+n+'/'+duration);
  excess+=result.warnings.filter(w=>w.code==='DURATION_EXCEEDED').length;
  audits++;
 }
