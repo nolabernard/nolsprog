@@ -44,3 +44,29 @@ const home=ctx.NolsEngine.buildProgram({...allDays,equipment:'none'});
 assert(home.filter(x=>x.ex.length).every(x=>x.ex.every(e=>!/machine|haltère|barre EZ|presse à cuisses/i.test(e.name))),'Le programme sans matériel ne doit pas exiger de machines');
 assert.throws(()=>ctx.NolsEngine.buildProgram({...allDays,days:[0,2]}),/jours disponibles/,'Refuser les calendriers incompatibles');
 console.log('Personnalisation vérifiée : disponibilité, répartition, variété A/B/C et matériel.');
+
+for(const [method,count] of [['fullbody',3],['upperlower',4],['ppl',6],['split',5],['hybrid',5]]){
+ const profile={...ctx.NolsEngine.defaults,method,daysCount:String(count),days:[0,1,2,3,4,5,6],equipment:'gym',level:'advanced',currentSessions:'5',duration:'75'};
+ const week=ctx.NolsEngine.buildProgram(profile).filter(d=>d.ex.length);
+ assert(week.length===count,method+': nombre de séances incorrect');
+ assert(week.every(s=>new Set(s.ex.map(e=>e.name)).size===s.ex.length),method+': exercices dupliqués dans une séance');
+ assert(week.every(s=>s.ex.length>=4),method+': séance incomplète');
+ assert(new Set(week.map(s=>s.ex.map(e=>e.name).join('|'))).size===count,method+': séances identiques');
+ const short=ctx.NolsEngine.buildProgram({...profile,duration:'30'}).filter(d=>d.ex.length);
+ assert(short.every(s=>s.ex.length<=3),method+': durée courte non respectée');
+ const strength=ctx.NolsEngine.buildProgram({...profile,goal:'strength'}).filter(d=>d.ex.length);
+ assert(strength.some((s,i)=>s.ex.some((e,j)=>e.reps!==week[i].ex[j]?.reps)),method+': objectif sans effet sur répétitions');
+}
+for(const equipment of ['gym','dumbbells','none']){
+ const profile={...ctx.NolsEngine.defaults,method:'auto',daysCount:'4',days:[0,1,2,3,4,5,6],equipment};
+ const sessions=ctx.NolsEngine.buildProgram(profile).filter(s=>s.ex.length);
+ assert(sessions.length===4,'Quatre séances doivent rester possibles avec '+equipment);
+ assert(sessions.every(s=>s.ex.length>=3),'Séance incomplète avec '+equipment);
+ if(equipment==='none')assert(sessions.every(s=>s.ex.every(e=>!/machine|haltère|presse|barre EZ/i.test(e.name))),'Matériel absent');
+}
+const beginnerProfile={...ctx.NolsEngine.defaults,days:[0,1,2,3,4,5,6],daysCount:'3',level:'beginner',currentSessions:'0'};
+const advancedProfile={...beginnerProfile,level:'advanced',currentSessions:'5'};
+const beginnerSets=ctx.NolsEngine.buildProgram(beginnerProfile).flatMap(s=>s.ex).reduce((sum,e)=>sum+e.sets,0);
+const advancedSets=ctx.NolsEngine.buildProgram(advancedProfile).flatMap(s=>s.ex).reduce((sum,e)=>sum+e.sets,0);
+assert(beginnerSets<advancedSets,'Le volume doit être inférieur pour les débutants');
+console.log('Tests avancés : 5 méthodes, 3 équipements, volume, objectif et durée OK');
