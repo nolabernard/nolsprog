@@ -82,8 +82,18 @@ function accountUI(){
  return '<div class="auth-panel"><div class="auth-headline"><span class="auth-kicker">STÉROÏDE · TON COACH</span><h1>'+title+'</h1><p>'+intro+'</p></div><div class="auth-glass">'+fields+(verify?'<button class="primary save" data-action="resend-confirm">Renvoyer l’email →</button>':'')+alternative+(!signup&&!recover&&!verify?'<button class="auth-forgot" data-action="auth-recover">Mot de passe oublié ?</button>':'')+'<div class="auth-or"><span>OU</span></div><button class="auth-guest" data-action="guest">Utiliser sans compte <span>↗</span></button></div></div>';
 }
 
-async function finishOnboarding(){const p=A.answers;if(Number(p.age)&&Number(p.age)<18){setNotice('STÉROÏDE est réservé aux adultes pour le moment.',true);return}if(p.days.length<Number(p.daysCount)){setNotice('Choisis au moins autant de jours disponibles que de séances.',true);return}if(p.limitations==='yes'){if(!confirm('En cas de douleur ou de limitation, fais valider les exercices par un professionnel de santé. Continuer ?'))return}
- const program=eng().buildProgram(p);S.plan=program;S.start=iso(monday(new Date()));S.logs=[];S.week=1;S.tab='today';S.open='auto';A.view='app';localStorage.setItem('nolsprog-onboarding-seen','1');if(!A.session)persist();else cacheAccount();render();
+async function finishOnboarding(){const p=A.answers;if(Number(p.age)&&Number(p.age)<18){setNotice('STÉROÏDE est réservé aux adultes pour le moment.',true);return}if(p.days.length<Number(p.daysCount)){setNotice('Choisis au moins autant de jours disponibles que de séances.',true);return}const assessment=globalThis.SteroidRules?.assess(p);
+ if(assessment){
+  if(!assessment.valid){setNotice(assessment.errors.map(x=>x.message).join(' '),true);return}
+  const requestedWarnings=assessment.warnings.filter(x=>x.requiresConfirmation);
+  if(requestedWarnings.length){
+   const message='STÉROÏDE adapte ton programme en conservant ta méthode : '+requestedWarnings.map(x=>x.message).join(' ')+'\\n\\nConfirmer ce choix ?';
+   if(!confirm(message))return;
+   if(!globalThis.SteroidRules.confirm(assessment,requestedWarnings.map(x=>x.code)).approved)return;
+  }
+ }else if(p.limitations==='yes'){if(!confirm('En cas de douleur ou de limitation, fais valider les exercices par un professionnel de santé. Continuer ?'))return}
+ let program;
+ try{program=eng().buildProgram(p)}catch(e){setNotice(e.message||'Impossible de générer ce programme.',true);return}S.plan=program;S.start=iso(monday(new Date()));S.logs=[];S.week=1;S.tab='today';S.open='auto';A.view='app';localStorage.setItem('nolsprog-onboarding-seen','1');if(!A.session)persist();else cacheAccount();render();
  if(A.session){try{await cloud('user_profiles?on_conflict=user_id',{method:'POST',prefer:'resolution=merge-duplicates',body:{user_id:A.session.user.id,answers:p,method:p.method}});await syncProgram();A.profile={answers:p,method:p.method};setNotice('Programme personnalisé créé et synchronisé ✓')}catch(e){setNotice('Programme créé localement, mais synchronisation impossible : '+e.message,true)}}
  else setNotice('Programme créé sur cet appareil ✓')
 }
