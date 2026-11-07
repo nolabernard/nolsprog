@@ -22,5 +22,7 @@ jobs:
         run: node scripts/sport-quality.test.cjs
       - name: Validate calendar integration
         run: node scripts/calendar-integration.test.cjs
+      - name: Test double progression and RIR
+        run: node scripts/sport-progression.test.cjs
       - name: Verify required files
         run: test -s index.html && test -s app.js && test -s styles.css && test -s manifest.webmanifest
