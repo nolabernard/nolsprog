@@ -813,3 +813,22 @@ button,input,select,textarea{font-family:Montserrat,system-ui,sans-serif}
 .settings-links button{padding:13px;text-align:left;border:1px solid #D9CBB7;border-radius:11px;background:#FFFCF7;color:#0B4D3B;font-weight:700}
 .settings-links .settings-logout{color:#A33737}
 @media(max-width:390px){.header-greeting{font-size:11px;max-width:95px}}
+
+/* Correctif en-tête : ne jamais superposer le pictogramme historique au vrai logo SVG. */
+.topbar .brand.official-brand::before{content:none!important;display:none!important}
+.topbar .brand.official-brand{flex:1 1 auto;min-width:0;max-width:none;width:auto;height:54px;overflow:visible!important;gap:0;padding:0;margin:0;letter-spacing:normal}
+.topbar .brand.official-brand img{display:block;flex:0 1 auto;width:100%;max-width:218px;height:44px;max-height:44px;object-fit:contain;object-position:left center}
+.topbar .header-actions{flex:0 0 auto;min-width:0}
+.topbar .header-greeting{max-width:145px;font-size:12px}
+.topbar .account-menu-trigger{flex:0 0 44px;width:44px;height:44px;display:grid;place-items:center}
+@media(max-width:480px){
+ .topbar .brand.official-brand{height:58px;min-width:0}
+ .topbar .brand.official-brand img{max-width:clamp(118px,38vw,170px);height:38px;max-height:38px}
+ .topbar .header-actions{gap:5px}
+ .topbar .header-greeting{max-width:118px;font-size:11px}
+}
+@media(max-width:360px){
+ .topbar .brand.official-brand img{max-width:112px}
+ .topbar .header-greeting{max-width:105px;font-size:10px}
+ .topbar .account-menu-trigger{width:40px;flex-basis:40px}
+}
