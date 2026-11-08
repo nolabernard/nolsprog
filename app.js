@@ -23,9 +23,9 @@ function restorePending(uid){pendingSets.clear();if(!uid)return;try{const rows=J
 function pendingFor(uid){return [...pendingSets.values()].filter(r=>r.user_id===uid)}
 const A={session:null,profile:null,answers:null,step:0,guide:false,view:'app',mode:'login',email:'',busy:false,syncing:false,menuOpen:false,firstName:''};
 const T={end:0,remaining:0,running:false,exercise:'',interval:null};
-const REST_KEY='steroid-rest-v1';
-function saveRest(){try{localStorage.setItem(REST_KEY,JSON.stringify({end:T.end,remaining:T.remaining,running:T.running,exercise:T.exercise}))}catch{}}
-function restoreRest(){try{const r=JSON.parse(localStorage.getItem(REST_KEY)||'null');if(!r)return;T.exercise=String(r.exercise||'');T.running=Boolean(r.running);T.end=Number(r.end)||0;T.remaining=T.running?Math.max(0,Math.ceil((T.end-Date.now())/1000)):Math.max(0,Number(r.remaining)||0);if(T.running&&T.remaining>0)T.interval=setInterval(updateTimer,250);else T.running=false}catch{}}
+const restKey=()=> 'steroid-rest-v2:'+(A.session?.user?.id||'guest');
+function saveRest(){try{localStorage.setItem(restKey(),JSON.stringify({end:T.end,remaining:T.remaining,running:T.running,exercise:T.exercise}))}catch{}}
+function restoreRest(){try{const r=JSON.parse(localStorage.getItem(restKey())||'null');if(!r)return;T.exercise=String(r.exercise||'');T.running=Boolean(r.running);T.end=Number(r.end)||0;T.remaining=T.running?Math.max(0,Math.ceil((T.end-Date.now())/1000)):Math.max(0,Number(r.remaining)||0);if(T.running&&T.remaining>0)T.interval=setInterval(updateTimer,250);else T.running=false}catch{}}
 
 const SESSION_PREFIX='steroid-workouts-v1:';
 const sessionStorageKey=()=>SESSION_PREFIX+(A.session?.user?.id||'guest');
@@ -55,7 +55,7 @@ const req=async(path,{method='GET',body,token,prefer}={})=>{
  if(!res.ok)throw Error(data?.msg||data?.error_description||data?.message||'Erreur réseau ('+res.status+')');return data;
 };
 const token=()=>A.session?.access_token;
-function setSession(s){const oldId=A.session?.user?.id,newId=s?.user?.id;if(oldId&&oldId!==newId)persistPending(oldId);A.session=s;if(oldId!==newId)restorePending(newId);loadWorkouts();if(s)localStorage.setItem(AUTH_KEY,JSON.stringify(s));else localStorage.removeItem(AUTH_KEY)}
+function setSession(s){const oldId=A.session?.user?.id,newId=s?.user?.id;if(oldId&&oldId!==newId)persistPending(oldId);if(oldId!==newId){clearInterval(T.interval);T.interval=null;T.running=false;T.remaining=0;T.end=0;T.exercise=''}A.session=s;if(oldId!==newId)restorePending(newId);loadWorkouts();if(s)localStorage.setItem(AUTH_KEY,JSON.stringify(s));else localStorage.removeItem(AUTH_KEY)}
 async function renew(){if(!A.session)return false;if(A.session.expires_at&&A.session.expires_at>Date.now()/1000+90)return true;try{const s=await req('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:{refresh_token:A.session.refresh_token}});setSession({...s,expires_at:Math.floor(Date.now()/1000)+s.expires_in});return true}catch{setSession(null);return false}}
 async function cloud(path,opts={}){if(!await renew())throw Error('Session expirée. Reconnecte-toi.');return req('/rest/v1/'+path,{...opts,token:token()})}
 async function loadCloud(){loadWorkouts();restoreRest();
