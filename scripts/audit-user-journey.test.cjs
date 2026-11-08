@@ -87,6 +87,6 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
  assert(!store['nolsprog-account-audit-test-user'],'Logout must clear account data cache');
  assert(!store['steroid-workouts-v1:audit-test-user'],'Logout must clear account workout cache');
  assert(!store['steroid-rest-v2:audit-test-user'],'Logout must clear account rest timer cache');
- await click('auth-login');await submit({email:'audit@example.invalid',password:'strong-test-123'});assert.equal(state('A.view'),'app');assert.equal(state('S.plan[0].ex[1].id'),before[0],'Program should restore from cloud after login');assert.equal(state('S.logs.length'),1,'Logged sets must restore from cloud');
+ await click('auth-login');await submit({email:'audit@example.invalid',password:'strong-test-123'});assert.equal(state('A.view'),'app');assert.equal(state('S.plan[0].ex[1].id'),program.plan[0].ex[1].id,'Program should restore the latest cloud edit after login');assert.equal(state('S.logs.length'),1,'Logged sets must restore from cloud');
  console.log('PASS: signup validation, duplicate account, confirmation flow, login, onboarding, generator, reorder, save/sync, workout finish, logout, cloud reload');
 })().catch(err=>{console.error(err);process.exitCode=1});
