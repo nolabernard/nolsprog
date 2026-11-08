@@ -56,6 +56,13 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
  assert.equal(state('S.plan[0].weeklyPlans[2].filter(d=>d.ex.length).length'),3,'Regeneration should schedule three new sessions for next week');
  assert.equal(state('S.plan[0].ex[0].id'),firstId,'Current-week exercise IDs must remain stable');
  assert.equal(state('S.start'),program.start_date,'Regeneration must preserve the cycle start date');
+ // A recorded exercise cannot be removed by a later edit.
+ await click('tab',{tab:'edit'});
+ state('S.draft[0].ex=S.draft[0].ex.filter(e=>e.id!==S.logs[0].exercise_id)');
+ const protectedPlan=JSON.stringify(state('S.plan'));
+ await click('save-plan');
+ assert.equal(JSON.stringify(state('S.plan')),protectedPlan,'Deleting an exercise with recorded sets must be rejected');
+ assert(state('S.logs.length')===1,'Recorded set must remain after rejected edit');
  networkDown=true;
  await state('flushSets()');
  // Offline edits must be queued, restored and not silently discarded.
