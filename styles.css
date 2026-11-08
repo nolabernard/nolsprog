@@ -832,3 +832,5 @@ button,input,select,textarea{font-family:Montserrat,system-ui,sans-serif}
  .topbar .header-greeting{max-width:105px;font-size:10px}
  .topbar .account-menu-trigger{width:40px;flex-basis:40px}
 }
+
+.header-name-setup{border:0;background:transparent;color:#0B4D3B;font:700 11px Montserrat,system-ui,sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:5px 0;text-align:right;white-space:nowrap}
