@@ -834,3 +834,49 @@ button,input,select,textarea{font-family:Montserrat,system-ui,sans-serif}
 }
 
 .header-name-setup{border:0;background:transparent;color:#0B4D3B;font:700 11px Montserrat,system-ui,sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:5px 0;text-align:right;white-space:nowrap}
+
+/* Navigation flottante, inspirée des barres d'onglets iOS : pilule coulissante. */
+.shell:not(.immersive-shell) .tabbar{
+ --tab-gap:5px;
+ position:fixed;bottom:calc(10px + env(safe-area-inset-bottom));left:50%;
+ transform:translateX(-50%);width:min(470px,calc(100% - 28px));
+ height:70px;box-sizing:border-box;padding:7px;
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--tab-gap);
+ border:1px solid #D6C9B6;border-radius:27px;
+ background:rgba(255,252,247,.94);
+ box-shadow:0 10px 35px #0B4D3B24,0 2px 8px #0B4D3B10;
+ backdrop-filter:blur(22px) saturate(150%);
+ -webkit-backdrop-filter:blur(22px) saturate(150%);
+ isolation:isolate;overflow:hidden;z-index:30;
+}
+.shell:not(.immersive-shell) .tabbar::before{
+ content:"";position:absolute;z-index:-1;
+ left:7px;top:7px;bottom:7px;
+ width:calc((100% - 14px - 2 * var(--tab-gap))/3);
+ border-radius:21px;background:#0B4D3B;
+ transform:translateX(calc(var(--active-tab,0) * (100% + var(--tab-gap))));
+ transition:transform 320ms cubic-bezier(.22,1,.36,1);
+ box-shadow:0 3px 9px #0B4D3B28;
+}
+.shell:not(.immersive-shell) .tabbar button,
+.shell:not(.immersive-shell) .tabbar button.active{
+ position:relative;z-index:1;border:0!important;
+ border-radius:21px!important;background:transparent!important;
+ box-shadow:none!important;min-width:0;min-height:0;height:100%;
+ display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;
+ color:#53645A!important;font-size:11px;font-weight:750;
+ transition:color 220ms ease,transform 260ms cubic-bezier(.22,1,.36,1);
+}
+.shell:not(.immersive-shell) .tabbar button.active{color:#F5E8D5!important}
+.shell:not(.immersive-shell) .tabbar button.active .tabicon{transform:translateY(-1px) scale(1.1)}
+.shell:not(.immersive-shell) .tabbar .tabicon{font-size:21px;transition:transform 260ms cubic-bezier(.22,1,.36,1)}
+.shell:not(.immersive-shell) .tabbar button:focus-visible{outline:2px solid #78A893;outline-offset:-3px}
+@media(max-width:360px){.shell:not(.immersive-shell) .tabbar{width:calc(100% - 20px);height:66px}.shell:not(.immersive-shell) .tabbar button{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.shell:not(.immersive-shell) .tabbar::before,.shell:not(.immersive-shell) .tabbar button,.shell:not(.immersive-shell) .tabbar .tabicon{transition:none!important}}
+
+@keyframes steroid-tab-slide{
+ from{transform:translateX(calc(var(--from-tab,0) * (100% + var(--tab-gap))))}
+ to{transform:translateX(calc(var(--active-tab,0) * (100% + var(--tab-gap))))}
+}
+.shell:not(.immersive-shell) .tabbar::before{animation:steroid-tab-slide 320ms cubic-bezier(.22,1,.36,1) both}
+@media(prefers-reduced-motion:reduce){.shell:not(.immersive-shell) .tabbar::before{animation:none!important}}
