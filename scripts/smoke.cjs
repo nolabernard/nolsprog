@@ -4,7 +4,7 @@ const listeners={};const store={'nolsprog-onboarding-seen':'1'};const root={inne
 const ctx={document:{getElementById:id=>id==='app'?root:null,addEventListener:()=>{},visibilityState:'visible'},localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>{store[k]=v}},window:{addEventListener:()=>{}},clearTimeout:()=>{},crypto:require('crypto').webcrypto,Date,console,Math,Number,String,Array,JSON,Intl,setTimeout:()=>0,URL,URLSearchParams,location:{hash:'',pathname:'/nolsprog/',search:'',origin:'https://nolabernard.github.io'},history:{replaceState:()=>{}},Blob,structuredClone,globalThis:null};ctx.globalThis=ctx;
 vm.createContext(ctx);vm.runInContext(fs.readFileSync('program-engine.js','utf8'),ctx);vm.runInContext(source,ctx);
 assert(root.innerHTML.includes('Développé incliné machine')===false);
-assert(root.innerHTML.includes('Exercices'));
+assert(root.innerHTML.includes('data-action="day"'),'Le calendrier doit afficher les jours');
 assert(root.innerHTML.includes('Push')||root.innerHTML.includes('Upper')||root.innerHTML.includes('Repos'));
 const click=(action,fields={})=>listeners.click({target:{closest:()=>({dataset:{action,...fields}})}});
 click('day',{day:'0'});assert(root.innerHTML.includes('Développé couché barre'),'La séance de lundi est absente');
