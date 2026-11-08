@@ -17,6 +17,7 @@
     button.addEventListener('click',()=>apply());
     box.append(label,button);document.body.append(box);
   }
+  box.style.display=safe()?'flex':'none';
   box.querySelector('.steroid-update-description').textContent=text;
   box.querySelector('button').disabled=!safe();
   box.querySelector('button').textContent=safe()?'Mettre à jour':'En attente';
@@ -49,6 +50,7 @@
     if(current==='dev')return;
     setTimeout(check,2500);
     setInterval(check,5*60*1000);
+    setInterval(()=>{if(available)status('Une nouvelle version est disponible.')},15000);
     document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')check()});
     global.addEventListener('online',check);
   }
