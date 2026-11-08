@@ -903,3 +903,12 @@ button,input,select,textarea{font-family:Montserrat,system-ui,sans-serif}
 .shell:not(.immersive-shell) .rest-timer{bottom:calc(78px + env(safe-area-inset-bottom))}
 @media(max-width:360px){.shell .mobile-wordmark{font-size:21px;letter-spacing:-1.3px}.app-topbar .header-main-row{gap:8px}.shell:not(.immersive-shell) .tabbar{width:calc(100% - 18px)!important}}
 @media(prefers-reduced-motion:reduce){.shell:not(.immersive-shell) .tabbar::before{animation:none!important}}
+
+/* STÉROÏDE version update: discreet and thumb-friendly on iPhone. */
+.steroid-update-banner{position:fixed;z-index:9999;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(440px,calc(100% - 28px));display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;background:#F5E8D5;color:#0B4D3B;border:1px solid #D6C9B6;border-radius:18px;box-shadow:0 12px 35px #092d2330;font-family:Montserrat,system-ui,sans-serif}
+.steroid-update-copy{min-width:0;flex:1}
+.steroid-update-copy strong{display:block;font-size:13px;line-height:1.4}
+.steroid-update-description{margin:3px 0 0;font-size:11px;line-height:1.45;color:#405c4d}
+.steroid-update-button{flex:0 0 auto;min-height:40px;padding:0 13px;border:0;border-radius:12px;background:#0B4D3B;color:#fffaf1;font-size:11px;font-weight:800;font-family:inherit;cursor:pointer}
+.steroid-update-button:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:360px){.steroid-update-banner{gap:8px;padding:10px}.steroid-update-button{padding:0 9px}}
