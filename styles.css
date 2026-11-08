@@ -794,3 +794,22 @@ button,input,select,textarea{font-family:Montserrat,system-ui,sans-serif}
 .edit-sort-arrows button:disabled{opacity:.3}
 .edit-ex.is-dragging{outline:2px solid #0B4D3B;outline-offset:2px;background:#E2EDE5}
 .edit-ex.is-drop-target{outline:2px dashed #0B4D3B;outline-offset:2px;background:#EAF0E9}
+
+/* Menu compte et paramètres — charte STÉROÏDE */
+.header-actions{position:relative;display:flex;align-items:center;gap:8px}
+.header-greeting{font-size:12px;font-weight:700;color:#0B4D3B;white-space:nowrap;max-width:145px;overflow:hidden;text-overflow:ellipsis}
+.account-menu-trigger{font-size:26px!important;line-height:1!important;letter-spacing:1px}
+.account-popover{position:absolute;right:0;top:calc(100% + 10px);width:min(260px,78vw);padding:8px;z-index:80;border:1px solid #D9CBB7;border-radius:15px;background:#FFFCF7;box-shadow:0 14px 35px #1A1A1A20;display:grid;gap:3px}
+.account-popover button{display:block;text-align:left;width:100%;padding:13px 12px;border:0;border-radius:9px;background:transparent;color:#0B4D3B;font:600 13px Montserrat,system-ui,sans-serif;cursor:pointer}
+.account-popover button:hover,.account-popover button:focus-visible{background:#F5E8D5}
+.settings-panel{background:#FFFCF7;border:1px solid #D9CBB7;border-radius:20px;padding:clamp(18px,4vw,28px);display:grid;gap:14px}
+.settings-panel h1{margin:0;color:#0B4D3B;font-size:clamp(25px,6vw,35px)}
+.settings-form,.settings-links{display:grid;gap:14px}
+.settings-form label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#0B4D3B}
+.settings-form input{width:100%;box-sizing:border-box;min-height:46px;border:1px solid #C3B9A8;border-radius:10px;background:#F5E8D5;padding:11px;color:#1A1A1A;font:500 15px Montserrat,system-ui,sans-serif}
+.settings-form input[readonly]{background:#F1F0EB;color:#53645A}
+.settings-pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.settings-links{border-top:1px solid #D9CBB7;padding-top:14px}
+.settings-links button{padding:13px;text-align:left;border:1px solid #D9CBB7;border-radius:11px;background:#FFFCF7;color:#0B4D3B;font-weight:700}
+.settings-links .settings-logout{color:#A33737}
+@media(max-width:390px){.header-greeting{font-size:11px;max-width:95px}}
