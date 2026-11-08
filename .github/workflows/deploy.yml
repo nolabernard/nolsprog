@@ -23,10 +23,24 @@ jobs:
         uses: actions/configure-pages@v5
         with:
           enablement: true
+      - name: Build versioned mobile site
+        run: |
+          mkdir -p dist
+          cp *.js *.css *.html *.webmanifest *.svg dist/
+          python3 - <<'PY'
+          import json, os, pathlib, re
+          sha = os.environ['GITHUB_SHA']
+          dest = pathlib.Path('dist')
+          (dest / 'version.json').write_text(json.dumps({'version': sha}) + '\n')
+          html = (dest / 'index.html').read_text()
+          html = html.replace('name="steroid-version" content="dev"', f'name="steroid-version" content="{sha}"')
+          html = re.sub(r'((?:src|href)="\./[^"]+\.(?:js|css))"', lambda m: m.group(1) + '?v=' + sha + '"', html)
+          (dest / 'index.html').write_text(html)
+          PY
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: dist
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

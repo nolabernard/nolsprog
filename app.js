@@ -314,3 +314,8 @@ root.addEventListener('submit',async e=>{
  finally{A.busy=false}
 });
 loadLocal();initAuth();
+window.SteroidUpdates?.start({
+ isSafe:()=>A.view==='app'&&activeWorkout()?.status!=='active'&&!A.busy&&!syncInFlight&&!programSyncPromise&&!hasPendingChanges(A.session?.user?.id)&&!(S.tab==='edit'&&S.draft)&&!document.querySelector('input:focus,textarea:focus,select:focus'),
+ autoOnLaunch:true
+});
+

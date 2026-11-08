@@ -16,6 +16,8 @@ jobs:
         run: node scripts/sport-session.test.cjs
       - name: Simulate new user journey
         run: node scripts/audit-user-journey.test.cjs
+      - name: Test safe mobile updates
+        run: node scripts/mobile-updates.test.cjs
       - name: Test mobile UI structure
         run: node scripts/mobile-ui.test.cjs
       - name: Test identity and navigation
