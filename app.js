@@ -15,8 +15,13 @@ const API='https://femtfigampvaeetcuoxe.supabase.co';
 const KEY='sb_publishable_61IlQxmdV4gQ3IEETp959Q_fEuCCXn9';
 const AUTH_KEY='nolsprog-session-v1';
 const accountCacheKey=id=>'nolsprog-account-'+id;
-const pendingSets=new Map();let syncTimer=null,syncInFlight=false;
+const pendingSets=new Map();let syncTimer=null,syncInFlight=false,programSyncPromise=null;
 const pendingKey=id=>'steroid-pending-sets-v1:'+id;
+const pendingProgramKey=id=>'steroid-pending-program-v1:'+id;
+function pendingProgram(uid){if(!uid)return null;try{const data=JSON.parse(localStorage.getItem(pendingProgramKey(uid))||'null');return data?.user_id===uid&&Array.isArray(data.plan)&&data.plan.length===7?data:null}catch{return null}}
+function hasPendingChanges(uid){return pendingFor(uid).length>0||Boolean(pendingProgram(uid))}
+function clearPrivateCache(uid){if(!uid)return;try{localStorage.removeItem(accountCacheKey(uid));localStorage.removeItem(SESSION_PREFIX+uid);localStorage.removeItem('steroid-rest-v2:'+uid)}catch{}}
+
 const setKey=r=>[r.user_id,r.week_number,r.day_index,r.exercise_id,r.set_number].join('|');
 function persistPending(uid){if(!uid)return;try{const rows=[...pendingSets.values()].filter(r=>r.user_id===uid);if(rows.length)localStorage.setItem(pendingKey(uid),JSON.stringify(rows));else localStorage.removeItem(pendingKey(uid))}catch(e){console.warn('Sauvegarde des séries en attente impossible',e)}}
 function restorePending(uid){pendingSets.clear();if(!uid)return;try{const rows=JSON.parse(localStorage.getItem(pendingKey(uid))||'[]');if(Array.isArray(rows))for(const r of rows){if(r?.user_id===uid&&Number.isInteger(r.week_number)&&Number.isInteger(r.day_index)&&typeof r.exercise_id==='string'&&Number.isInteger(r.set_number))pendingSets.set(setKey(r),r)}}catch(e){console.warn('Séries en attente illisibles',e)}}
@@ -55,7 +60,7 @@ const req=async(path,{method='GET',body,token,prefer}={})=>{
  if(!res.ok)throw Error(data?.msg||data?.error_description||data?.message||'Erreur réseau ('+res.status+')');return data;
 };
 const token=()=>A.session?.access_token;
-function setSession(s){const oldId=A.session?.user?.id,newId=s?.user?.id;if(oldId&&oldId!==newId)persistPending(oldId);if(oldId!==newId){clearInterval(T.interval);T.interval=null;T.running=false;T.remaining=0;T.end=0;T.exercise=''}A.session=s;if(oldId!==newId)restorePending(newId);loadWorkouts();if(s)localStorage.setItem(AUTH_KEY,JSON.stringify(s));else localStorage.removeItem(AUTH_KEY)}
+function setSession(s){const oldId=A.session?.user?.id,newId=s?.user?.id;if(oldId&&oldId!==newId){persistPending(oldId);clearPrivateCache(oldId)}if(oldId!==newId){clearInterval(T.interval);T.interval=null;T.running=false;T.remaining=0;T.end=0;T.exercise=''}A.session=s;if(oldId!==newId)restorePending(newId);loadWorkouts();if(s)localStorage.setItem(AUTH_KEY,JSON.stringify(s));else localStorage.removeItem(AUTH_KEY)}
 async function renew(){if(!A.session)return false;if(A.session.expires_at&&A.session.expires_at>Date.now()/1000+90)return true;try{const s=await req('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:{refresh_token:A.session.refresh_token}});setSession({...s,expires_at:Math.floor(Date.now()/1000)+s.expires_in});return true}catch{setSession(null);return false}}
 async function cloud(path,opts={}){if(!await renew())throw Error('Session expirée. Reconnecte-toi.');return req('/rest/v1/'+path,{...opts,token:token()})}
 async function loadCloud(){loadWorkouts();restoreRest();
@@ -63,15 +68,32 @@ async function loadCloud(){loadWorkouts();restoreRest();
  try{const freshUser=await req('/auth/v1/user',{token:token()});if(freshUser?.id===A.session?.user?.id){A.session.user=freshUser;setSession(A.session);A.firstName=''}}catch(err){console.warn('Profil Auth non actualisé :',err)}
  const uid=encodeURIComponent(A.session.user.id);
  const [program,profile,logs]=await Promise.all([cloud('user_programs?user_id=eq.'+uid+'&select=plan,start_date&limit=1'),cloud('user_profiles?user_id=eq.'+uid+'&select=answers,method&limit=1'),cloud('workout_sets?user_id=eq.'+uid+'&select=week_number,day_index,exercise_id,set_number,weight,reps,completed&order=week_number.asc&limit=20000')]);
- A.profile=profile?.[0]||null;A.answers=A.profile?.answers||structuredClone(eng().defaults);
- if(program?.[0]?.plan&&Array.isArray(program[0].plan)){S.plan=program[0].plan;S.start=program[0].start_date;S.logs=logs||[];S.week=currentWeek(S.start)}
+ const queuedProgram=pendingProgram(A.session.user.id);
+ A.profile=queuedProgram?.profile||profile?.[0]||null;A.answers=A.profile?.answers||structuredClone(eng().defaults);
+ if(queuedProgram||program?.[0]?.plan&&Array.isArray(program[0].plan)){S.plan=queuedProgram?.plan||program[0].plan;S.start=queuedProgram?.start_date||program[0].start_date;S.logs=logs||[];S.week=currentWeek(S.start)}
  else {S.plan=seed();S.start=iso(monday(new Date()));S.logs=[];S.week=currentWeek(S.start)}
  for(const row of pendingFor(A.session.user.id)){S.logs=S.logs.filter(l=>!(l.week_number===row.week_number&&l.day_index===row.day_index&&l.exercise_id===row.exercise_id&&l.set_number===row.set_number));S.logs.push({...row})}
- cacheAccount();if(pendingFor(A.session.user.id).length)flushSets().catch(e=>console.warn('Synchronisation différée',e));
+ cacheAccount();if(pendingFor(A.session.user.id).length)flushSets().catch(e=>console.warn('Synchronisation différée',e));if(queuedProgram)flushProgram().catch(e=>console.warn('Programme en attente',e));
  try{ensureWeekPlan(S.week)}catch(e){setNotice('Calendrier indisponible : '+e.message,true)}
  A.view=A.profile?'app':'onboard';A.step=0;render()
 }
-async function syncProgram(){if(!A.session)return;await cloud('user_programs?on_conflict=user_id',{method:'POST',prefer:'resolution=merge-duplicates',body:{user_id:A.session.user.id,plan:S.plan,start_date:S.start}})}
+async function flushProgram(){if(programSyncPromise)return programSyncPromise;
+ if(!A.session||!pendingProgram(A.session.user.id))return;
+ const uid=A.session.user.id;
+ programSyncPromise=(async()=>{while(A.session?.user?.id===uid){
+  const payload=pendingProgram(uid);if(!payload)break;
+  if(payload.profile)await cloud('user_profiles?on_conflict=user_id',{method:'POST',prefer:'resolution=merge-duplicates',body:{user_id:uid,...payload.profile}});
+  await cloud('user_programs?on_conflict=user_id',{method:'POST',prefer:'resolution=merge-duplicates',body:{user_id:uid,plan:payload.plan,start_date:payload.start_date}});
+  if(localStorage.getItem(pendingProgramKey(uid))===JSON.stringify(payload))localStorage.removeItem(pendingProgramKey(uid));
+ }})();
+ try{await programSyncPromise}finally{programSyncPromise=null}
+}
+async function syncProgram(){if(!A.session)return;const uid=A.session.user.id;
+ const payload={user_id:uid,plan:structuredClone(S.plan),start_date:S.start,profile:A.profile?{answers:structuredClone(A.profile.answers),method:A.profile.method}:null};
+ try{localStorage.setItem(pendingProgramKey(uid),JSON.stringify(payload))}catch(e){setNotice('Sauvegarde locale indisponible : ne quitte pas cette page.',true);throw e}
+ try{await flushProgram()}catch(e){setNotice('Programme conservé sur cet appareil, synchronisation en attente.',true);throw e}
+}
+
 function cacheAccount(){if(!A.session)return;try{localStorage.setItem(accountCacheKey(A.session.user.id),JSON.stringify({plan:S.plan,start:S.start,logs:S.logs}))}catch{}}
 function queueSet(row){if(!A.session)return;const uid=A.session.user.id;const entry={...row,user_id:uid};pendingSets.set(setKey(entry),entry);persistPending(uid);cacheAccount();if(syncTimer)clearTimeout(syncTimer);syncTimer=setTimeout(()=>{flushSets().catch(e=>console.warn('Synchronisation des séries',e))},1100)}
 async function flushSets(){if(syncInFlight||!pendingSets.size||!A.session)return;const uid=A.session.user.id,batch=pendingFor(uid).slice(0,80);if(!batch.length)return;syncInFlight=true;syncTimer=null;
@@ -81,7 +103,7 @@ async function flushSets(){if(syncInFlight||!pendingSets.size||!A.session)return
  finally{syncInFlight=false}
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushSets();else updateTimer()});
-window.addEventListener('online',()=>flushSets());
+window.addEventListener('online',()=>{flushSets();flushProgram().catch(e=>console.warn('Programme toujours en attente',e))});
 function profileField(f){const val=A.answers[f.key]??'';if(f.type==='multi'||f.type==='days')return '<div class="choice-grid">'+f.options.map((v,i)=>{const value=f.type==='days'?i:v;return '<button type="button" class="choice '+(val.includes(value)?'selected':'')+'" data-action="choice" data-key="'+f.key+'" data-value="'+esc(value)+'"><span>'+esc(v)+'</span><span class="choice-end">'+(val.includes(value)?'✓':'›')+'</span></button>'}).join('')+'</div>';
  if(f.type==='methods')return '<div class="method-list">'+f.options.map(([id,info])=>'<button type="button" class="method '+(val===id?'selected':'')+'" data-action="choice" data-key="method" data-value="'+id+'"><strong>'+esc(info.name)+'</strong><small>'+esc(info.description)+'</small><span class="method-chevron">'+(val===id?'✓':'›')+'</span></button>').join('')+'</div>';
  if(f.type==='select')return '<div class="answer-options">'+f.options.map(([v,label],i)=>'<button type="button" class="answer-card '+(String(val)===String(v)?'selected':'')+'" data-action="choice" data-key="'+f.key+'" data-value="'+esc(v)+'"><span class="answer-icon">'+'<img class="answer-brand-icon" src="./favicon.svg" alt="" aria-hidden="true">'+'</span><span class="answer-label">'+esc(label)+'</span><span class="answer-chevron">'+(String(val)===String(v)?'✓':'›')+'</span></button>').join('')+'</div>';
@@ -124,7 +146,26 @@ async function finishOnboarding(){const p=A.answers;if(Number(p.age)&&Number(p.a
  if(!d.ok){A.guide=true;render();scrollToSectionTop();return}
  let program;
  try{program=eng().buildProgram(p)}catch(e){setNotice(e.message||'Impossible de générer ce programme.',true);return}
- if(A.profile&&S.logs.length){setNotice('Ton historique contient déjà des performances. Pour les protéger, adapte ton programme depuis l’onglet Programme plutôt que de le régénérer.',true);return}
+ if(A.profile&&S.logs.length){
+ // Keep the current cycle and all recorded exercise IDs unchanged. Apply the
+ // updated questionnaire only to the next training week.
+ const nextWeek=Math.max(S.week,...S.logs.map(r=>r.week_number))+1;
+ if(nextWeek>52){setNotice('Cycle de 52 semaines terminé. Exporte tes données avant de recommencer.',true);return}
+ const future=eng().buildProgram(p,nextWeek-1);
+ for(let day=0;day<future.length;day++)for(let i=0;i<future[day].ex.length;i++)future[day].ex[i].id='w'+nextWeek+'-d'+day+'-e'+i;
+ if(!S.plan[0].weeklyPlans)S.plan[0].weeklyPlans={};
+ // Discard only future snapshots without any logged performance.
+ for(const week of Object.keys(S.plan[0].weeklyPlans)){
+  const n=Number(week);
+  if(n>=nextWeek&&!S.logs.some(r=>r.week_number===n))delete S.plan[0].weeklyPlans[week];
+ }
+ S.plan[0].weeklyPlans[nextWeek]=future;
+ A.profile={answers:structuredClone(p),method:p.method};A.view='app';S.tab='today';A.guide=false;
+ persist();render();
+ if(A.session){try{await syncProgram();setNotice('Nouveau programme prévu dès la semaine '+nextWeek+'. Historique conservé ✓')}catch(e){setNotice('Modification enregistrée sur cet appareil, synchronisation en attente.',true)}}
+ else setNotice('Nouveau programme prévu dès la semaine '+nextWeek+'. Historique conservé ✓');
+ return;
+}
  S.plan=program;A.profile={answers:structuredClone(p),method:p.method};S.start=iso(monday(new Date()));S.logs=[];S.week=1;S.tab='today';S.open='auto';A.view='app';localStorage.setItem('nolsprog-onboarding-seen','1');if(!A.session)persist();else cacheAccount();render();
  if(A.session){try{await cloud('user_profiles?on_conflict=user_id',{method:'POST',prefer:'resolution=merge-duplicates',body:{user_id:A.session.user.id,answers:p,method:p.method}});await syncProgram();A.profile={answers:p,method:p.method};setNotice('Programme personnalisé créé et synchronisé ✓')}catch(e){setNotice('Programme créé localement, mais synchronisation impossible : '+e.message,true)}}
  else setNotice('Programme créé sur cet appareil ✓')
@@ -219,9 +260,20 @@ root.addEventListener('pointermove',e=>{const d=dragExercise;if(!d||e.pointerId!
 function endExerciseDrag(e){const d=dragExercise;if(!d||e.pointerId!==d.pointerId)return;dragExercise=null;d.row.classList.remove('is-dragging');root.querySelectorAll('.edit-ex.is-drop-target').forEach(el=>el.classList.remove('is-drop-target'));if(e.type!=='pointercancel'&&moveDraftExercise(d.day,d.from,d.to))render()}
 root.addEventListener('pointerup',endExerciseDrag);
 root.addEventListener('pointercancel',endExerciseDrag);
-function savePlan(){const draft=S.draft;if(!draft)return;const oldPlan=S.plan;const changed=draft.map((d,i)=>JSON.stringify({title:d.title,focus:d.focus,ex:d.ex})!==JSON.stringify({title:oldPlan[i].title,focus:oldPlan[i].focus,ex:oldPlan[i].ex}));S.plan=structuredClone(draft);const weekly=S.plan?.[0]?.weeklyPlans;if(S.week>1&&weekly?.[S.week]){for(let i=0;i<7;i++){if(!changed[i])continue;const hasLogs=S.logs.some(r=>r.week_number===S.week&&r.day_index===i);if(!hasLogs)weekly[S.week][i]=structuredClone(S.plan[i]);}}persist();if(A.session){cacheAccount();syncProgram().catch(e=>setNotice('Synchronisation impossible : '+e.message,true))};S.tab='today';S.open='auto';setNotice(A.session?'Programme enregistré ✓':'Programme enregistré sur cet appareil ✓')}
+function savePlan(){const draft=S.draft;if(!draft)return;
+ // A deleted exercise or reduced set count must never orphan completed sets.
+ const orphaned=S.logs.some(row=>{
+  const historical=row.week_number===1?S.plan:S.plan?.[0]?.weeklyPlans?.[row.week_number];
+  if(row.week_number!==1&&row.week_number!==S.week)return false;
+  const target=row.week_number===1?draft:(S.week>1?draft:null);
+  if(!target)return false;
+  const ex=target[row.day_index]?.ex.find(e=>e.id===row.exercise_id);
+  return !ex||Number(ex.sets)<row.set_number;
+ });
+ if(orphaned){setNotice('Cet exercice contient des performances enregistrées. Conserve-le et ses séries pour protéger ton historique ; modifie plutôt les séances à venir.',true);return}
+ const oldPlan=S.plan;const changed=draft.map((d,i)=>JSON.stringify({title:d.title,focus:d.focus,ex:d.ex})!==JSON.stringify({title:oldPlan[i].title,focus:oldPlan[i].focus,ex:oldPlan[i].ex}));S.plan=structuredClone(draft);const weekly=S.plan?.[0]?.weeklyPlans;if(S.week>1&&weekly?.[S.week]){for(let i=0;i<7;i++){if(!changed[i])continue;const hasLogs=S.logs.some(r=>r.week_number===S.week&&r.day_index===i);if(!hasLogs)weekly[S.week][i]=structuredClone(S.plan[i]);}}persist();if(A.session){cacheAccount();syncProgram().catch(e=>setNotice('Synchronisation impossible : '+e.message,true))};S.tab='today';S.open='auto';setNotice(A.session?'Programme enregistré ✓':'Programme enregistré sur cet appareil ✓')}
 const scrollToSectionTop=()=>{if(typeof window.scrollTo==='function')window.scrollTo({top:0,behavior:'instant'});const scroller=document.scrollingElement;if(scroller)scroller.scrollTop=0};
-root.addEventListener('click',async e=>{const b=e.target.closest('[data-action]');if(!b)return;const a=b.dataset.action;if(a==='workout-guided'){startWorkout(true)}else if(a==='workout-classic'){startWorkout(false)}else if(a==='workout-next'||a==='workout-prev'){const p=currentPlan()[S.day],i=p.ex.findIndex(x=>x.id===activeWorkout()?.active_exercise_id),next=p.ex[i+(a==='workout-next'?1:-1)];if(next)selectWorkoutExercise(next.id)}else if(a==='workout-request-finish'){if(activeWorkout()?.status!=='active')return;S.finishPrompt=true;render()}else if(a==='workout-cancel-finish'){S.finishPrompt=false;render()}else if(a==='workout-confirm-finish'){S.finishPrompt=false;S.workoutScreen='summary';finishWorkout()}else if(a==='workout-show-summary'){S.workoutScreen='summary';render()}else if(a==='workout-exit'){S.workoutScreen='';render()}else if(a==='timer-toggle'){if(T.running){T.remaining=timerSeconds();T.running=false;clearInterval(T.interval);T.interval=null}else if(T.remaining>0){T.end=Date.now()+T.remaining*1000;T.running=true;T.interval=setInterval(updateTimer,250)}saveRest();render()}else if(a==='timer-plus'){T.remaining=timerSeconds()+30;if(T.running)T.end=Date.now()+T.remaining*1000;saveRest();render()}else if(a==='timer-close'){T.running=false;T.remaining=0;clearInterval(T.interval);T.interval=null;saveRest();render()}else if(a==='auth-login'){A.mode='login';A.view='account';render()}else if(a==='auth-signup'){A.mode='signup';A.view='account';render()}else if(a==='auth-recover'){A.mode='recover';A.view='account';render()}else if(a==='resend-confirm'){if(!A.email){setNotice('Renseigne ton email pour renvoyer la confirmation.',true);return}try{await req('/auth/v1/resend',{method:'POST',body:{type:'signup',email:A.email,options:{emailRedirectTo:location.origin+location.pathname}}});setNotice('Si ton adresse est en attente de confirmation, un nouvel email a été demandé.')}catch(err){setNotice('Impossible de renvoyer le message : '+err.message,true)}}else if(a==='back-app'){A.view='app';render()}else if(a==='account-menu'){A.menuOpen=!A.menuOpen;render()}else if(a==='open-settings'){A.menuOpen=false;S.tab='settings';render()}else if(a==='settings-back'){S.tab='today';render()}else if(a==='logout'){if(A.busy)return;A.busy=true;await flushSets();if(syncInFlight||pendingFor(A.session?.user?.id).length){A.busy=false;setNotice('Déconnexion bloquée : certaines séries ne sont pas encore synchronisées. Reconnecte-toi au réseau et réessaie.',true);return}try{await req('/auth/v1/logout',{method:'POST',token:token()})}catch(e){console.warn('Déconnexion distante indisponible',e)}setSession(null);A.profile=null;A.answers=null;A.firstName='';A.menuOpen=false;workouts={};S.logs=[];S.plan=seed();S.start=iso(monday(new Date()));S.week=currentWeek(S.start);S.tab='today';S.draft=null;A.view='welcome';A.busy=false;render()}else if(a==='edit-profile'){A.menuOpen=false;A.answers=structuredClone(A.profile?.answers||eng().defaults);A.step=0;A.view='onboard';render()}else if(a==='start-account'){A.view='account';A.mode='signup';render()}else if(a==='start-onboard'){A.answers=structuredClone(eng().defaults);A.view='onboard';A.step=0;render();scrollToSectionTop()}else if(a==='keep-plan'){localStorage.setItem('nolsprog-onboarding-seen','1');A.view='app';render()}else if(a==='guest'){A.view='onboard';A.step=0;A.answers=structuredClone(eng().defaults);render()}else if(a==='forgot-password'){const email=prompt('Quelle adresse email est associée à ton compte ?');if(!email)return;try{await req('/auth/v1/recover',{method:'POST',body:{email:email.trim(),redirect_to:location.origin+location.pathname}});setNotice('Si ce compte existe, un email pour définir ton mot de passe va arriver. Regarde aussi les spams.')}catch(e){setNotice('Envoi impossible : '+e.message,true)}}else if(a==='auth-mode'){A.mode=A.mode==='signup'?'login':'signup';render()}else if(a==='account'){A.view='account';A.mode='login';render()}else if(a==='onboard-exit'){A.view=A.session?'app':'welcome';render()}else if(a==='guide-close'){A.guide=false;render();scrollToSectionTop()}else if(a==='guide-edit'){A.guide=false;A.step=Math.max(0,Math.min(onboardingStages.length-1,Number(b.dataset.step)||0));render();scrollToSectionTop()}else if(a==='guide-apply'){
+root.addEventListener('click',async e=>{const b=e.target.closest('[data-action]');if(!b)return;const a=b.dataset.action;if(a==='workout-guided'){startWorkout(true)}else if(a==='workout-classic'){startWorkout(false)}else if(a==='workout-next'||a==='workout-prev'){const p=currentPlan()[S.day],i=p.ex.findIndex(x=>x.id===activeWorkout()?.active_exercise_id),next=p.ex[i+(a==='workout-next'?1:-1)];if(next)selectWorkoutExercise(next.id)}else if(a==='workout-request-finish'){if(activeWorkout()?.status!=='active')return;S.finishPrompt=true;render()}else if(a==='workout-cancel-finish'){S.finishPrompt=false;render()}else if(a==='workout-confirm-finish'){S.finishPrompt=false;S.workoutScreen='summary';finishWorkout()}else if(a==='workout-show-summary'){S.workoutScreen='summary';render()}else if(a==='workout-exit'){S.workoutScreen='';render()}else if(a==='timer-toggle'){if(T.running){T.remaining=timerSeconds();T.running=false;clearInterval(T.interval);T.interval=null}else if(T.remaining>0){T.end=Date.now()+T.remaining*1000;T.running=true;T.interval=setInterval(updateTimer,250)}saveRest();render()}else if(a==='timer-plus'){T.remaining=timerSeconds()+30;if(T.running)T.end=Date.now()+T.remaining*1000;saveRest();render()}else if(a==='timer-close'){T.running=false;T.remaining=0;clearInterval(T.interval);T.interval=null;saveRest();render()}else if(a==='auth-login'){A.mode='login';A.view='account';render()}else if(a==='auth-signup'){A.mode='signup';A.view='account';render()}else if(a==='auth-recover'){A.mode='recover';A.view='account';render()}else if(a==='resend-confirm'){if(!A.email){setNotice('Renseigne ton email pour renvoyer la confirmation.',true);return}try{await req('/auth/v1/resend',{method:'POST',body:{type:'signup',email:A.email,options:{emailRedirectTo:location.origin+location.pathname}}});setNotice('Si ton adresse est en attente de confirmation, un nouvel email a été demandé.')}catch(err){setNotice('Impossible de renvoyer le message : '+err.message,true)}}else if(a==='back-app'){A.view='app';render()}else if(a==='account-menu'){A.menuOpen=!A.menuOpen;render()}else if(a==='open-settings'){A.menuOpen=false;S.tab='settings';render()}else if(a==='settings-back'){S.tab='today';render()}else if(a==='logout'){if(A.busy)return;A.busy=true;await flushSets();if(syncInFlight||programSyncPromise||hasPendingChanges(A.session?.user?.id)){A.busy=false;setNotice('Déconnexion bloquée : des données ne sont pas encore synchronisées. Reconnecte-toi au réseau et réessaie.',true);return}try{await req('/auth/v1/logout',{method:'POST',token:token()})}catch(e){console.warn('Déconnexion distante indisponible',e)}const previousUserId=A.session?.user?.id;clearPrivateCache(previousUserId);setSession(null);A.profile=null;A.answers=null;A.firstName='';A.menuOpen=false;workouts={};S.logs=[];S.plan=seed();S.start=iso(monday(new Date()));S.week=currentWeek(S.start);S.tab='today';S.draft=null;A.view='welcome';A.busy=false;render()}else if(a==='edit-profile'){A.menuOpen=false;A.answers=structuredClone(A.profile?.answers||eng().defaults);A.step=0;A.view='onboard';render()}else if(a==='start-account'){A.view='account';A.mode='signup';render()}else if(a==='start-onboard'){A.answers=structuredClone(eng().defaults);A.view='onboard';A.step=0;render();scrollToSectionTop()}else if(a==='keep-plan'){localStorage.setItem('nolsprog-onboarding-seen','1');A.view='app';render()}else if(a==='guest'){A.view='onboard';A.step=0;A.answers=structuredClone(eng().defaults);render()}else if(a==='forgot-password'){const email=prompt('Quelle adresse email est associée à ton compte ?');if(!email)return;try{await req('/auth/v1/recover',{method:'POST',body:{email:email.trim(),redirect_to:location.origin+location.pathname}});setNotice('Si ce compte existe, un email pour définir ton mot de passe va arriver. Regarde aussi les spams.')}catch(e){setNotice('Envoi impossible : '+e.message,true)}}else if(a==='auth-mode'){A.mode=A.mode==='signup'?'login':'signup';render()}else if(a==='account'){A.view='account';A.mode='login';render()}else if(a==='onboard-exit'){A.view=A.session?'app':'welcome';render()}else if(a==='guide-close'){A.guide=false;render();scrollToSectionTop()}else if(a==='guide-edit'){A.guide=false;A.step=Math.max(0,Math.min(onboardingStages.length-1,Number(b.dataset.step)||0));render();scrollToSectionTop()}else if(a==='guide-apply'){
  const d=globalThis.SteroidGuide.diagnostic(A.answers),choice=d.choices[Number(b.dataset.index)];if(!choice)return;
  A.answers=globalThis.SteroidGuide.change(A.answers,choice.patch);
  const next=globalThis.SteroidGuide.diagnostic(A.answers);
