@@ -1,7 +1,7 @@
 name: Validate NolsProg
 on:
   push:
-    branches: [main, 'audit/user-journey-regression']
+    branches: [main, 'fix/account-data-safety']
   workflow_dispatch:
 permissions:
   contents: read
