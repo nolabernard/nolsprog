@@ -12,7 +12,7 @@ assert(favicon.includes('viewBox="0 0 128 128"'));
 assert(favicon.includes('<circle'),'Favicon must be kettlebell O');
 assert(!favicon.includes('<rect'),'Favicon must not have background square');
 assert(svg.includes('<path'),'PWA icon must be vector artwork');
-assert(app.includes('class="brand official-brand"'),'Header must use official wordmark image');
+assert(app.includes('class="brand mobile-wordmark"'),'Mobile header must use one legible branded wordmark');
 assert(app.includes('class="fit-wordmark official-wordmark"'),'Welcome must use official wordmark image');
 assert(app.includes('class="answer-brand-icon"'),'Questionnaire uses vector icons');
 assert(html.includes('href="./favicon.svg"'),'Favicon points to dedicated O');
