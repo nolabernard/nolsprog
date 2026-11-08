@@ -58,7 +58,7 @@ async function loadCloud(){loadWorkouts();restoreRest();
  try{const freshUser=await req('/auth/v1/user',{token:token()});if(freshUser?.id===A.session?.user?.id){A.session.user=freshUser;setSession(A.session);A.firstName=''}}catch(err){console.warn('Profil Auth non actualisé :',err)}
  const uid=encodeURIComponent(A.session.user.id);
  const [program,profile,logs]=await Promise.all([cloud('user_programs?user_id=eq.'+uid+'&select=plan,start_date&limit=1'),cloud('user_profiles?user_id=eq.'+uid+'&select=answers,method&limit=1'),cloud('workout_sets?user_id=eq.'+uid+'&select=week_number,day_index,exercise_id,set_number,weight,reps,completed&order=week_number.asc&limit=20000')]);
- A.profile=profile?.[0]||null;A.answers=A.profile?.answers||null;
+ A.profile=profile?.[0]||null;A.answers=A.profile?.answers||structuredClone(eng().defaults);
  if(program?.[0]?.plan&&Array.isArray(program[0].plan)){S.plan=program[0].plan;S.start=program[0].start_date;S.logs=logs||[];S.week=currentWeek(S.start)}
  else {S.plan=seed();S.start=iso(monday(new Date()));S.logs=[];S.week=currentWeek(S.start)}
  try{localStorage.setItem(accountCacheKey(A.session.user.id),JSON.stringify({plan:S.plan,start:S.start,logs:S.logs}))}catch{}
