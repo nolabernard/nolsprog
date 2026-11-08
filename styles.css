@@ -873,3 +873,10 @@ button,input,select,textarea{font-family:Montserrat,system-ui,sans-serif}
 .shell:not(.immersive-shell) .tabbar button:focus-visible{outline:2px solid #78A893;outline-offset:-3px}
 @media(max-width:360px){.shell:not(.immersive-shell) .tabbar{width:calc(100% - 20px);height:66px}.shell:not(.immersive-shell) .tabbar button{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.shell:not(.immersive-shell) .tabbar::before,.shell:not(.immersive-shell) .tabbar button,.shell:not(.immersive-shell) .tabbar .tabicon{transition:none!important}}
+
+@keyframes steroid-tab-slide{
+ from{transform:translateX(calc(var(--from-tab,0) * (100% + var(--tab-gap))))}
+ to{transform:translateX(calc(var(--active-tab,0) * (100% + var(--tab-gap))))}
+}
+.shell:not(.immersive-shell) .tabbar::before{animation:steroid-tab-slide 320ms cubic-bezier(.22,1,.36,1) both}
+@media(prefers-reduced-motion:reduce){.shell:not(.immersive-shell) .tabbar::before{animation:none!important}}
