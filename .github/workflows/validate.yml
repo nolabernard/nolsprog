@@ -1,7 +1,7 @@
 name: Validate NolsProg
 on:
   push:
-    branches: [main, 'feature/reorder-exercises']
+    branches: [main, 'feature/account-settings-menu']
   workflow_dispatch:
 permissions:
   contents: read
