@@ -3,7 +3,7 @@
   'use strict';
   const current=document.querySelector('meta[name="steroid-version"]')?.content||'dev';
   const endpoint=new URL('./version.json',document.baseURI);
-  let available=null, checking=false, started=false, lastNotice=null;
+  let available=null, checking=false, started=false, lastNotice=null, firstCheck=true;
   const state={current,get available(){return available}};
   let options={};
   function safe(){try{return options.isSafe?.()===true}catch{return false}}
@@ -39,10 +39,10 @@
       if(typeof version!=='string'||!/^[a-f0-9]{40}$/.test(version)||version===current)return;
       available=version;
       if(lastNotice!==version){lastNotice=version;options.onUpdate?.(version)}
-      if(options.autoOnLaunch&&safe())apply();
+      if(firstCheck&&options.autoOnLaunch&&safe())apply();
       else status(safe()?'Une nouvelle version est disponible.':'Nouvelle version disponible : termine ta séance et synchronise tes données.');
     }catch(err){console.warn('Vérification de version indisponible',err)}
-    finally{checking=false}
+    finally{checking=false;firstCheck=false}
   }
   function start(opts={}){
     if(started)return;started=true;options=opts;
