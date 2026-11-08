@@ -31,10 +31,10 @@ jobs:
           import json, os, pathlib, re
           sha = os.environ['GITHUB_SHA']
           dest = pathlib.Path('dist')
-          (dest / 'version.json').write_text(json.dumps({'version': sha}) + '\\n')
+          (dest / 'version.json').write_text(json.dumps({'version': sha}) + '\n')
           html = (dest / 'index.html').read_text()
           html = html.replace('name="steroid-version" content="dev"', f'name="steroid-version" content="{sha}"')
-          html = re.sub(r'((?:src|href)="\\./[^"]+\\.(?:js|css))"', lambda m: m.group(1) + '?v=' + sha + '"', html)
+          html = re.sub(r'((?:src|href)="\./[^"]+\.(?:js|css))"', lambda m: m.group(1) + '?v=' + sha + '"', html)
           (dest / 'index.html').write_text(html)
           PY
       - name: Upload site
