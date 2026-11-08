@@ -880,3 +880,26 @@ button,input,select,textarea{font-family:Montserrat,system-ui,sans-serif}
 }
 .shell:not(.immersive-shell) .tabbar::before{animation:steroid-tab-slide 320ms cubic-bezier(.22,1,.36,1) both}
 @media(prefers-reduced-motion:reduce){.shell:not(.immersive-shell) .tabbar::before{animation:none!important}}
+
+/* STÉROÏDE — interface mobile prioritaire, sans chevauchements. */
+.shell .mobile-wordmark::before{content:none!important;display:none!important}
+.shell .mobile-wordmark{display:block!important;min-width:0!important;max-width:100%!important;width:auto!important;height:auto!important;flex:none!important;overflow:hidden;text-overflow:clip;white-space:nowrap;font-family:Montserrat,"Avenir Next",Arial,sans-serif;font-size:clamp(22px,6.6vw,30px);font-weight:950;font-style:italic;letter-spacing:-1.45px;line-height:1.1;color:#0B4D3B}
+.shell:not(.immersive-shell) .app-topbar{display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:center!important;height:auto!important;min-height:88px!important;padding:14px 0 12px;gap:8px;border-bottom:1px solid #D9CBB7;background:#F5E8D5}
+.app-topbar .header-main-row{display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;min-width:0}
+.app-topbar .header-main-row .mobile-wordmark{flex:0 1 auto!important}
+.app-topbar .header-actions{flex:0 0 42px!important;display:flex;align-items:center;justify-content:flex-end;position:relative;min-width:42px}
+.app-topbar .account-menu-trigger{width:42px!important;height:42px!important;flex:0 0 42px!important;border:1px solid #D9CBB7!important;border-radius:15px!important;background:#FFFCF7!important;color:#0B4D3B!important;display:grid;place-items:center;font-size:14px!important;letter-spacing:2px;line-height:1}
+.app-topbar .account-menu-trigger span{transform:translateY(-2px);display:block;font-weight:900}
+.app-topbar .header-account-status{display:flex;align-items:center;gap:7px;min-height:20px;font-size:12px;line-height:1.3;font-weight:750;color:#0B4D3B;overflow-wrap:anywhere}
+.app-topbar .online-dot{display:inline-block;flex:0 0 7px;width:7px;height:7px;border-radius:50%;background:#3B956C;box-shadow:0 0 0 3px #3B956C20}
+.app-topbar .account-popover{top:calc(100% + 8px);right:0;z-index:100}
+.shell:not(.immersive-shell) .tabbar{height:60px!important;bottom:calc(8px + env(safe-area-inset-bottom))!important;width:min(410px,calc(100% - 28px))!important;border-radius:23px!important;padding:5px!important;--tab-gap:4px}
+.shell:not(.immersive-shell) .tabbar::before{top:5px;bottom:5px;left:5px;width:calc((100% - 10px - 2 * var(--tab-gap))/3);border-radius:18px}
+.shell:not(.immersive-shell) .tabbar button,.shell:not(.immersive-shell) .tabbar button.active{gap:3px!important;font-size:10px!important;letter-spacing:0!important;border-radius:18px!important;min-height:0!important}
+.shell:not(.immersive-shell) .tabbar .tabicon{display:flex;align-items:center;justify-content:center;font-size:initial;line-height:1}
+.shell:not(.immersive-shell) .tabbar .tabicon svg{display:block;width:20px;height:20px;stroke:currentColor}
+.shell:not(.immersive-shell) .tabbar .tab-label{white-space:nowrap;font-size:10px;line-height:1.2;font-weight:750}
+.shell:not(.immersive-shell){padding-bottom:calc(110px + env(safe-area-inset-bottom))}
+.shell:not(.immersive-shell) .rest-timer{bottom:calc(78px + env(safe-area-inset-bottom))}
+@media(max-width:360px){.shell .mobile-wordmark{font-size:21px;letter-spacing:-1.3px}.app-topbar .header-main-row{gap:8px}.shell:not(.immersive-shell) .tabbar{width:calc(100% - 18px)!important}}
+@media(prefers-reduced-motion:reduce){.shell:not(.immersive-shell) .tabbar::before{animation:none!important}}
