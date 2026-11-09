@@ -100,7 +100,7 @@ function quickEditExercise(exId){
  const n=Number(sets),r=Number(rest);
  if(!name.trim()||!Number.isInteger(n)||n<1||n>20||!reps.trim()||!Number.isInteger(r)||r<0||r>3600){setNotice('Vérifie le nom, les séries, les répétitions et le repos.',true);return}
  const recorded=S.logs.some(x=>x.week_number===S.week&&x.day_index===S.day&&x.exercise_id===exId);
- if(recorded&&(name.trim()!==current.name||n<Math.max(0,...S.logs.filter(x=>x.week_number===S.week&&x.day_index===S.day&&x.exercise_id===exId).map(x=>x.set_number)))){setNotice('Exercice déjà enregistré : conserve son nom et ses séries pour protéger les performances.',true);return}
+ if(recorded&&n<Math.max(0,...S.logs.filter(x=>x.week_number===S.week&&x.day_index===S.day&&x.exercise_id===exId).map(x=>x.set_number))){setNotice('Impossible de retirer une série déjà enregistrée. Tu peux modifier le nom, les répétitions et le repos.',true);return}
  const draft=structuredClone(currentPlan()),item=draft[S.day].ex.find(e=>e.id===exId);
  Object.assign(item,{name:name.trim().slice(0,100),sets:n,reps:reps.trim().slice(0,30),rest:r});
  S.draft=draft;S.editedDay=S.day;savePlan();
