@@ -380,10 +380,13 @@ function savePlan(){const draft=S.draft;if(!draft||draft.length!==7)return;
  // Recorded sets are immutable: keep their exercise IDs and number of sets.
  const orphaned=S.logs.some(row=>{
   if(row.week_number!==S.week)return false;
+  const extra=S.plan?.[0]?.sessionOverrides?.[S.week+':'+row.day_index]?.__extra;
+  if(Array.isArray(extra)&&extra.some(ex=>ex.id===row.exercise_id))return false; // Extra exercise belongs to this session, not the program.
   const ex=draft[row.day_index]?.ex.find(e=>e.id===row.exercise_id);
   return !ex||Number(ex.sets)<row.set_number;
  });
  if(orphaned){setNotice('Cet exercice contient des performances enregistrées. Conserve-le et ses séries pour protéger ton historique ; modifie plutôt les séances à venir.',true);return}
+ const baseBeforeSave=structuredClone(baseWeekPlan());
  const updated=structuredClone(draft);
  if(S.week===1){
   // Preserve every existing weekly snapshot when updating the base week.
@@ -395,6 +398,22 @@ function savePlan(){const draft=S.draft;if(!draft||draft.length!==7)return;
  }else{
   if(!S.plan[0].weeklyPlans)S.plan[0].weeklyPlans={};
   S.plan[0].weeklyPlans[S.week]=updated;
+ }
+ // A program edit must not be hidden by an older one-off substitution.
+ // Preserve overrides of finished workouts: they describe what was actually performed.
+ const overrides=S.plan?.[0]?.sessionOverrides;
+ if(overrides){
+  for(let day=0;day<7;day++){
+   const key=S.week+':'+day,entry=overrides[key];
+   if(!entry||workouts[key]?.status==='finished')continue;
+   const before=baseBeforeSave?.[day]?.ex||[];
+   const after=updated[day]?.ex||[];
+   for(const ex of after){
+    const prior=before.find(x=>x.id===ex.id);
+    if(prior&&['name','sets','reps','rest'].some(field=>prior[field]!==ex[field]))delete entry[ex.id];
+   }
+   if(!Object.keys(entry).length)delete overrides[key];
+  }
  }
  S.draft=null;
  if(Number.isInteger(S.editedDay)&&S.editedDay>=0&&S.editedDay<7)S.day=S.editedDay;
