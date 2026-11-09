@@ -95,6 +95,18 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
  assert(!store['steroid-workouts-v1:audit-test-user'],'Logout must clear account workout cache');
  assert(!store['steroid-rest-v2:audit-test-user'],'Logout must clear account rest timer cache');
  await click('auth-login');await submit({email:'audit@example.invalid',password:'strong-test-123'});assert.equal(state('A.view'),'app');assert.equal(state('S.plan[0].ex[1].id'),program.plan[0].ex[1].id,'Program should restore the latest cloud edit after login');assert.equal(state('S.logs.length'),1,'Logged sets must restore from cloud');
+ // Regression: adding an exercise on a different day must open that day immediately.
+ state('S.week=2;S.day=0');
+ await click('tab',{tab:'edit'});
+ const tuesdayBefore=state('S.draft[1].ex.length');
+ await click('add',{day:'1'});
+ assert.equal(state('S.draft[1].ex.length'),tuesdayBefore+1);
+ await click('save-plan');await tick();
+ assert.equal(state('S.tab'),'today','Saving must navigate to Séances');
+ assert.equal(state('S.day'),1,'Séances must show the day just edited');
+ assert.equal(state('currentPlan()[1].ex.length'),tuesdayBefore+1,'The newly added exercise must appear immediately');
+ assert(root.innerHTML.includes('Exercices <span>'+String(tuesdayBefore+1)+'</span>'),'Visible exercise count must update immediately');
+ assert.equal(program.plan[0].weeklyPlans[2][1].ex.length,tuesdayBefore+1,'New exercise must reach Supabase');
  // Regression: the editor and the Séances tab must show the SAME weekly snapshot.
  state('S.week=2;ensureWeekPlan(2)');
  const originalWeekOne=JSON.stringify(state('S.plan.map(d=>d.ex.map(e=>e.id))'));
