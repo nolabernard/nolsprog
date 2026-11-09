@@ -955,3 +955,21 @@ button,input,select,textarea{font-family:Montserrat,system-ui,sans-serif}
 @media(prefers-reduced-motion:reduce){.workout-action{transition:none}}
 
 .session-add-exercise{display:flex;flex-direction:column;align-items:flex-start;gap:7px;padding:12px 2px 28px}.session-add-exercise .workout-action{width:100%;min-height:48px;border-style:dashed;font-size:14px}.session-add-exercise p{margin:0 4px;font-size:12px;color:var(--muted);line-height:1.5}
+
+/* Optional warmup: intentionally quieter than the working-set controls. */
+.warmup-box{margin:12px 14px 16px;padding:14px;border:1px solid #d5e1d5;border-radius:16px;background:#f5f7ef;min-width:0}
+.warmup-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.warmup-top>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.warmup-top strong{font-size:14px;color:#0b4d3b}
+.warmup-top small{font-size:11px;color:#597065;line-height:1.4}
+.warmup-toggle{flex-shrink:0;min-height:44px;padding:9px 13px;border-radius:12px;border:1px solid #b8d0bd;background:#fffdf8;color:#0b4d3b;font:inherit;font-size:12px;font-weight:750;cursor:pointer}
+.warmup-choice{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-top:14px}
+.warmup-choice span{font-size:12px;font-weight:650;color:#536c5c;margin-right:auto}
+.warmup-choice button{min-height:40px;padding:8px 12px;border:1px solid #c3d5c7;border-radius:10px;background:#fff;color:#0b4d3b;font:inherit;font-size:12px;font-weight:700}
+.warmup-choice button.active{background:#0b4d3b;border-color:#0b4d3b;color:white}
+.warmup-rows{margin-top:12px}
+.warmup-rows .set-row{gap:6px}
+.warmup-rows .set-row input{min-width:0}
+.warmup-help{margin:12px 0 0;font-size:11px;line-height:1.5;color:#60756b}
+.warmup-box button:focus-visible{outline:3px solid #78a893;outline-offset:2px}
+@media(max-width:390px){.warmup-box{margin:10px 9px 14px;padding:11px}.warmup-top strong{font-size:13px}.warmup-toggle{padding:8px 10px}}
