@@ -185,10 +185,10 @@ async function finishOnboarding(){const p=A.answers;if(Number(p.age)&&Number(p.a
  if(!d.ok){A.guide=true;render();scrollToSectionTop();return}
  let program;
  try{program=eng().buildProgram(p)}catch(e){setNotice(e.message||'Impossible de générer ce programme.',true);return}
- if(A.profile&&S.logs.length){
+ if(A.profile&&(S.logs.length||journalEntries().length)){
  // Keep the current cycle and all recorded exercise IDs unchanged. Apply the
  // updated questionnaire only to the next training week.
- const nextWeek=Math.max(S.week,...S.logs.map(r=>r.week_number))+1;
+ const nextWeek=Math.max(S.week,...S.logs.map(r=>r.week_number),...journalEntries().map(r=>r.week_number))+1;
  if(nextWeek>52){setNotice('Cycle de 52 semaines terminé. Exporte tes données avant de recommencer.',true);return}
  const future=eng().buildProgram(p,nextWeek-1);
  for(let day=0;day<future.length;day++)for(let i=0;i<future[day].ex.length;i++)future[day].ex[i].id='w'+nextWeek+'-d'+day+'-e'+i;
@@ -196,7 +196,7 @@ async function finishOnboarding(){const p=A.answers;if(Number(p.age)&&Number(p.a
  // Discard only future snapshots without any logged performance.
  for(const week of Object.keys(S.plan[0].weeklyPlans)){
   const n=Number(week);
-  if(n>=nextWeek&&!S.logs.some(r=>r.week_number===n))delete S.plan[0].weeklyPlans[week];
+  if(n>=nextWeek&&!S.logs.some(r=>r.week_number===n)&&!journalEntries().some(r=>r.week_number===n))delete S.plan[0].weeklyPlans[week];
  }
  S.plan[0].weeklyPlans[nextWeek]=future;
  A.profile={answers:structuredClone(p),method:p.method};A.view='app';S.tab='today';A.guide=false;
