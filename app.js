@@ -100,6 +100,7 @@ function quickEditExercise(exId){
  const reps=prompt('Répétitions prévues :',String(current.reps));if(reps===null)return;
  const rest=prompt('Repos entre les séries, en secondes :',String(current.rest));if(rest===null)return;
  const n=Number(sets),r=Number(rest);
+ if(activeWorkout()?.status==='finished'&&n!==current.sets){setNotice('Séance terminée : conserve le nombre de séries pour préserver ton bilan. Le nom, les répétitions prévues et le repos restent modifiables.',true);return}
  if(!name.trim()||!Number.isInteger(n)||n<1||n>20||!reps.trim()||!Number.isInteger(r)||r<0||r>3600){setNotice('Vérifie le nom, les séries, les répétitions et le repos.',true);return}
  const recorded=S.logs.filter(x=>x.week_number===S.week&&x.day_index===S.day&&x.exercise_id===exId);
  if(n<Math.max(0,...recorded.map(x=>x.set_number))){setNotice('Impossible de retirer une série déjà enregistrée.',true);return}
