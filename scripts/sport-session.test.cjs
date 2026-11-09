@@ -2,7 +2,11 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('nod
 const S=require('../sport-session.js');
 const plan={ex:[{id:'a',sets:2},{id:'b',sets:2}]};
 assert.deepEqual(S.progress(plan,[{week_number:1,day_index:0,exercise_id:'a',completed:true}],1,0),{total:4,done:1,percent:25,exercises:1});
-assert.equal(S.calories(75,52*60,12,12),Math.round((3.8*75*52/60)/5)*5);
+assert.equal(S.calories(75,52*60,12,12),Math.round((3.5*75*52/60)/5)*5);
+assert.equal(S.calories(75,52*60,2,12),S.calories(75,52*60,12,12),'Completion ratio is not a MET intensity estimate');
+assert.equal(S.calories(97,1992*60,12,12),null,'Unattended 33-hour timer must not produce invented calories');
+assert.equal(S.duration(75*60),'1 h 15 min');
+assert.equal(S.duration(1992*60),'33 h 12 min');
 assert.equal(S.calories(0,3600,10,10),null);
 assert.match(S.motivation({done:2,total:5}),/avancé/);
 const app=fs.readFileSync('app.js','utf8'),engine=fs.readFileSync('program-engine.js','utf8');
