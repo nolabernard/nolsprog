@@ -50,7 +50,30 @@ function upsertJournal(w,week=S.week,day=S.day){
  if(!S.plan?.[0])return;
  const item=journalRecord(w,week,day),items=journalEntries().filter(x=>journalKey(x)!==journalKey(item));
  items.push(item);S.plan[0].workoutHistory=items;
- persist();if(A.session)syncProgram().catch(e=>setNotice('Carnet enregistré sur cet appareil, synchronisation en attente.',true));
+ persist();if(A.session){syncProgram().catch(e=>setNotice('Carnet enregistré sur cet appareil, synchronisation en attente.',true));syncSessionRecord(item).catch(e=>console.warn('Séance conservée dans le programme, synchronisation dédiée en attente :',e))}
+}
+// Independent cloud journal: preserve the legacy program journal during migration.
+async function syncSessionRecord(item){
+ if(!A.session||!item)return;
+ const uid=A.session.user.id;
+ const toStamp=value=>Number(value)>0?new Date(Number(value)).toISOString():null;
+ const payload={user_id:uid,week_number:item.week_number,day_index:item.day_index,title:item.title||'Séance de musculation',status:'completed',started_at:toStamp(item.started_at),ended_at:toStamp(item.ended_at),duration_seconds:item.duration_seconds||0,calories_estimate:item.calories_estimate??null,summary:item.summary||{},legacy_entry:item};
+ // Never delete an existing session; the legacy JSON remains the recovery source.
+ await cloud('workout_sessions?on_conflict=user_id,week_number,day_index',{method:'POST',prefer:'resolution=merge-duplicates',body:payload});
+}
+async function loadSessionJournal(){
+ if(!A.session||!S.plan?.[0])return;
+ const uid=encodeURIComponent(A.session.user.id);
+ const rows=await cloud('workout_sessions?user_id=eq.'+uid+'&select=week_number,day_index,legacy_entry&limit=2000');
+ const existing=new Set(journalEntries().map(journalKey));
+ let changed=false;
+ for(const row of rows||[]){
+  const entry=row.legacy_entry;
+  if(!entry||existing.has(journalKey(row)))continue;
+  S.plan[0].workoutHistory=[...journalEntries(),entry];
+  existing.add(journalKey(row));changed=true;
+ }
+ if(changed){persist();cacheAccount()}
 }
 function migrateLocalJournal(){
  if(!S.plan?.[0])return;
@@ -210,6 +233,7 @@ async function loadCloud(){loadWorkouts();restoreRest();
  cacheAccount();if(pendingFor(A.session.user.id).length)flushSets().catch(e=>console.warn('Synchronisation différée',e));if(queuedProgram)flushProgram().catch(e=>console.warn('Programme en attente',e));
  try{ensureWeekPlan(S.week)}catch(e){setNotice('Calendrier indisponible : '+e.message,true)}
  migrateLocalJournal();
+ try{await loadSessionJournal()}catch(e){console.warn('Carnet dédié indisponible, utilisation du journal historique :',e)}
  A.view=A.profile?'app':'onboard';A.step=0;render()
 }
 async function flushProgram(){if(programSyncPromise)return programSyncPromise;
