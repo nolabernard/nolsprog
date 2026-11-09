@@ -81,7 +81,7 @@ function workoutProgress(){return globalThis.SteroidSession.progress(currentPlan
 function exercisePrevious(day,ex,set){const previous=previousExerciseLogs(day,ex.name);return previous.find(r=>r.set_number===set+1)||null}
 function setFields(ex,set){const row=logFor(S.day,ex.id,set),previous=exercisePrevious(S.day,ex,set);return {weight:row?.weight??previous?.weight??ex.targetWeight??null,reps:row?.reps??previous?.reps??null}}
 function completeWithSuggestedValues(exId,set){
- if(activeWorkout()?.status==='finished'){setNotice('Séance finalisée : les performances sont verrouillées.',true);return}
+ if(activeWorkout()?.status==='finished'&&!String(exId).startsWith('extra-')){setNotice('Les performances initiales sont verrouillées.',true);return}
  const ex=currentPlan()[S.day]?.ex.find(x=>x.id===exId);if(!ex)return;
  const existing=logFor(S.day,exId,set);
  if(existing?.completed){saveSet(exId,set,'completed',false);return}
