@@ -260,11 +260,29 @@ async function syncProgram(){if(!A.session)return;const uid=A.session.user.id;
 
 function cacheAccount(){if(!A.session)return;try{localStorage.setItem(accountCacheKey(A.session.user.id),JSON.stringify({plan:S.plan,start:S.start,logs:S.logs}))}catch{}}
 function queueSet(row){if(!A.session)return;const uid=A.session.user.id;const entry={...row,user_id:uid};pendingSets.set(setKey(entry),entry);persistPending(uid);cacheAccount();if(syncTimer)clearTimeout(syncTimer);syncTimer=setTimeout(()=>{flushSets().catch(e=>console.warn('Synchronisation des séries',e))},1100)}
-async function flushSets(){if(syncInFlight||!pendingSets.size||!A.session)return;const uid=A.session.user.id,batch=pendingFor(uid).slice(0,80);if(!batch.length)return;syncInFlight=true;syncTimer=null;
- try{await cloud('workout_sets?on_conflict=user_id,week_number,day_index,exercise_id,set_number',{method:'POST',prefer:'resolution=merge-duplicates',body:batch});
- for(const row of batch){const key=setKey(row);if(pendingSets.get(key)===row)pendingSets.delete(key)}persistPending(uid);
+async function flushSets(){
+ if(syncInFlight||!pendingSets.size||!A.session)return;
+ const uid=A.session.user.id;
+ syncInFlight=true;
+ if(syncTimer){clearTimeout(syncTimer);syncTimer=null}
+ try{
+  while(A.session?.user?.id===uid){
+   const batch=pendingFor(uid).slice(0,80);
+   if(!batch.length)break;
+   await cloud('workout_sets?on_conflict=user_id,week_number,day_index,exercise_id,set_number',{method:'POST',prefer:'resolution=merge-duplicates',body:batch});
+   // A more recent local edit must remain queued rather than being discarded.
+   for(const row of batch){const key=setKey(row);if(pendingSets.get(key)===row)pendingSets.delete(key)}
+   persistPending(uid);
+  }
  }catch(e){persistPending(uid);setNotice('Synchronisation en attente : tes séries restent sauvegardées sur cet appareil. '+e.message,true)}
- finally{syncInFlight=false}
+ finally{
+  syncInFlight=false;
+  // A new edit may have been queued while the final batch was being sent.
+  if(A.session?.user?.id===uid&&pendingFor(uid).length&&navigator.onLine){
+   if(syncTimer)clearTimeout(syncTimer);
+   syncTimer=setTimeout(()=>{flushSets().catch(e=>console.warn('Synchronisation différée',e))},3000);
+  }
+ }
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushSets();else updateTimer()});
 window.addEventListener('online',()=>{flushSets();flushProgram().catch(e=>console.warn('Programme toujours en attente',e))});
