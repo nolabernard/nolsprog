@@ -1143,3 +1143,50 @@ button,input,select,textarea{font-family:Montserrat,system-ui,sans-serif}
 @media(prefers-reduced-motion:reduce){
  .shell:not(.immersive-shell) .cardio-done{transition:none}
 }
+
+
+/* UX simplification — clear primary actions, compact exercise editing and mobile reachability. */
+.shell:not(.immersive-shell) .workout-entry{display:grid;gap:10px;margin:14px 0 20px}
+.shell:not(.immersive-shell) .workout-entry .fit-action{width:100%;min-height:56px;border-radius:15px;font-weight:850;line-height:1.35}
+.shell:not(.immersive-shell) .workout-head .session-previous-note{
+ margin:12px 0 0;padding:10px 13px;border-radius:12px;
+ background:#edf3e8;color:#0b4d3b;font-size:12px;font-weight:700;line-height:1.5;
+}
+.shell:not(.immersive-shell) .edit-advanced{margin:12px 0 3px;border:1px solid #d7e1d4;border-radius:13px;background:#f6f8f2;overflow:hidden}
+.shell:not(.immersive-shell) .edit-advanced summary{
+ min-height:46px;display:flex;align-items:center;justify-content:space-between;
+ gap:9px;padding:12px 14px;cursor:pointer;color:#0b4d3b;
+ font-size:13px;font-weight:750;list-style:none;
+}
+.shell:not(.immersive-shell) .edit-advanced summary::-webkit-details-marker{display:none}
+.shell:not(.immersive-shell) .edit-advanced summary::after{content:'＋';font-size:19px;font-weight:500}
+.shell:not(.immersive-shell) .edit-advanced[open] summary::after{content:'−'}
+.shell:not(.immersive-shell) .edit-advanced .edit-fields{padding:4px 11px 13px}
+.shell:not(.immersive-shell) .simple-progress{
+ display:flex;flex-direction:column;gap:5px;padding:14px 15px;
+ margin:0 0 16px;background:#edf4e9;border:1px solid #c7dac9;
+ border-radius:14px;color:#0b4d3b;line-height:1.5;
+}
+.shell:not(.immersive-shell) .simple-progress strong{font-size:13px}
+.shell:not(.immersive-shell) .simple-progress span{font-size:12px}
+.shell:not(.immersive-shell) .sync-state{
+ display:block;margin:4px 0 0;padding:2px 14px 8px;
+ font-size:10px;color:#53645a;line-height:1.4;text-align:center;
+}
+.shell:not(.immersive-shell) .sync-state.is-pending{color:#925f12;font-weight:700}
+.shell:not(.immersive-shell) .workout-screen .workout-sets input{
+ font-size:16px;min-width:0;min-height:46px;
+}
+.shell:not(.immersive-shell) .workout-screen .set-row .check{min-height:46px;min-width:44px;touch-action:manipulation}
+.shell:not(.immersive-shell) .days button{min-height:64px;touch-action:manipulation}
+@media(max-width:390px){
+ .shell:not(.immersive-shell) .edit-advanced .edit-fields{padding-inline:7px}
+ .shell:not(.immersive-shell) .workout-screen{min-width:0;padding-inline:10px}
+ .shell:not(.immersive-shell) .workout-sets{min-width:0}
+ .shell:not(.immersive-shell) .workout-screen .set-row{grid-template-columns:25px minmax(0,1fr) minmax(0,1fr) 44px;column-gap:5px}
+ .shell:not(.immersive-shell) .workout-screen .set-row input{padding-inline:4px;text-align:center}
+ .shell:not(.immersive-shell) .sync-state{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){
+ .shell:not(.immersive-shell) .workout-entry .fit-action{transition:none}
+}
