@@ -1056,3 +1056,90 @@ button,input,select,textarea{font-family:Montserrat,system-ui,sans-serif}
 .program-cardio-add{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(80px,0.7fr);gap:9px;align-items:end;margin-top:12px}
 .program-cardio-add button{grid-column:1/-1;min-height:44px;border:1px solid #0b4d3b;border-radius:10px;color:#fff;background:#0b4d3b;font:inherit;font-size:13px;font-weight:750}
 @media(max-width:390px){.program-cardio-editor{margin-inline:8px;padding:11px}.program-cardio-row{grid-template-columns:minmax(0,1fr) 74px 42px;gap:6px}}
+
+
+/* Cardio polish — consistent cream/Rolex-green cards and thumb-sized controls. */
+.shell:not(.immersive-shell) .cardio-panel,
+.shell:not(.immersive-shell) .program-cardio-editor{
+ border:1px solid #cfdbd0;
+ border-radius:18px;
+ background:#fffcf7;
+ box-shadow:0 4px 18px rgba(11,77,59,.045);
+ min-width:0;
+}
+.shell:not(.immersive-shell) .cardio-panel{padding:18px;margin:18px 0 22px}
+.shell:not(.immersive-shell) .cardio-heading{align-items:center;gap:10px;margin-bottom:14px}
+.shell:not(.immersive-shell) .cardio-heading h3,
+.shell:not(.immersive-shell) .program-cardio-title strong{font-size:15px;line-height:1.35;letter-spacing:-.2px}
+.shell:not(.immersive-shell) .cardio-heading p{max-width:38ch}
+.shell:not(.immersive-shell) .cardio-heading>strong{
+ padding:7px 10px;border-radius:999px;background:#e4eee4;color:#0b4d3b;
+ font-size:11px;font-weight:800;text-align:center;
+}
+.shell:not(.immersive-shell) .cardio-entry{
+ grid-template-columns:minmax(0,1fr) 82px 26px 88px;
+ gap:9px;align-items:center;border:1px solid #e0e9de;
+ background:#f7f9f3;border-radius:13px;
+ padding:11px 12px;margin:9px 0;
+}
+.shell:not(.immersive-shell) .cardio-name{color:#0b4d3b;font-size:13px;line-height:1.4}
+.shell:not(.immersive-shell) .cardio-entry input,
+.shell:not(.immersive-shell) .program-cardio-editor input,
+.shell:not(.immersive-shell) .program-cardio-editor select{
+ border:1px solid #b6cbbb;border-radius:10px;background:#fffdf8;
+ color:#173b2b;font-size:16px;min-height:46px;
+}
+.shell:not(.immersive-shell) .cardio-done{
+ width:100%;min-height:46px;border-radius:11px;
+ background:#0b4d3b;border:1px solid #0b4d3b;color:#fffaf0;
+ font-size:12px;font-weight:800;padding:10px;
+ transition:background-color .15s ease,transform .15s ease;
+}
+.shell:not(.immersive-shell) .cardio-done.is-done{
+ background:#e1efe4;color:#0b4d3b;border-color:#a6c6af;
+}
+.shell:not(.immersive-shell) .cardio-done:active,
+.shell:not(.immersive-shell) .program-cardio-add button:active{transform:scale(.98)}
+.shell:not(.immersive-shell) .cardio-done:focus-visible,
+.shell:not(.immersive-shell) .program-cardio-editor button:focus-visible,
+.shell:not(.immersive-shell) .cardio-entry input:focus-visible{
+ outline:3px solid #78a893;outline-offset:2px;
+}
+.shell:not(.immersive-shell) .program-cardio-editor{padding:16px;margin:16px 12px 18px}
+.shell:not(.immersive-shell) .program-cardio-title{margin-bottom:14px}
+.shell:not(.immersive-shell) .program-cardio-row{
+ grid-template-columns:minmax(0,1fr) 98px 44px;
+ gap:10px;padding:11px 10px;margin:9px 0;
+ border:1px solid #e0e9de;border-radius:13px;background:#f7f9f3;
+}
+.shell:not(.immersive-shell) .program-cardio-row button{
+ min-height:46px;height:46px;min-width:44px;
+ border-radius:11px;background:#fff8f5;color:#9e3838;border:1px solid #dfc8c3;
+}
+.shell:not(.immersive-shell) .program-cardio-add{
+ padding-top:14px;margin-top:14px;border-top:1px solid #e0e9de;gap:10px;
+}
+.shell:not(.immersive-shell) .program-cardio-add button{
+ grid-column:1/-1;width:100%;min-height:48px;
+ border-radius:12px;background:#0b4d3b;color:#fffaf0;
+ border:1px solid #0b4d3b;font-size:13px;font-weight:800;
+}
+@media(max-width:440px){
+ .shell:not(.immersive-shell) .cardio-panel{padding:13px;margin:14px 0 18px}
+ .shell:not(.immersive-shell) .cardio-entry{
+  grid-template-columns:minmax(0,1fr) 76px 18px;
+  gap:7px;padding:11px;
+ }
+ .shell:not(.immersive-shell) .cardio-entry .cardio-done{
+  grid-column:1/-1;margin-top:2px;min-height:44px;
+ }
+ .shell:not(.immersive-shell) .cardio-heading{align-items:flex-start}
+ .shell:not(.immersive-shell) .program-cardio-editor{margin-inline:9px;padding:12px}
+ .shell:not(.immersive-shell) .program-cardio-row{
+  grid-template-columns:minmax(0,1fr) 76px 44px;
+  gap:6px;padding:10px 8px;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ .shell:not(.immersive-shell) .cardio-done{transition:none}
+}
