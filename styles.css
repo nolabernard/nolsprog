@@ -1009,3 +1009,35 @@ button,input,select,textarea{font-family:Montserrat,system-ui,sans-serif}
  .shell:not(.immersive-shell) .workout-screen .workout-navigation{gap:6px}
  .shell:not(.immersive-shell) .workout-screen .workout-navigation button{min-width:0;padding-inline:7px;font-size:13px}
 }
+
+
+/* Cardio is time-based and deliberately separate from strength sets. */
+.cardio-panel{margin:18px 0;padding:17px;border-radius:18px;border:1px solid #c6d7c9;background:#fffdf8;color:#173b2b;min-width:0}
+.cardio-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+.cardio-heading h3{font-size:17px;margin:0 0 5px;color:#0b4d3b}
+.cardio-heading p{margin:0;color:#53645a;font-size:12px;line-height:1.5}
+.cardio-heading>strong{font-size:12px;white-space:nowrap;color:#0b4d3b}
+.cardio-entry{display:grid;grid-template-columns:minmax(0,1fr) 74px 25px auto 36px;gap:7px;align-items:center;margin:9px 0;padding:9px 0;border-bottom:1px solid #e5e9dc}
+.cardio-name{font-size:13px;font-weight:750;overflow-wrap:anywhere}
+.cardio-min-label{font-size:10px;font-weight:700;color:#53645a;display:flex;flex-direction:column;gap:4px}
+.cardio-entry input,.cardio-add input,.cardio-add select{width:100%;min-width:0;min-height:44px;padding:8px;border:1px solid #bdcfc1;background:#fff;color:#173b2b;border-radius:10px;font:inherit;font-size:16px}
+.cardio-unit{font-size:12px;color:#53645a}
+.cardio-done,.cardio-remove,.cardio-add-button{min-height:44px;border-radius:11px;font:inherit;cursor:pointer}
+.cardio-done{padding:8px 11px;border:1px solid #a9c2b0;background:#e8f0e9;color:#0b4d3b;font-size:12px;font-weight:750}
+.cardio-done.is-done,.cardio-add-button{background:#0b4d3b;color:#fff;border:1px solid #0b4d3b}
+.cardio-remove{width:36px;min-width:36px;background:transparent;color:#a33737;border:1px solid #dbc9c3;font-size:20px}
+.cardio-add{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(90px,1fr) auto;align-items:end;gap:10px;margin-top:15px}
+.cardio-add label{min-width:0;display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700}
+.cardio-add-button{padding:10px 13px;font-size:13px;font-weight:750}
+.cardio-history{margin-top:16px;padding:16px;border-radius:16px;background:#fffdf8;border:1px solid #d9cbb7}
+.cardio-history h3{margin:0 0 5px;font-size:17px;color:#0b4d3b}
+.cardio-history p{font-size:13px;line-height:1.55;margin:0;color:#53645a}
+@media(max-width:440px){
+ .cardio-panel{padding:13px}
+ .cardio-entry{grid-template-columns:minmax(0,1fr) 66px 22px 64px 32px;gap:4px}
+ .cardio-done{padding:7px 4px;font-size:11px}
+ .cardio-remove{width:32px;min-width:32px}
+ .cardio-add{grid-template-columns:minmax(0,1fr) 94px}
+ .cardio-add-button{grid-column:1/-1;width:100%}
+ .cardio-heading{flex-wrap:wrap}
+}
