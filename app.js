@@ -346,7 +346,18 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const monday=d=>{let x=new Date(d);x.setHours(12,0,0,0);x.setDate(x.getDate()-(x.getDay()+6)%7);return x};
 const iso=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
 const currentWeek=s=>Math.max(1,Math.floor((monday(new Date())-monday(new Date(s+'T12:00:00')))/604800000)+1);
-const setNotice=(msg,error=false)=>{S.notice=msg;S.error=error;render();setTimeout(()=>{if(S.notice===msg){S.notice='';render()}},6500)};
+let noticeTimeout=null;
+const setNotice=(msg,error=false)=>{
+ S.notice=msg;S.error=error;
+ let toast=root.querySelector('.toast');
+ if(!toast){toast=document.createElement('div');root.appendChild(toast)}
+ toast.className='toast'+(error?' alert':'');
+ toast.setAttribute('role',error?'alert':'status');
+ toast.setAttribute('aria-live',error?'assertive':'polite');
+ toast.textContent=msg;
+ if(noticeTimeout)clearTimeout(noticeTimeout);
+ noticeTimeout=setTimeout(()=>{if(S.notice!==msg)return;S.notice='';const current=root.querySelector('.toast');if(current)current.remove();noticeTimeout=null},6500);
+};
 // Weekly plans are immutable snapshots persisted inside the existing plan JSON.
 // This preserves exercise IDs and historical set records across navigation/reloads.
 function baseWeekPlan(){
@@ -520,7 +531,7 @@ root.addEventListener('click',async e=>{const b=e.target.closest('[data-action]'
  const local=workouts[week+':'+day];if(local?.status==='finished'){local.duration_seconds=item.duration_seconds;persistWorkouts()}
  persist();if(A.session)syncProgram().catch(e=>setNotice('Correction sauvegardée localement, synchronisation en attente.',true));
  render();
- }else if(a==='metric'){S.metric=b.dataset.metric;render()}else if(a==='toggle-edit-day'){const day=Number(b.dataset.day);S.editOpenDay=S.editOpenDay===day?null:day;render()}else if(a==='move-exercise'){if(moveDraftExercise(Number(b.dataset.day),Number(b.dataset.index),Number(b.dataset.index)+Number(b.dataset.step))){S.editedDay=Number(b.dataset.day);render()}}else if(a==='add'){const d=Number(b.dataset.day);S.draft[d].ex.push(mk('Nouvel exercice',3,'8–12',90));S.editedDay=d;S.editOpenDay=d;render()}else if(a==='delete'){const d=Number(b.dataset.day),i=Number(b.dataset.index);S.draft[d].ex.splice(i,1);S.editedDay=d;render()}else if(a==='import-preview'){S.importText=root.querySelector('#import-text')?.value||'';prepareImport()}else if(a==='import-apply'){applyImport()}else if(a==='save-plan')await savePlan();else if(a==='backup'){downloadBackup()}});
+ }else if(a==='metric'){S.metric=b.dataset.metric;render()}else if(a==='toggle-edit-day'){const day=Number(b.dataset.day);S.editOpenDay=S.editOpenDay===day?null:day;render()}else if(a==='move-exercise'){if(moveDraftExercise(Number(b.dataset.day),Number(b.dataset.index),Number(b.dataset.index)+Number(b.dataset.step))){S.editedDay=Number(b.dataset.day);render()}}else if(a==='add'){const d=Number(b.dataset.day);S.draft[d].ex.push(mk('Nouvel exercice',3,'8–12',90));S.editedDay=d;S.editOpenDay=d;render()}else if(a==='delete'){const d=Number(b.dataset.day),i=Number(b.dataset.index),exercise=S.draft?.[d]?.ex?.[i];if(!exercise)return;if(!confirm('Retirer « '+exercise.name+' » du brouillon ? Cette action ne modifiera pas les séances déjà enregistrées.'))return;S.draft[d].ex.splice(i,1);S.editedDay=d;render()}else if(a==='import-preview'){S.importText=root.querySelector('#import-text')?.value||'';prepareImport()}else if(a==='import-apply'){applyImport()}else if(a==='save-plan')await savePlan();else if(a==='backup'){downloadBackup()}});
 root.addEventListener('change',async e=>{const el=e.target;if(el.dataset.profile&&A.answers){A.answers[el.dataset.profile]=el.value;return}if(el.id==='import-file'){const file=el.files?.[0];if(!file)return;if(file.size>150000){setNotice('Fichier trop volumineux : maximum 150 Ko.',true);return}try{S.importText=await file.text();S.importPreview=null;render();setNotice('Fichier chargé. Clique sur Prévisualiser mon import.')}catch{setNotice('Impossible de lire ce fichier.',true)}return}if(el.id==='import-day'){S.importDay=Number(el.value);return}if(el.id==='workout-jump'){selectWorkoutExercise(el.value);return}if(el.id==='exercise-select'){S.selected=el.value;render();return}if(el.dataset.warmupField){const v=el.value.trim();if(v!==''&&(!Number.isFinite(Number(v))||Number(v)<0||Number(v)>(el.dataset.warmupField==='weight'?3000:1000)))return;updateWarmupRow(el.dataset.ex,Number(el.dataset.set),el.dataset.warmupField,v===''?null:Number(v));return}if(el.dataset.field){const v=el.value.trim();if(v&&!Number.isFinite(Number(v)))return;if(v!==''&&(Number(v)<0||Number(v)>(el.dataset.field==='weight'?3000:1000)))return;saveSet(el.dataset.ex,Number(el.dataset.set),el.dataset.field,v===''?null:Number(v));return}if(el.dataset.edit){const d=Number(el.dataset.day),i=Number(el.dataset.index),field=el.dataset.edit;let v=el.value;if(field==='sets')v=Math.max(1,Math.min(20,Number(v)||1));if(field==='rest')v=Math.max(0,Math.min(3600,Number(v)||0));if(field==='name')v=v.slice(0,100).trim()||'Exercice';if(field==='reps')v=v.slice(0,30);S.draft[d].ex[i][field]=v;S.editedDay=d}});
 root.addEventListener('submit',async e=>{
  if(e.target.id==='settings-form'){e.preventDefault();await saveAccountSettings(e.target);return}
