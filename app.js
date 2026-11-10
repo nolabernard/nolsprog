@@ -74,7 +74,7 @@ async function flushActiveSnapshots(){
   while(activeSyncQueue.size&&A.session){
    const key=activeSyncQueue.values().next().value;
    activeSyncQueue.delete(key);
-   try{await syncActiveSnapshot(key)}catch(e){console.warn('Checkpoint de séance',e);setNotice('Séance conservée sur cet appareil, sauvegarde cloud en attente.',true);break}
+   try{await syncActiveSnapshot(key)}catch(e){activeSyncQueue.add(key);console.warn('Checkpoint de séance',e);setNotice('Séance conservée sur cet appareil, sauvegarde cloud en attente.',true);break}
   }
  }finally{activeSyncRunning=false}
 }
