@@ -973,3 +973,9 @@ button,input,select,textarea{font-family:Montserrat,system-ui,sans-serif}
 .warmup-help{margin:12px 0 0;font-size:11px;line-height:1.5;color:#60756b}
 .warmup-box button:focus-visible{outline:3px solid #78a893;outline-offset:2px}
 @media(max-width:390px){.warmup-box{margin:10px 9px 14px;padding:11px}.warmup-top strong{font-size:13px}.warmup-toggle{padding:8px 10px}}
+
+/* Global guided workout countdown */
+.session-clock{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;margin:0 0 18px;padding:16px 12px;border:1px solid #b8c9ba;border-radius:18px;background:#f5e8d5;color:#0b4d3b;text-align:center}
+.session-clock span{font-size:10px;font-weight:800;letter-spacing:.12em}
+.session-clock strong{font-size:clamp(34px,10vw,48px);line-height:1.1;font-weight:900;font-variant-numeric:tabular-nums}
+.session-clock small{font-size:12px;color:#315b4c}
