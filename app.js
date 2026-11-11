@@ -290,7 +290,7 @@ function substituteExercise(exId,name){
  const equipment=A.profile?.answers?.equipment||A.answers?.equipment||'gym';
  if(!choices.some(x=>x.name===name&&(equipment==='gym'||x.equipment===equipment)))return;
  const recorded=S.logs.some(x=>x.week_number===S.week&&x.day_index===S.day&&x.exercise_id===exId&&x.completed);
- if(recorded&&!confirm('Des séries sont déjà validées. Le nouvel intitulé ne décrira plus exactement les séries précédentes. Continuer ?'))return;
+ if(recorded){setNotice('Ce mouvement a déjà des séries validées : garde son intitulé pour protéger ton historique.',true);return}
  if(!S.plan[0].sessionOverrides)S.plan[0].sessionOverrides={};
  const key=S.week+':'+S.day,entry=S.plan[0].sessionOverrides[key]||{};
  S.plan[0].sessionOverrides[key]={...entry,[exId]:{...(entry[exId]||{}),name}};
@@ -719,6 +719,18 @@ root.addEventListener('click',async e=>{const b=e.target.closest('[data-action]'
  persist();if(A.session)syncProgram().catch(e=>setNotice('Correction sauvegardée localement, synchronisation en attente.',true));
  render();
  }else if(a==='metric'){S.metric=b.dataset.metric;render()}else if(a==='toggle-edit-day'){const day=Number(b.dataset.day);S.editOpenDay=S.editOpenDay===day?null:day;render()}else if(a==='move-exercise'){if(moveDraftExercise(Number(b.dataset.day),Number(b.dataset.index),Number(b.dataset.index)+Number(b.dataset.step))){S.editedDay=Number(b.dataset.day);render()}}else if(a==='add'){const d=Number(b.dataset.day);S.draft[d].ex.push(mk('Nouvel exercice',3,'8–12',90));S.editedDay=d;S.editOpenDay=d;render()}else if(a==='delete'){const d=Number(b.dataset.day),i=Number(b.dataset.index),exercise=S.draft?.[d]?.ex?.[i];if(!exercise)return;if(!confirm('Retirer « '+exercise.name+' » du brouillon ? Cette action ne modifiera pas les séances déjà enregistrées.'))return;S.draft[d].ex.splice(i,1);S.editedDay=d;render()}else if(a==='import-preview'){S.importText=root.querySelector('#import-text')?.value||'';prepareImport()}else if(a==='import-apply'){applyImport()}else if(a==='save-plan')await savePlan();else if(a==='backup'){downloadBackup()}});
+// Save typed set values locally as they change: closing the app must not lose a focused field.
+root.addEventListener('input',e=>{
+ const el=e.target;
+ if(!el?.dataset?.field||!el.dataset.ex)return;
+ const field=el.dataset.field,raw=el.value.trim(),value=raw===''?null:Number(raw);
+ if(!['weight','reps'].includes(field)||raw!==''&&(!Number.isFinite(value)||value<0||value>(field==='weight'?3000:1000)))return;
+ const set=Number(el.dataset.set),old=logFor(S.day,el.dataset.ex,set);
+ if((old?.[field]??null)===value)return;
+ saveSet(el.dataset.ex,set,field,value);
+});
+window.addEventListener('pagehide',()=>{persistWorkouts();if(A.session)flushSets().catch(()=>{})});
+
 root.addEventListener('change',async e=>{const el=e.target;if(el.dataset.programCardioMinutes){const day=Number(el.dataset.day),index=Number(el.dataset.index),raw=el.value.trim(),minutes=Number(raw);if(!isValidCardioMinutes(raw,minutes)){setNotice('Durée prévue : indique entre 1 et 600 minutes.',true);render();return}const row=S.draft?.[day]?.cardio?.[index];if(row){row.minutes=minutes;S.editedDay=day}return}if(el.dataset.cardioMinutes){const raw=el.value.trim(),minutes=Number(raw);if(!(raw.length>0&&[...raw].every(c=>c>='0'&&c<='9'))||!Number.isInteger(minutes)||minutes<1||minutes>600){setNotice('La durée du cardio doit être comprise entre 1 et 600 minutes.',true);render();return}saveCardioEntries(cardioEntries().map(x=>x.id===el.dataset.cardioMinutes?{...x,minutes}:x));return}if(el.dataset.profile&&A.answers){A.answers[el.dataset.profile]=el.value;return}if(el.id==='import-file'){const file=el.files?.[0];if(!file)return;if(file.size>150000){setNotice('Fichier trop volumineux : maximum 150 Ko.',true);return}try{S.importText=await file.text();S.importPreview=null;render();setNotice('Fichier chargé. Clique sur Prévisualiser mon import.')}catch{setNotice('Impossible de lire ce fichier.',true)}return}if(el.id==='import-day'){S.importDay=Number(el.value);return}if(el.id==='workout-jump'){selectWorkoutExercise(el.value);return}if(el.id==='exercise-select'){S.selected=el.value;render();return}if(el.dataset.warmupField){const v=el.value.trim();if(v!==''&&(!Number.isFinite(Number(v))||Number(v)<0||Number(v)>(el.dataset.warmupField==='weight'?3000:1000)))return;updateWarmupRow(el.dataset.ex,Number(el.dataset.set),el.dataset.warmupField,v===''?null:Number(v));return}if(el.dataset.field){const v=el.value.trim();if(v&&!Number.isFinite(Number(v)))return;if(v!==''&&(Number(v)<0||Number(v)>(el.dataset.field==='weight'?3000:1000)))return;saveSet(el.dataset.ex,Number(el.dataset.set),el.dataset.field,v===''?null:Number(v));return}if(el.dataset.edit){const d=Number(el.dataset.day),i=Number(el.dataset.index),field=el.dataset.edit;let v=el.value;if(field==='sets')v=Math.max(1,Math.min(20,Number(v)||1));if(field==='rest')v=Math.max(0,Math.min(3600,Number(v)||0));if(field==='name')v=v.slice(0,100).trim()||'Exercice';if(field==='reps')v=v.slice(0,30);S.draft[d].ex[i][field]=v;S.editedDay=d}});
 root.addEventListener('submit',async e=>{
  if(e.target.id==='settings-form'){e.preventDefault();await saveAccountSettings(e.target);return}
