@@ -36,7 +36,64 @@ const SESSION_PREFIX='steroid-workouts-v1:';
 const sessionStorageKey=()=>SESSION_PREFIX+(A.session?.user?.id||'guest');
 let workouts={};
 function loadWorkouts(){try{workouts=JSON.parse(localStorage.getItem(sessionStorageKey())||'{}')||{}}catch{workouts={}}}
-function persistWorkouts(){try{localStorage.setItem(sessionStorageKey(),JSON.stringify(workouts))}catch{setNotice('Impossible de sauvegarder le parcours sur cet appareil.',true)}}
+function persistWorkouts(){try{localStorage.setItem(sessionStorageKey(),JSON.stringify(workouts))}catch{setNotice('Impossible de sauvegarder le parcours sur cet appareil.',true)}const w=activeWorkout();if(w?.status==='active')queueActiveSnapshot(S.week,S.day)}
+// Keep active session checkpoints separate from completed workout history.
+// Write only matching revision numbers so a stale device cannot silently replace a newer checkpoint.
+const activeSyncQueue=new Set();
+let activeSyncTimer=null,activeSyncRunning=false;
+function queueActiveSnapshot(week,day){
+ if(!A.session)return;
+ activeSyncQueue.add(week+':'+day);
+ if(activeSyncTimer)clearTimeout(activeSyncTimer);
+ activeSyncTimer=setTimeout(()=>{flushActiveSnapshots().catch(e=>console.warn('Sauvegarde de séance en attente',e))},650);
+}
+async function syncActiveSnapshot(key){
+ if(!A.session)return;
+ const w=workouts[key],parts=key.split(':').map(Number);
+ if(w?.status!=='active'||parts.length!==2||!Number.isInteger(parts[0])||!Number.isInteger(parts[1]))return;
+ const uid=A.session.user.id,week=parts[0],day=parts[1];
+ const filter='user_id=eq.'+encodeURIComponent(uid)+'&week_number=eq.'+week+'&day_index=eq.'+day;
+ const payload={user_id:uid,week_number:week,day_index:day,status:'in_progress',title:'Séance de musculation',started_at:new Date(w.started_at).toISOString(),summary:{active_workout:{id:w.id,mode:'guided',active_exercise_id:w.active_exercise_id,elapsed_offset_seconds:Number(w.elapsed_offset_seconds)||0}}};
+ let rows=await cloud('workout_sessions?'+filter+'&select=id,status,revision,summary');
+ if(!rows.length){
+  await cloud('workout_sessions?on_conflict=user_id,week_number,day_index',{method:'POST',prefer:'resolution=ignore-duplicates',body:payload});
+  rows=await cloud('workout_sessions?'+filter+'&select=id,status,revision,summary');
+ }
+ const remote=rows[0];if(!remote||remote.status!=='in_progress')return;
+ const remoteId=remote.summary?.active_workout?.id;
+ if(remoteId&&remoteId!==w.id){setNotice('Une autre séance est enregistrée sur un autre appareil. Ta version locale est conservée ; aucune donnée distante n’a été écrasée.',true);return}
+ if(w.cloud_revision!=null&&Number(w.cloud_revision)!==Number(remote.revision)){setNotice('Séance modifiée sur un autre appareil. Ta version locale est conservée : recharge après avoir synchronisé tes séries.',true);return}
+ const changed=await cloud('workout_sessions?'+filter+'&status=eq.in_progress&revision=eq.'+remote.revision+'&select=revision',{method:'PATCH',prefer:'return=representation',body:{started_at:payload.started_at,summary:payload.summary,revision:Number(remote.revision)+1}});
+ if(!changed?.length){setNotice('Conflit de synchronisation détecté. Tes données locales sont conservées.',true);return}
+ if(workouts[key]?.id===w.id){w.cloud_revision=Number(changed[0].revision);try{localStorage.setItem(sessionStorageKey(),JSON.stringify(workouts))}catch{}}
+}
+async function flushActiveSnapshots(){
+ if(activeSyncRunning||!A.session)return;
+ activeSyncRunning=true;
+ try{
+  while(activeSyncQueue.size&&A.session){
+   const key=activeSyncQueue.values().next().value;
+   activeSyncQueue.delete(key);
+   try{await syncActiveSnapshot(key)}catch(e){activeSyncQueue.add(key);console.warn('Checkpoint de séance',e);setNotice('Séance conservée sur cet appareil, sauvegarde cloud en attente.',true);break}
+  }
+ }finally{activeSyncRunning=false}
+}
+async function loadActiveSnapshots(){
+ if(!A.session)return;
+ const uid=encodeURIComponent(A.session.user.id);
+ const rows=await cloud('workout_sessions?user_id=eq.'+uid+'&status=eq.in_progress&select=week_number,day_index,started_at,revision,summary&limit=500');
+ let restored=0;
+ for(const row of rows||[]){
+  const snap=row.summary?.active_workout,key=row.week_number+':'+row.day_index;
+  if(!snap?.id||workouts[key])continue;
+  const started=Date.parse(row.started_at);
+  if(!Number.isFinite(started))continue;
+  workouts[key]={id:snap.id,status:'active',mode:'guided',started_at:started,active_exercise_id:snap.active_exercise_id||null,elapsed_offset_seconds:Number(snap.elapsed_offset_seconds)||0,cloud_revision:Number(row.revision)};
+  restored++;
+ }
+ if(restored){try{localStorage.setItem(sessionStorageKey(),JSON.stringify(workouts))}catch{}}
+}
+
 // Completed workout journal is stored in the account's existing program JSON,
 // in addition to the local workout cache, so it survives device changes.
 function journalEntries(){return Array.isArray(S.plan?.[0]?.workoutHistory)?S.plan[0].workoutHistory:[]}
@@ -246,7 +303,7 @@ function sessionClockUI(w){return '<div class="session-clock" role="timer" aria-
 setInterval(()=>{const w=activeWorkout();const el=document.getElementById('session-clock-value');if(el&&w?.status==='active')el.textContent=sessionElapsedText(sessionElapsed(w))},1000);
 function startWorkout(guided){const id=workoutId(),w=workouts[id];if(w?.status==='finished'){setNotice('Cette séance est déjà terminée.',true);return}workouts[id]=w?.status==='active'?{...w,mode:'guided'}:{id:uniqueId(),status:'active',mode:'guided',started_at:Date.now(),active_exercise_id:currentPlan()[S.day].ex[0]?.id||null};persistWorkouts();render();scrollToSectionTop()}
 function selectWorkoutExercise(id){const w=activeWorkout();if(!w||w.status!=='active')return;w.active_exercise_id=id;persistWorkouts();render();scrollToSectionTop()}
-async function reopenWorkout(){const w=activeWorkout();if(!w||w.status!=='finished')return;if(!confirm('Rouvrir cette séance ? Elle ne sera plus comptée comme terminée, mais tes séries et tes charges seront conservées.'))return;const key=workoutId();const previous={...w};const history=[...journalEntries()];w.elapsed_offset_seconds=Math.max(0,Number(w.duration_seconds)||0);w.started_at=Date.now();w.status='active';delete w.ended_at;delete w.duration_seconds;delete w.summary;S.plan[0].workoutHistory=history.filter(item=>journalKey(item)!==key);persistWorkouts();persist();S.workoutScreen='';S.finishPrompt=false;render();if(A.session){try{await cloud('workout_sessions?user_id=eq.'+encodeURIComponent(A.session.user.id)+'&week_number=eq.'+S.week+'&day_index=eq.'+S.day,{method:'PATCH',body:{status:'in_progress',started_at:new Date(w.started_at).toISOString(),ended_at:null,duration_seconds:0,calories_estimate:null,summary:{},legacy_entry:null}});await syncProgram();setNotice('Séance rouverte. Tu peux reprendre ton entraînement.')}catch(err){w.status=previous.status;Object.assign(w,previous);S.plan[0].workoutHistory=history;persistWorkouts();persist();render();setNotice('Réouverture non synchronisée : '+err.message,true)}}else setNotice('Séance rouverte. Tu peux reprendre ton entraînement.')}
+async function reopenWorkout(){const w=activeWorkout();if(!w||w.status!=='finished')return;if(!confirm('Rouvrir cette séance ? Elle ne sera plus comptée comme terminée, mais tes séries et tes charges seront conservées.'))return;const key=workoutId();const previous={...w};const history=[...journalEntries()];w.elapsed_offset_seconds=Math.max(0,Number(w.duration_seconds)||0);w.started_at=Date.now();w.status='active';delete w.ended_at;delete w.duration_seconds;delete w.summary;S.plan[0].workoutHistory=history.filter(item=>journalKey(item)!==key);persistWorkouts();persist();S.workoutScreen='';S.finishPrompt=false;render();if(A.session){try{await cloud('workout_sessions?user_id=eq.'+encodeURIComponent(A.session.user.id)+'&week_number=eq.'+S.week+'&day_index=eq.'+S.day,{method:'PATCH',body:{status:'in_progress',started_at:new Date(w.started_at).toISOString(),ended_at:null,duration_seconds:0,calories_estimate:null,summary:{},legacy_entry:null}});await syncProgram();queueActiveSnapshot(S.week,S.day);setNotice('Séance rouverte. Tu peux reprendre ton entraînement.')}catch(err){w.status=previous.status;Object.assign(w,previous);S.plan[0].workoutHistory=history;persistWorkouts();persist();render();setNotice('Réouverture non synchronisée : '+err.message,true)}}else setNotice('Séance rouverte. Tu peux reprendre ton entraînement.')}
 function finishWorkout(){const w=activeWorkout();if(!w||w.status!=='active')return;w.status='finished';w.ended_at=Date.now();T.running=false;T.remaining=0;clearInterval(T.interval);T.interval=null;saveRest();w.duration_seconds=sessionElapsed(w);w.summary=workoutProgress();w.weight=Number(A.answers?.weight||A.profile?.answers?.weight||0);w.title=currentPlan()[S.day]?.title||'Séance de musculation';persistWorkouts();upsertJournal(w);render();scrollToSectionTop()}
 function workoutSummaryUI(w){const p=w.summary||workoutProgress(),cal=globalThis.SteroidSession.calories(w.weight,w.duration_seconds,p.done,p.total),duration=globalThis.SteroidSession.duration(w.duration_seconds),suspicious=Number(w.duration_seconds)>14400;return '<section class="workout-screen workout-finish"><div class="workout-kicker">STÉROÏDE · BILAN</div><div class="workout-success">✓</div><h1>Séance terminée.</h1><p class="workout-motivation">'+esc(globalThis.SteroidSession.motivation(p))+'</p><div class="workout-stats"><div><strong>'+esc(duration)+'</strong><small>Durée enregistrée</small></div><div><strong>'+(cal===null?'—':'≈ '+cal)+' kcal</strong><small>'+(cal===null?'Estimation indisponible':'Estimation indicative')+'</small></div></div><p>'+p.exercises+' exercices · '+p.done+'/'+p.total+' séries validées</p>'+achievementUI()+(cardioEntries().some(x=>x.completed)?'<p class="workout-note">Cardio : '+cardioEntries().filter(x=>x.completed).map(x=>esc(CARDIO_TYPES[x.type]||'Cardio')+' · '+x.minutes+' min').join(' · ')+'</p>':'')+'<p class="workout-note">Calories indicatives calculées sur la durée globale (hypothèse 3,5 MET). Le calcul ne distingue pas musculation et cardio et ne constitue pas une mesure. '+(suspicious?'Durée inhabituelle : corrige le chronomètre.':'')+'</p><button class="journal-edit" data-action="journal-duration" data-week="'+S.week+'" data-day="'+S.day+'">Corriger la durée</button><button class="fit-outline" data-action="workout-reopen">Rouvrir cette séance</button><button class="fit-action" data-action="workout-exit">Retour à mon programme →</button></section>'}
 
@@ -343,6 +400,7 @@ async function loadCloud(){loadWorkouts();restoreRest();
  try{ensureWeekPlan(S.week)}catch(e){setNotice('Calendrier indisponible : '+e.message,true)}
  migrateLocalJournal();
  try{await loadSessionJournal()}catch(e){console.warn('Carnet dédié indisponible, utilisation du journal historique :',e)}
+ try{await loadActiveSnapshots()}catch(e){console.warn('Reprise des séances actives indisponible :',e)}
  A.view=A.profile?'app':'onboard';A.step=0;render()
 }
 async function flushProgram(){if(programSyncPromise)return programSyncPromise;
@@ -388,8 +446,8 @@ async function flushSets(){
   }
  }
 }
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushSets();else updateTimer()});
-window.addEventListener('online',()=>{flushSets();flushProgram().catch(e=>console.warn('Programme toujours en attente',e))});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushSets();else{updateTimer();if(A.session)flushActiveSnapshots().catch(()=>{})}});
+window.addEventListener('online',()=>{flushSets();flushActiveSnapshots().catch(e=>console.warn('Séances en attente',e));flushProgram().catch(e=>console.warn('Programme toujours en attente',e))});
 function profileField(f){const val=A.answers[f.key]??'';if(f.type==='multi'||f.type==='days')return '<div class="choice-grid">'+f.options.map((v,i)=>{const value=f.type==='days'?i:v;return '<button type="button" class="choice '+(val.includes(value)?'selected':'')+'" data-action="choice" data-key="'+f.key+'" data-value="'+esc(value)+'"><span>'+esc(v)+'</span><span class="choice-end">'+(val.includes(value)?'✓':'›')+'</span></button>'}).join('')+'</div>';
  if(f.type==='methods')return '<div class="method-list">'+f.options.map(([id,info])=>'<button type="button" class="method '+(val===id?'selected':'')+'" data-action="choice" data-key="method" data-value="'+id+'"><strong>'+esc(info.name)+'</strong><small>'+esc(info.description)+'</small><span class="method-chevron">'+(val===id?'✓':'›')+'</span></button>').join('')+'</div>';
  if(f.type==='select')return '<div class="answer-options">'+f.options.map(([v,label],i)=>'<button type="button" class="answer-card '+(String(val)===String(v)?'selected':'')+'" data-action="choice" data-key="'+f.key+'" data-value="'+esc(v)+'"><span class="answer-icon">'+'<img class="answer-brand-icon" src="./favicon.svg" alt="" aria-hidden="true">'+'</span><span class="answer-label">'+esc(label)+'</span><span class="answer-chevron">'+(String(val)===String(v)?'✓':'›')+'</span></button>').join('')+'</div>';
