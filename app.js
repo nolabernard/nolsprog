@@ -169,15 +169,22 @@ function workoutProgress(){return globalThis.SteroidSession.progress(currentPlan
 function exercisePrevious(day,ex,set){const previous=previousExerciseLogs(day,ex.name);return previous.find(r=>r.set_number===set+1)||null}
 function setFields(ex,set){const row=logFor(S.day,ex.id,set),previous=exercisePrevious(S.day,ex,set);return {weight:row?.weight??previous?.weight??ex.targetWeight??null,reps:row?.reps??previous?.reps??null}}
 function completeWithSuggestedValues(exId,set){
- // Allow retroactive correction of all recorded sets, including planned exercises.
  const ex=currentPlan()[S.day]?.ex.find(x=>x.id===exId);if(!ex)return;
- const existing=logFor(S.day,exId,set);
- if(existing?.completed){saveSet(exId,set,'completed',false);return}
+ const previous=logFor(S.day,exId,set);
+ if(previous?.completed){saveSet(exId,set,'completed',false);return}
  const values=setFields(ex,set);
- // Save only the values explicitly shown to the user; never invent repetitions.
- if(existing?.weight==null&&values.weight!=null)saveSet(exId,set,'weight',Number(values.weight));
- if(existing?.reps==null&&values.reps!=null)saveSet(exId,set,'reps',Number(values.reps));
- saveSet(exId,set,'completed',true);
+ // Read the actual visible fields first. Values can have changed before the blur event fires.
+ const fields=[...root.querySelectorAll('[data-ex][data-set][data-field]')].filter(el=>el.dataset.ex===exId&&Number(el.dataset.set)===set);
+ for(const field of fields){const raw=field.value.trim();values[field.dataset.field]=raw===''?null:Number(raw)}
+ if(values.weight===null||values.reps===null||!Number.isFinite(Number(values.weight))||!Number.isFinite(Number(values.reps))||Number(values.weight)<0||Number(values.weight)>3000||!Number.isInteger(Number(values.reps))||Number(values.reps)<1||Number(values.reps)>1000){
+  setNotice('Indique une charge et des répétitions valides avant de confirmer la série.',true);return;
+ }
+ const row={week_number:S.week,day_index:S.day,exercise_id:exId,set_number:set+1,weight:Number(values.weight),reps:Number(values.reps),completed:true};
+ S.logs=[...S.logs.filter(l=>!(l.week_number===S.week&&l.day_index===S.day&&l.exercise_id===exId&&l.set_number===set+1)),row];
+ persist();if(A.session)queueSet(row);
+ if(activeWorkout()?.status==='finished')refreshFinishedSessionSummary();
+ else beginRest(ex.name,ex.rest);
+ render();
 }
 function addSessionExercise(){
  const name=prompt('Nom de l’exercice supplémentaire :');if(name===null)return;
