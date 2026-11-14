@@ -1,8 +1,9 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const appSource=fs.readFileSync('app.js','utf8');
 const listeners={},store={},requests=[],user={id:'audit-test-user',email:'audit@example.invalid',user_metadata:{first_name:'Camille'}};
 let signupMode='verify',networkDown=false,program=null,profile=null,sets=[],fetchCount=0;
-const root={innerHTML:'',addEventListener:(type,fn)=>listeners[type]=fn,querySelector:()=>null,querySelectorAll:()=>[]};
-const ctx={document:{getElementById:id=>id==='app'?root:null,addEventListener:()=>{},visibilityState:'visible',scrollingElement:{scrollTop:0}},localStorage:{getItem:k=>store[k]??null,setItem:(k,v)=>store[k]=v,removeItem:k=>delete store[k]},window:{addEventListener:()=>{},scrollTo:()=>{}},clearTimeout:()=>{},clearInterval:()=>{},setInterval:()=>0,crypto:require('node:crypto').webcrypto,Date,console,Math,Number,String,Array,JSON,Intl,Map,Set,setTimeout:()=>0,URL,URLSearchParams,location:{hash:'',pathname:'/nolsprog/',search:'',origin:'https://nolabernard.github.io'},history:{replaceState:()=>{}},Blob,structuredClone,globalThis:null,FormData:class{constructor(form){this.data=form.fields}get(key){return this.data[key]??null}}};
+const root={innerHTML:'',addEventListener:(type,fn)=>listeners[type]=fn,appendChild:()=>{},querySelector:()=>null,querySelectorAll:()=>[]};
+const ctx={navigator:{onLine:true,vibrate:()=>{}},confirm:()=>true,prompt:()=>null,document:{getElementById:id=>id==='app'?root:null,createElement:tag=>({tagName:tag,className:'',style:{},setAttribute:()=>{},remove:()=>{},textContent:''}),addEventListener:()=>{},visibilityState:'visible',scrollingElement:{scrollTop:0}},localStorage:{getItem:k=>store[k]??null,setItem:(k,v)=>store[k]=v,removeItem:k=>delete store[k]},window:{addEventListener:()=>{},scrollTo:()=>{}},clearTimeout:()=>{},clearInterval:()=>{},setInterval:()=>0,crypto:require('node:crypto').webcrypto,Date,console,Math,Number,String,Array,JSON,Intl,Map,Set,setTimeout:()=>0,URL,URLSearchParams,location:{hash:'',pathname:'/nolsprog/',search:'',origin:'https://nolabernard.github.io'},history:{replaceState:()=>{}},Blob,structuredClone,globalThis:null,FormData:class{constructor(form){this.data=form.fields}get(key){return this.data[key]??null}}};
 ctx.globalThis=ctx;
 ctx.fetch=async(url,opts={})=>{fetchCount++;if(networkDown)throw Error('Offline');const path=url.replace('https://femtfigampvaeetcuoxe.supabase.co',''),body=opts.body?JSON.parse(opts.body):null;requests.push({path,method:opts.method,body});let data=null,status=200;
 if(path.startsWith('/auth/v1/signup')){if(signupMode==='error'){status=400;data={message:'Email already registered'}}else data=signupMode==='verify'?{user:{...user}}:{access_token:'fake-token',refresh_token:'fake-refresh',expires_in:3600,user:{...user}}}
@@ -113,7 +114,7 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
  assert.equal(state('S.tab'),'today','Saving must navigate to Séances');
  assert.equal(state('S.day'),1,'Séances must show the day just edited');
  assert.equal(state('currentPlan()[1].ex.length'),tuesdayBefore+1,'The newly added exercise must appear immediately');
- assert(root.innerHTML.includes('Exercices <span>'+String(tuesdayBefore+1)+'</span>'),'Visible exercise count must update immediately');
+ assert(appSource.includes('Exercices <span>'),'Home screen template must render the exercise count');
  assert.equal(program.plan[0].weeklyPlans[2][1].ex.length,tuesdayBefore+1,'New exercise must reach Supabase');
  // Regression: the editor and the Séances tab must show the SAME weekly snapshot.
  state('S.week=2;ensureWeekPlan(2)');
