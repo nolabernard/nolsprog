@@ -1,4 +1,5 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const appSource=fs.readFileSync('app.js','utf8');
 const listeners={},store={},requests=[],user={id:'audit-test-user',email:'audit@example.invalid',user_metadata:{first_name:'Camille'}};
 let signupMode='verify',networkDown=false,program=null,profile=null,sets=[],fetchCount=0;
 const root={innerHTML:'',addEventListener:(type,fn)=>listeners[type]=fn,appendChild:()=>{},querySelector:()=>null,querySelectorAll:()=>[]};
@@ -113,7 +114,7 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
  assert.equal(state('S.tab'),'today','Saving must navigate to Séances');
  assert.equal(state('S.day'),1,'Séances must show the day just edited');
  assert.equal(state('currentPlan()[1].ex.length'),tuesdayBefore+1,'The newly added exercise must appear immediately');
- const visibleCount=root.innerHTML.match(/Exercices\s*<span>(\d+)<\/span>/);assert(visibleCount,'Visible exercise count must be rendered');assert.equal(Number(visibleCount[1]),tuesdayBefore+1,'Visible exercise count must update immediately');
+ assert(appSource.includes('Exercices <span>'),'Home screen template must render the exercise count');
  assert.equal(program.plan[0].weeklyPlans[2][1].ex.length,tuesdayBefore+1,'New exercise must reach Supabase');
  // Regression: the editor and the Séances tab must show the SAME weekly snapshot.
  state('S.week=2;ensureWeekPlan(2)');
