@@ -8,7 +8,7 @@ assert(html.includes('family=Archivo'),'Archivo must be loaded');
 assert(html.includes('family=Inter'),'Inter must be loaded');
 for(const headline of ['Les haltères t’attendent.','Le vélo t’appelle.','Repos. Canapé validé.'])assert(app.includes(headline),'Missing home headline: '+headline);
 assert(app.includes('class="day-icon"'),'Week strip must show activity pictograms');
-assert(app.includes('hero--\'+'), 'Activity-specific hero classes must be rendered');
+assert(app.includes('hero hero--'), 'Activity-specific hero classes must be rendered');
 for(const color of ['#0B4D3B','#F5F0E5','#E6EFE5','#FFFCF7','#073528','#1A2923','#4F6158','#DCE8DD'])assert(css.includes(color),'Missing design token '+color);
 assert(css.includes('.tabbar button.active'),'Floating navigation active state missing');
 assert(css.includes('prefers-reduced-motion:reduce'),'Reduced motion preference must be respected');
