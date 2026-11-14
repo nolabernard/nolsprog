@@ -1,22 +1,32 @@
-# Petite merde 💩 (anciennement NolsProg)
+# STÉROÏDE
 
-Application mobile-first de suivi de musculation, avec comptes Supabase ou mode invité. Ton de coach volontairement provocateur et humoristique.
+Application mobile-first de suivi d'entraînement (musculation et cardio), avec mode invité et comptes Supabase. Interface statique publiée sur GitHub Pages.
 
-## Fonctionnement
-- Accès libre à l'interface : pas d'identifiant ou de mot de passe.
-- Programme préconfiguré : 5 séances, jeudi repos actif, dimanche repos complet.
-- Modification des exercices, séries, répétitions et repos.
-- Suivi hebdomadaire des charges et répétitions et graphiques de progression.
-- Données enregistrées uniquement en `localStorage` dans le navigateur de chaque appareil.
-- Export JSON personnel via l'icône ↓ dans la barre supérieure pour sauvegarder ses données.
+## Fonctionnalités existantes
+- Programme hebdomadaire personnalisable et import de programmes.
+- Séances guidées, séries validées, charges et répétitions.
+- Cardio planifié par jour avec durée en minutes.
+- Chronomètre de séance et de récupération.
+- Progression, historique, records comparables et bilan de séance.
+- Sauvegarde locale et synchronisation Supabase pour les comptes connectés.
 
-## Confidentialité et sécurité
-Le site statique **ne contacte pas Supabase** et ne publie aucune clé API ou jeton d'accès dans sa version actuelle. Chaque navigateur a sa propre copie locale des données, inaccessible à un autre utilisateur depuis l'application. Une politique CSP restrictive interdit les connexions réseau depuis le JavaScript de la page, les scripts tiers, les cadres et le chargement de ressources distantes. Le projet GitHub reste **public** : le code HTML/CSS/JS n'est pas secret. Ne jamais y enregistrer de clé confidentielle.
+## Données et synchronisation
+- Le mode invité conserve ses données dans le stockage local du navigateur.
+- Pour les comptes connectés, les profils, programmes, séries et séances sont synchronisés avec Supabase.
+- Les tables utilisées sont `user_profiles`, `user_programs`, `workout_sets` et `workout_sessions`.
+- Les quatre tables exposées ont RLS activé et des politiques limitant les lectures/écritures à `auth.uid() = user_id`.
+- Les changements non synchronisés sont conservés localement et doivent rester explicitement signalés comme « synchronisation en attente » jusqu'à confirmation du serveur.
+- La clé `sb_publishable` utilisée par le navigateur est une clé publique. Ne jamais publier de clé secrète ou de clé `service_role`.
 
-Limites : le stockage local n'est **ni chiffré ni synchronisé**. Une personne ayant accès au téléphone ou au profil navigateur peut consulter les données ; vider les données du site ou changer d'appareil peut supprimer le suivi. Ce dispositif ne constitue pas un audit exhaustif, ni une garantie d'absence de faille. Le stockage sur le projet Supabase des comptes déjà créés n'est pas effacé par cette mise à jour : l'ancien projet conserve ses politiques RLS.
+## Confidentialité et limites
+- Le dépôt GitHub est public : le code source HTML/CSS/JS est visible.
+- Le stockage local du navigateur n'est pas un coffre chiffré. Protéger l'accès à l'appareil.
+- Les calories sont des estimations indicatives, jamais une mesure exacte.
+- Les records ne doivent être calculés qu'à partir de séries réellement validées et comparables.
+- Une synchronisation en attente ne doit jamais être présentée comme terminée.
 
 ## Déploiement
-Le projet est un site statique sans compilation, hébergé sur GitHub Pages et publié via `.github/workflows/deploy.yml`.
+Le site statique est publié sur GitHub Pages via `.github/workflows/deploy.yml`. Les contrôles automatisés sont définis dans `.github/workflows/validate.yml`.
 
 URL : https://nolabernard.github.io/nolsprog/
 
