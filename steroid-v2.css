@@ -108,3 +108,6 @@ button:active{transform:translateY(1px)}
 .days button small{font-size:9px;letter-spacing:.5px}
 .days button strong{font-size:15px;line-height:1}
 .header-actions .account-menu-trigger{display:grid;place-items:center;border-radius:50%;font-size:14px;font-weight:850}
+
+.avatar-initials{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--raised);color:var(--accent);font-weight:900;font-size:13px}
+.avatar-initials svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
