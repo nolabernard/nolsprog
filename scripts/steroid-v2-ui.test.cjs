@@ -13,4 +13,11 @@ for(const color of ['#0B4D3B','#F5F0E5','#E6EFE5','#FFFCF7','#073528','#1A2923',
 assert(css.includes('.tabbar button.active'),'Floating navigation active state missing');
 assert(css.includes('prefers-reduced-motion:reduce'),'Reduced motion preference must be respected');
 assert(css.includes('min-height:46px'),'Touch targets should remain comfortably tappable');
+assert(app.includes('function archiveUI()'),'Workout archive calendar must be implemented');
+assert(app.includes('data-action=\"archive-month\"'),'Archive month navigation must be interactive');
+assert(app.includes('function shareWorkoutStory(w)'),'Workout story sharing must be implemented');
+assert(app.includes('data-action=\"share-workout\"'),'Workout summary must expose the share action');
+assert(app.includes('Aucun exercice ni historique existant n’a été remplacé'),'Import must confirm that existing workout data is preserved');
+assert(app.includes('existing.ex=[...(existing.ex||[]),...incoming]'),'Import must append exercises instead of replacing existing exercises');
+assert(css.includes('.archive-calendar'),'Archive calendar styles must be present');
 console.log('STÉROÏDE V2 design-system checks passed.');
