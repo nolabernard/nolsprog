@@ -1,7 +1,9 @@
 name: Validate NolsProg
 on:
   push:
-    branches: [main, 'fix/data-integrity-offline-isolation']
+    branches: [main, 'fix/data-integrity-offline-isolation', 'ux-v2-design-system']
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
@@ -42,6 +44,8 @@ jobs:
         run: node scripts/sport-progression.test.cjs
       - name: Validate visual identity
         run: node scripts/visual-identity.test.cjs
+      - name: Validate STÉROÏDE V2 design system
+        run: node scripts/steroid-v2-ui.test.cjs
       - name: Test personalized coherence guide
         run: node scripts/sport-guide.test.cjs
       - name: Verify required files
