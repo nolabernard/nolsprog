@@ -1,7 +1,7 @@
 const fs=require('fs');const vm=require('vm');const assert=require('assert');
 const source=fs.readFileSync('app.js','utf8');
 const listeners={};const store={'nolsprog-onboarding-seen':'1'};const root={innerHTML:'',addEventListener:(type,fn)=>listeners[type]=fn};
-const ctx={document:{getElementById:id=>id==='app'?root:null,addEventListener:()=>{},visibilityState:'visible'},localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>{store[k]=v}},window:{addEventListener:()=>{}},clearTimeout:()=>{},crypto:require('crypto').webcrypto,Date,console,Math,Number,String,Array,JSON,Intl,setTimeout:()=>0,URL,URLSearchParams,location:{hash:'',pathname:'/nolsprog/',search:'',origin:'https://nolabernard.github.io'},history:{replaceState:()=>{}},Blob,structuredClone,globalThis:null};ctx.globalThis=ctx;
+const ctx={navigator:{onLine:true,vibrate:()=>{}},setInterval:()=>0,clearInterval:()=>{},document:{getElementById:id=>id==='app'?root:null,addEventListener:()=>{},visibilityState:'visible'},localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>{store[k]=v}},window:{addEventListener:()=>{}},clearTimeout:()=>{},crypto:require('crypto').webcrypto,Date,console,Math,Number,String,Array,JSON,Intl,setTimeout:()=>0,URL,URLSearchParams,location:{hash:'',pathname:'/nolsprog/',search:'',origin:'https://nolabernard.github.io'},history:{replaceState:()=>{}},Blob,structuredClone,globalThis:null};ctx.globalThis=ctx;
 vm.createContext(ctx);vm.runInContext(fs.readFileSync('program-engine.js','utf8'),ctx);vm.runInContext(source,ctx);
 assert(root.innerHTML.includes('Développé incliné machine')===false);
 assert(root.innerHTML.includes('data-action="day"'),'Le calendrier doit afficher les jours');
