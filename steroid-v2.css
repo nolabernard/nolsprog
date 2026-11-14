@@ -98,3 +98,13 @@ button:active{transform:translateY(1px)}
 @media(prefers-reduced-motion:reduce){
  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+.hero--cardio{background-image:linear-gradient(180deg,rgba(7,53,40,.08) 0%,rgba(7,53,40,.92) 100%),url("https://images.unsplash.com/photo-1538805060514-97d9cc17730c?auto=format&fit=crop&w=1200&q=82");background-position:center 42%}
+.hero--rest{background-image:linear-gradient(135deg,#073528 0%,#0B4D3B 65%,#4F6158 100%)}
+.days button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 2px}
+.days .day-icon{display:grid;place-items:center;width:20px;height:20px;color:var(--accent)}
+.days .day-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.days button.active .day-icon{color:var(--surface)}
+.days button small{font-size:9px;letter-spacing:.5px}
+.days button strong{font-size:15px;line-height:1}
+.header-actions .account-menu-trigger{display:grid;place-items:center;border-radius:50%;font-size:14px;font-weight:850}
