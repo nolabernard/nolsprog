@@ -111,3 +111,15 @@ button:active{transform:translateY(1px)}
 
 .avatar-initials{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--raised);color:var(--accent);font-weight:900;font-size:13px}
 .avatar-initials svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* Archives and share sheet — V2 */
+.archive-panel{margin:26px 0;padding:18px;background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow)}
+.archive-panel .section-title{margin:0 0 16px}.archive-count{font-size:12px;color:var(--muted);font-weight:750}
+.archive-month{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:10px;margin:8px 0 14px;text-align:center;text-transform:capitalize}
+.archive-month button{height:42px;border:1px solid var(--line);border-radius:13px;background:var(--raised);color:var(--accent);font-size:24px}
+.archive-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;text-align:center}
+.archive-calendar>span{padding:6px 0;color:var(--muted);font-size:11px;font-weight:800}
+.archive-day{position:relative;display:grid;place-items:center;min-height:42px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--text);font-weight:700}
+.archive-day:disabled{opacity:.48}.archive-day.is-empty{border-color:transparent;background:transparent}.archive-day.has-workout{border-color:var(--accent);background:var(--raised);color:var(--accent)}.archive-day.has-workout small{font-size:9px;line-height:1;color:var(--muted)}.archive-day.is-selected{background:var(--accent);color:var(--surface);border-color:var(--accent)}.archive-day.is-selected small{color:var(--surface)}
+.archive-list{display:grid;gap:9px;margin-top:14px}.archive-entry{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 12px;padding:13px;border:1px solid var(--line);border-radius:14px;background:var(--bg)}.archive-entry>div{display:grid;gap:4px}.archive-entry strong{font-size:14px}.archive-entry small{font-size:11px;color:var(--muted)}.archive-entry>span{align-self:center;color:var(--accent);font-weight:850}.archive-empty{padding:12px;text-align:center;color:var(--muted);font-size:13px}.archive-reset{width:100%;margin-top:12px}
+@media(max-width:380px){.archive-calendar{gap:4px}.archive-day{min-height:38px;border-radius:10px}}
