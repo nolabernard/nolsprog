@@ -20,4 +20,8 @@ assert(app.includes('data-action=\"share-workout\"'),'Workout summary must expos
 assert(app.includes('Aucun exercice ni historique existant n’a été remplacé'),'Import must confirm that existing workout data is preserved');
 assert(app.includes('existing.ex=[...(existing.ex||[]),...incoming]'),'Import must append exercises instead of replacing existing exercises');
 assert(css.includes('.archive-calendar'),'Archive calendar styles must be present');
+assert(app.includes('function effortUI(ex)'),'Perceived-effort control must be implemented');
+assert(app.includes('function saveEffort(exId,value)'),'Perceived effort must be persisted');
+assert(app.includes('Ressenti moyen : RPE'),'Workout summary must report perceived effort');
+assert(css.includes('.effort-panel'),'Perceived-effort control must be styled');
 console.log('STÉROÏDE V2 design-system checks passed.');
