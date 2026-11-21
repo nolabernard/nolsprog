@@ -90,7 +90,7 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
  assert.equal(sets.length,1,'Offline set must sync on reconnect');
  assert(!store['steroid-pending-sets-v1:audit-test-user'],'Pending storage must clear after confirmed sync');
  assert.equal(state('S.logs[0].exercise_id'),firstId);
- await click('workout-classic');assert.equal(state('activeWorkout().status'),'active');await click('workout-request-finish');await click('workout-cancel-finish');assert.equal(state('activeWorkout().status'),'active');await click('workout-request-finish');await click('workout-confirm-finish');assert.equal(state('activeWorkout().status'),'finished');
+ await click('workout-guided');assert.equal(state('activeWorkout().status'),'active');await click('workout-request-finish');await click('workout-cancel-finish');assert.equal(state('activeWorkout().status'),'active');await click('workout-request-finish');await click('workout-confirm-finish');assert.equal(state('activeWorkout().status'),'finished');
  await tick();await state('flushProgram()');
  assert.equal(state('journalEntries().length'),1,'Completed workout must enter journal');
  assert.equal(program.plan[0].workoutHistory.length,1,'Journal must sync to account cloud');
