@@ -31,6 +31,8 @@ const session={id:'cs-1',cycle_id:'cy-1',exercises:[
  // Pause : 5 min non comptées.
  t+=10*60e3;s.pause();assert(s.current().paused_at);
  t+=5*60e3;s.resume();assert.equal(s.current().paused_seconds,300);assert.equal(s.current().paused_at,null);
+ // Pause oubliée : « Tu étais en pause ? » → pause datée du dernier geste (10 min non comptées).
+ t+=10*60e3;s.pause(t-10*60e3);s.resume();assert.equal(s.current().paused_seconds,900);
 
  // Plus tard : passe en fin de séance sans réutiliser une position (contrainte unique en base).
  const curl=s.current().exercises[1].id;
@@ -84,4 +86,37 @@ const session={id:'cs-1',cycle_id:'cy-1',exercises:[
  // La file vide survit au redémarrage.
  assert.equal(make().pending(),0);
  console.log('Workout store checks passed');
+})().catch(e=>{console.error(e);process.exit(1)});
+
+// Régression : un envoi avec une file vide ne doit pas bloquer les envois suivants.
+(async()=>{
+ const m=new Map(),st={getItem:k=>m.has(k)?m.get(k):null,setItem:(k,v)=>m.set(k,String(v)),removeItem:k=>m.delete(k)};
+ const sent=[],store=W.createWorkoutStore({storage:st,api:{async upsert(t){sent.push(t)}},userId:'empty-queue'});
+ assert.equal(await store.flush(),true);
+ store.start({id:'s',exercises:[{exercise_key:'dips',sets:1,role:'base'}]});
+ assert.equal(await store.flush(),true);assert.equal(store.pending(),0);assert(sent.includes('workouts'));
+ console.log('Workout store empty-queue regression passed');
+})().catch(e=>{console.error(e);process.exit(1)});
+
+// Revue finale : une ligne refusée par le serveur (4xx) ne bloque plus toute la file.
+(async()=>{
+ const m=new Map(),st={getItem:k=>m.has(k)?m.get(k):null,setItem:(k,v)=>m.set(k,String(v)),removeItem:k=>m.delete(k)};
+ const rejected=[],sent=[];
+ const api={async upsert(t,rows){if(rows.some(r=>r.cycle_exercise_id==='gone')){const e=Error('violates foreign key');e.status=409;throw e}sent.push(...rows.map(r=>t+':'+r.id))}};
+ const store=W.createWorkoutStore({storage:st,api,userId:'reject',onReject:(t,row)=>rejected.push(t)});
+ const w=store.start({id:'s',cycle_id:'c',exercises:[{id:'gone',exercise_key:'dips',sets:1,role:'base'},{id:'ok',exercise_key:'hack-squat',sets:1,role:'base'}]});
+ // Exercice prévu retiré du programme : la séance ne le référence plus.
+ store.forgetCycleExercise('gone');
+ assert.equal(store.current().exercises.find(e=>e.exercise_key==='dips').cycle_exercise_id,null);
+ assert.equal(await store.flush(),true);assert.equal(store.pending(),0);assert.deepEqual(rejected,[]);
+ // Ligne réellement refusée : écartée seule, signalée, le reste part.
+ store.logSet(store.current().exercises[1].id,1,{reps:5,completed:true});
+ const bad=store.current().exercises[0];bad.cycle_exercise_id='gone';store.later(bad.id);
+ assert.equal(await store.flush(),true);assert.equal(store.pending(),0);
+ assert.deepEqual(rejected,['workout_exercises']);assert(sent.some(s=>s.startsWith('workout_set_logs:')));
+ // Erreur réseau : rien n'est écarté, tout reste en file.
+ const off=W.createWorkoutStore({storage:st,api:{async upsert(){throw Error('Failed to fetch')}},userId:'offline'});
+ off.start({id:'s',exercises:[{exercise_key:'dips',sets:1,role:'base'}]});const before=off.pending();
+ assert.equal(await off.flush(),false);assert.equal(off.pending(),before);
+ console.log('Workout store rejection handling passed');
 })().catch(e=>{console.error(e);process.exit(1)});

@@ -28,7 +28,11 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
   tolérante (`search`, `resolveName`). Une clé publiée ne change jamais et n'est jamais réutilisée.
 - `session-planner.js` (`SteroidPlanner.nextSession`) : prochaine séance de la suite + garde-fou 48 h expliqué.
 - `workout-store.js` (`SteroidWorkout.createWorkoutStore`) : séance V2 en cours (séries, pause, plus tard,
-  remplacement, fin) et file d'envoi ordonnée vers les tables V2 (upsert sur `id`). Pas encore branché (lot 3b).
+  remplacement, fin) et file d'envoi ordonnée vers les tables V2 (upsert sur `id`).
+- `v2-cycle.js` (`SteroidCycle`) : cycle actif (construction, chargement Supabase), dernières performances et progrès par clé.
+- `ui-v2.js` (`SteroidUI`) : écrans V2 en HTML pur (accueil, séance P1, machine prise, fin, progrès, programme, choix d'exercice).
+- `app-v2.js` (`SteroidAppV2.create`) : contrôleur V2 (stockage, envoi, actions `data-action="v2-…"`), testé sous Node.
+  `app.js` lui délègue Aujourd'hui, Progrès et Programme (`v2Main`) ; l'ancien écran ne sert plus qu'en secours.
 - `ui-dialog.js` : panneaux de dialogue de l'app (`SteroidDialog.open/confirm/yesNo/ask`).
   Interdit : `prompt`, `confirm`, `alert` natifs (vérifié par les tests).
 - `app-updates.js` : détection de nouvelle version (`version.json` généré au déploiement).
@@ -68,5 +72,7 @@ maquettes sur le canevas « STÉROÏDE — refonte UX »). Plans : `docs/superpo
   relancer la copie au basculement (lot 3).
 - Lot 2 Générateur et cycles : fait (`buildCycle`, moteur `{version: 2}`, tests sur 4 050 combinaisons).
 - Lot 3a Logique de séance : fait (modules ci-dessus + `alternatives` du catalogue).
-- Lots 3b à 7 : à faire (écrans P1 + bascule V2, planning en suite, historique, coach et bilan, rappels).
+- Lot 3b Écrans P1 et bascule : fait. Les nouvelles séances s'écrivent dans les tables V2 ; Progrès et Programme lisent la V2.
+  Le code V1 (todayUI, guidedWorkoutUI, editUI, statsUI) reste en secours : à supprimer dans un lot de nettoyage.
+- Lots 4 à 7 : à faire (planning en suite et cardio, historique, coach et bilan, rappels).
 - Migrations Supabase : uniquement sur accord explicite du propriétaire (« applique les migrations »).

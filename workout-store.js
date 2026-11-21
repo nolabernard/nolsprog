@@ -8,7 +8,9 @@ const TABLES=['workouts','workout_exercises','workout_set_logs'];
 const iso=ms=>ms==null?null:new Date(ms).toISOString();
 function defaultUuid(){return globalThis.crypto.randomUUID()}
 
-function createWorkoutStore({storage,api,userId,now=()=>Date.now(),uuid=defaultUuid}){
+// Refus du serveur sur les données (contrainte, clé étrangère) : réessayer ne servira à rien.
+const isRejection=err=>Number.isInteger(err?.status)&&err.status>=400&&err.status<500&&![401,403,408,429].includes(err.status);
+function createWorkoutStore({storage,api,userId,now=()=>Date.now(),uuid=defaultUuid,onReject=()=>{}}){
  const WKEY='steroid-v2-workout:'+userId,QKEY='steroid-v2-queue:'+userId;
  const read=k=>{try{return JSON.parse(storage.getItem(k)||'null')}catch{return null}};
  let workout=read(WKEY);
@@ -43,8 +45,26 @@ function createWorkoutStore({storage,api,userId,now=()=>Date.now(),uuid=defaultU
    if(s.weight!=null&&(!Number.isFinite(s.weight)||s.weight<0))throw Error('Charge invalide.');
    enqueue('workout_set_logs',setRow(e,s));save();return s;
   },
+  // Exercice prévu retiré du programme : la séance (et sa file) ne doit plus le référencer.
+  forgetCycleExercise(cycleExerciseId){
+   if(!cycleExerciseId)return;
+   for(const e of workout?.exercises||[])if(e.cycle_exercise_id===cycleExerciseId){e.cycle_exercise_id=null;enqueue('workout_exercises',exerciseRow(e))}
+   for(const v of Object.values(queue))if(v.table==='workout_exercises'&&v.row.cycle_exercise_id===cycleExerciseId)v.row={...v.row,cycle_exercise_id:null};
+   save();
+  },
+  // Cycle abandonné (un autre appareil avait déjà le sien) : les séances restent, sans lien vers lui.
+  forgetCycle(cycleId,cycleExerciseIds=[]){
+   const gone=new Set(cycleExerciseIds);
+   if(workout&&workout.cycle_id===cycleId){workout.cycle_id=null;workout.cycle_session_id=null;touchWorkout()}
+   for(const e of workout?.exercises||[])if(gone.has(e.cycle_exercise_id)){e.cycle_exercise_id=null;enqueue('workout_exercises',exerciseRow(e))}
+   for(const v of Object.values(queue)){
+    if(v.table==='workouts'&&v.row.cycle_id===cycleId)v.row={...v.row,cycle_id:null,cycle_session_id:null};
+    if(v.table==='workout_exercises'&&gone.has(v.row.cycle_exercise_id))v.row={...v.row,cycle_exercise_id:null};
+   }
+   save();
+  },
   setRpe(exerciseId,rpe){const e=find(exerciseId);const v=Number(rpe);e.rpe=Number.isInteger(v)&&v>=1&&v<=10?v:null;enqueue('workout_exercises',exerciseRow(e));save()},
-  pause(){if(!workout||workout.paused_at)return;workout.paused_at=now();touchWorkout();save()},
+  pause(at){if(!workout||workout.paused_at)return;workout.paused_at=Math.max(workout.started_at,Math.min(now(),at??now()));touchWorkout();save()},
   resume(){if(!workout?.paused_at)return;workout.paused_seconds+=Math.round((now()-workout.paused_at)/1000);workout.paused_at=null;touchWorkout();save()},
   isPaused(){return Boolean(workout?.paused_at)},
   elapsedSeconds(){if(!workout)return 0;const end=workout.paused_at||now();return Math.max(0,Math.round((end-workout.started_at)/1000)-workout.paused_seconds)},
@@ -80,23 +100,29 @@ function createWorkoutStore({storage,api,userId,now=()=>Date.now(),uuid=defaultU
   },
   async flush(){
    if(flushing)return flushing;
-   flushing=(async()=>{
+   // Un envoi sans attente se termine avant l'affectation : on libère le verrou après coup.
+   const run=(async()=>{
     try{
      for(const table of TABLES){
       const items=Object.entries(queue).filter(([,v])=>v.table===table);
       if(!items.length)continue;
-      await api.upsert(table,items.map(([,v])=>v.row));
+      try{await api.upsert(table,items.map(([,v])=>v.row))}
+      catch(err){
+       if(!isRejection(err))throw err;
+       // Une ligne refusée ne doit pas bloquer les autres : envoi ligne par ligne, les refusées sont écartées et signalées.
+       for(const [k,v] of items){try{await api.upsert(table,[v.row])}catch(e){if(!isRejection(e))throw e;if(queue[k]===v){delete queue[k];save()}onReject(table,v.row,e)}}
+      }
       // Une ligne modifiée pendant l'envoi reste dans la file.
       for(const [k,v] of items)if(queue[k]===v)delete queue[k];
       save();
      }
      return true;
     }catch(err){return false}
-    finally{flushing=null}
    })();
-   return flushing;
+   flushing=run;run.finally(()=>{if(flushing===run)flushing=null});
+   return run;
   }
  };
 }
-return {createWorkoutStore};
+return {createWorkoutStore,isRejection};
 });
