@@ -73,6 +73,7 @@ let n=0;const uuid=()=>'00000000-0000-4000-8000-'+String(++n).padStart(12,'0');
   return []}};
  const lr=await C.loadCycle(rich,'u1');
  assert.equal(lr.workouts[0].title,'Haut ancien');assert.equal('cycle_sessions' in lr.workouts[0],false);
+ assert.equal(lr.truncated,false);
  assert.deepEqual(lr.setLogs[0],{exercise_key:'dips',set_number:2,weight:null,reps:10,rir:2,completed:true,workout_id:'w9',position:3,substituted_from_key:'pompes',rpe:8});
  assert(paths.some(p=>/^workouts.*cycle_sessions\(title\)/.test(p)));
  assert(paths.some(p=>/^workout_set_logs.*set_number.*workout_exercises\(workout_id,position,substituted_from_key,rpe\)/.test(p)));

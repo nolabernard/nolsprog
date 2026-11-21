@@ -63,6 +63,15 @@ a=H.advice({sets:2,reps_min:6,reps_max:8},[L('w1','squat',1,100,8),L('w1','squat
 assert.equal(H.advice(plan,logs,workouts,'rowing-barre'),null);
 // Données en cache d'avant le lot 5 (sans numéro de série) : pas d'erreur.
 assert.equal(H.sessions([W('w1','2026-11-02T10:00:00Z')],[{workout_id:'w1',exercise_key:'squat',weight:100,reps:5,completed:true}],{})[0].exercises[0].sets.length,1);
+// Historique tronqué : aucun record annoncé (le vrai record peut être plus ancien).
+assert.deepEqual(H.newRecords('w2',logs,workouts,{truncated:true}),[]);assert.equal(H.latestRecord(more,ws,{truncated:true}),null);
+// Même clé deux fois dans une séance : deux exercices distincts, jamais mélangés.
+const twice=[L('w1','squat',1,100,8,{workout_exercise_id:'a',position:0}),L('w1','squat',1,90,10,{workout_exercise_id:'b',position:2}),L('w1','squat',2,90,10,{workout_exercise_id:'b',position:2})];
+assert.equal(H.sessions(workouts,twice,{}).at(-1).exercises.length,2);
+assert.equal(H.exercise('squat',twice,workouts).entries[0].sets.length,2);
+assert.equal(H.advice({sets:3,reps_min:8,reps_max:10},twice,workouts,'squat').status,'complete');
+// Charge 0 saisie : pas de « tente 0,5 kg ».
+assert.doesNotMatch(H.advice({sets:1,reps_min:8,reps_max:10},[L('w1','squat',1,0,10)],workouts,'squat').text,/kg/);
 assert.equal(H.increment(60),2.5);assert.equal(H.increment(20),1.25);assert.equal(H.increment(10),0.5);
 
 console.log('v2-history : ok');

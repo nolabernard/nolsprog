@@ -15,8 +15,8 @@ function grouped(setLogs,ids){
  for(const r of setLogs||[]){
   if(!r||!r.completed||!ids.has(r.workout_id))continue;
   let w=by.get(r.workout_id);if(!w)by.set(r.workout_id,w=new Map());
-  let e=w.get(r.exercise_key);
-  if(!e)w.set(r.exercise_key,e={key:r.exercise_key,from:r.substituted_from_key||null,position:num(r.position),rpe:null,order:seq++,sets:[]});
+  const gid=r.workout_exercise_id||r.exercise_key;let e=w.get(gid);
+  if(!e)w.set(gid,e={key:r.exercise_key,from:r.substituted_from_key||null,position:num(r.position),rpe:null,order:seq++,sets:[]});
   if(r.rpe!=null)e.rpe=num(r.rpe);
   e.sets.push({set_number:num(r.set_number),weight:num(r.weight),reps:num(r.reps),order:seq++});
  }
@@ -60,14 +60,16 @@ function events(setLogs,workouts){
  }
  return {out,top};
 }
+// Historique incomplet (plus anciennes séances non chargées) : on n'annonce aucun record, il pourrait être faux.
 function records(setLogs,workouts){return Object.fromEntries(events(setLogs,workouts).top)}
-function newRecords(workoutId,setLogs,workouts){return events(setLogs,workouts).out.filter(r=>r.workoutId===workoutId).map(({workoutId,date,...r})=>r)}
-function latestRecord(setLogs,workouts){const r=events(setLogs,workouts).out.at(-1);if(!r)return null;const {workoutId,...x}=r;return x}
+function newRecords(workoutId,setLogs,workouts,{truncated=false}={}){if(truncated)return [];return events(setLogs,workouts).out.filter(r=>r.workoutId===workoutId).map(({workoutId,date,...r})=>r)}
+function latestRecord(setLogs,workouts,{truncated=false}={}){if(truncated)return null;const r=events(setLogs,workouts).out.at(-1);if(!r)return null;const {workoutId,...x}=r;return x}
 
 function exercise(key,setLogs,workouts){
  const list=done(workouts),by=grouped(setLogs,new Set(list.map(w=>w.id))),entries=[];
  for(const w of list){
-  const e=by.get(w.id)?.get(key);if(!e)continue;
+  // Même clé deux fois dans une séance (remplacée puis reprise) : on garde l'exercice le plus complet.
+  const e=listOf(by.get(w.id)).filter(x=>x.key===key).sort((a,b)=>b.sets.length-a.sets.length)[0];if(!e)continue;
   const prev=entries.at(-1),b=best(e.sets);
   entries.push({workoutId:w.id,date:dateOf(w),from:e.from,rpe:e.rpe,sets:clean(e).sets,best:b,volume:volume(e.sets),
    diff:prev?.best&&b&&prev.best.weight!=null&&b.weight!=null?{weight:Number((b.weight-prev.best.weight).toFixed(2)),reps:b.reps-prev.best.reps}:null});
@@ -89,6 +91,7 @@ function advice(plan,setLogs,workouts,key){
  if(noWeight===sets.length)return {status:'bodyweight',text:top?'Haut de fourchette atteint sur chaque série : ajoute de la difficulté (lest ou variante plus dure).':'Vise '+max+' répétitions sur chaque série.'};
  if(noWeight)return {status:'weight',text:'Note ta charge sur chaque série pour recevoir un conseil précis.'};
  const w=Math.max(...sets.map(s=>s.weight));
+ if(top&&w===0)return {status:'bodyweight',text:'Haut de fourchette atteint sur chaque série : ajoute de la charge ou une variante plus dure.'};
  if(!top)return {status:'reps',text:'Garde '+fr(w)+' kg et vise '+max+' répétitions sur chaque série.'};
  if(last.rpe===10)return {status:'hold',text:'Haut de fourchette atteint, mais à l’échec : garde '+fr(w)+' kg jusqu’à ce que ce soit plus facile.'};
  const next=Number((w+increment(w)).toFixed(2));

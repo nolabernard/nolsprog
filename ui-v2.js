@@ -165,16 +165,16 @@ function sessionsHTML(list,open,userExercises,records){
  if(!list.length)return '<p class="v2-card v2-empty">Tes séances terminées apparaîtront ici.</p>';
  return '<ul class="v2-hist">'+list.slice(0,60).map(x=>'<li><button type="button" class="v2-opt" data-action="v2-history-open" data-id="'+esc(x.id)+'"><span><b>'+esc(x.title)+'</b><small>'+esc(dayText(x.date))+' · '+[x.minutes!=null?x.minutes+' min':null,plural(x.sets,'série','séries')].filter(Boolean).join(' · ')+(x.cardio.length?' · cardio':'')+'</small></span>'+icon('right','v2-ic v2-ic--sm')+'</button></li>').join('')+'</ul>';
 }
-function progress({progress,selected,metric='weight',userExercises=[],cardio=null,tab='exercises',history=null,advice=null,sessions=[],open=null,records=[]}={}){
+function progress({progress,selected,metric='weight',userExercises=[],cardio=null,tab='exercises',history=null,advice=null,sessions=[],open=null,records=[],truncated=false}={}){
  const keys=Object.keys(progress?.byKey||{}).sort((a,b)=>nameOf(a,userExercises).localeCompare(nameOf(b,userExercises),'fr'));
  let html='<section class="v2-progress"><h1 class="v2-hello">Tes progrès</h1>'+tabs(tab);
  if(tab==='sessions')return html+sessionsHTML(sessions,open,userExercises,records)+'</section>';
  html+='<dl class="v2-figures v2-figures--card"><div><b>'+(progress?.totals.sets||0)+'</b> <span>'+((progress?.totals.sets||0)>1?'séries validées':'série validée')+'</span></div><div><b>'+Math.round(progress?.totals.volume||0).toLocaleString('fr-FR')+'</b> <span>kg de volume</span></div></dl>';
  if(!keys.length)return html+'<p class="v2-card v2-empty">Ton graphique apparaîtra après tes premières séries validées.</p>'+cardioBlock(cardio)+'</section>';
- const key=keys.includes(selected)?selected:keys[0],points=progress.byKey[key],rec=history?.key===key?history.record:null;
+ const key=keys.includes(selected)?selected:keys[0],points=progress.byKey[key],rec=history?.key===key&&!truncated?history.record:null;
  html+='<label class="v2-field-label" for="v2-progress-ex">Exercice</label><select id="v2-progress-ex" class="v2-select" data-v2-progress>'+keys.map(k=>'<option value="'+esc(k)+'" '+(k===key?'selected':'')+'>'+esc(nameOf(k,userExercises))+'</option>').join('')+'</select>'
   +'<div class="v2-seg" role="group" aria-label="Mesure">'+[['weight','Charge max'],['reps','Répétitions'],['volume','Volume']].map(([v,t])=>'<button type="button" data-action="v2-metric" data-metric="'+v+'" aria-pressed="'+(metric===v)+'">'+t+'</button>').join('')+'</div>'
-  +'<div class="v2-card">'+(chart(points,metric)||'<p class="v2-muted">Pas encore de valeur pour cette mesure.</p>')+'<p class="v2-muted">'+plural(points.length,'séance','séances')+(rec?' · Record : '+kg(rec.weight)+' kg × '+rec.reps:'')+'</p></div>';
+  +'<div class="v2-card">'+(chart(points,metric)||'<p class="v2-muted">Pas encore de valeur pour cette mesure.</p>')+'<p class="v2-muted">'+plural(points.length,'séance','séances')+(rec?' · Meilleure série : '+kg(rec.weight)+' kg × '+rec.reps:'')+'</p></div>';
  if(advice)html+='<section class="v2-card v2-advice-card"><h2 class="v2-card-title">'+icon('coach','v2-ic v2-ic--sm')+'Prochaine fois</h2><p>'+esc(advice.text)+'</p><p class="v2-muted">Un conseil, pas une obligation : c’est toi qui décides de la charge.</p></section>';
  const entries=history?.key===key?history.entries.slice(0,8):[];
  if(entries.length)html+='<section class="v2-card"><h2 class="v2-card-title">Séance par séance</h2><ul class="v2-compare">'+entries.map(e=>'<li><div><b>'+esc(dayText(e.date))+'</b>'+(e.from?'<small>à la place de '+esc(nameOf(e.from,userExercises))+'</small>':'')+'</div><span>'+e.sets.map(setText).join(' · ')+'</span>'+diffText(e.diff)+'</li>').join('')+'</ul></section>';

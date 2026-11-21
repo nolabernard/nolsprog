@@ -78,7 +78,7 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
   assert.match(h5.todayHTML(),/Nouveau record : Développé couché barre : 62,5 kg × 8 \(\+2,5 kg\)/);
   await h5.handle('v2-close-summary');
   assert.match(h5.todayHTML(),/Record récent : Développé couché barre, 62,5 kg × 8/);
-  let st5=h5.statsHTML();assert.match(st5,/Séance par séance/);assert.match(st5,/62,5 × 8 · 62,5 × 8/);assert.match(st5,/Record : 62,5 kg × 8/);assert.match(st5,/Prochaine fois/);
+  let st5=h5.statsHTML();assert.match(st5,/Séance par séance/);assert.match(st5,/62,5 × 8 · 62,5 × 8/);assert.match(st5,/Meilleure série : 62,5 kg × 8/);assert.match(st5,/Prochaine fois/);
   await h5.handle('v2-progress-tab',{tab:'sessions'});st5=h5.statsHTML();
   const ids=[...st5.matchAll(/data-action="v2-history-open" data-id="([^"]+)"/g)].map(m=>m[1]);assert.equal(ids.length,2);
   await h5.handle('v2-history-open',{id:ids[0]});st5=h5.statsHTML();assert.match(st5,/Push A/);assert.match(st5,/Record : Développé couché barre/);

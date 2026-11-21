@@ -75,7 +75,7 @@ assert.match(p,/Hack squat/);assert.match(p,/1\s132/);assert.match(p,/<svg/);
 assert.doesNotMatch(p,/Record/);
 const hist={key:'hack-squat',record:{weight:80,reps:8},entries:[{workoutId:'w2',date:'2026-11-12T11:00:00Z',from:'presse-a-cuisses',sets:[{weight:82.5,reps:6},{weight:null,reps:6}],best:{weight:82.5,reps:6},diff:{weight:2.5,reps:-2}},{workoutId:'w1',date:'2026-11-10T11:00:00Z',from:null,sets:[{weight:80,reps:8}],best:{weight:80,reps:8},diff:null}]};
 const p2=UI.progress({progress:{totals:{sets:3,volume:1132},byKey:{'hack-squat':[{date:'2026-11-10T11:00:00Z',weight:80,reps:8,volume:640}]}},selected:'hack-squat',history:hist,advice:{status:'reps',text:'Garde 82,5 kg et vise 10 répétitions sur chaque série.'}});
-assert.match(p2,/Record : 80 kg × 8/);assert.match(p2,/Séance par séance/);assert.match(p2,/82,5 × 6 · 6 reps/);assert.match(p2,/\+2,5 kg/);
+assert.match(p2,/Meilleure série : 80 kg × 8/);assert.match(p2,/Séance par séance/);assert.match(p2,/82,5 × 6 · 6 reps/);assert.match(p2,/\+2,5 kg/);
 assert.match(p2,/à la place de Presse à cuisses/);assert.match(p2,/Prochaine fois/);assert.match(p2,/vise 10 répétitions/);assert.match(p2,/jeu\. 12 nov\./);
 // Onglet Séances : liste puis détail.
 const list=[{id:'w2',date:'2026-11-12T11:00:00Z',title:'Bas A',minutes:52,sets:2,volume:495,exercises:[{key:'hack-squat',from:'presse-a-cuisses',sets:[{weight:82.5,reps:6}]}],cardio:[{type:'velo',minutes:15}]}];
