@@ -146,6 +146,37 @@ function fillWeeklyVolume(sessions,p,addExercise){
   }
  }
 }
+// V2 : répétitions « 6–10 » ou « 25–45 s » → [min, max].
+function parseReps(text){const nums=String(text||'').match(/\d+/g)||[];const a=Number(nums[0]||8),b=Number(nums[1]||nums[0]||12);return [Math.min(a,b),Math.max(a,b)]}
+const DEFAULT_DAYS={2:[0,3],3:[0,2,4],4:[0,1,3,4],5:[0,1,2,4,5],6:[0,1,2,3,4,5]};
+const ROTATING=['Push','Pull','Legs','Upper','Lower'];
+// V2 : un cycle = une suite de séances générée une fois, avec la photographie des réponses.
+function buildCycle(p){
+ const Cat=globalThis.SteroidCatalogue;
+ if(!Cat)throw Error('Catalogue d’exercices indisponible.');
+ const answers=JSON.parse(JSON.stringify(p||{}));
+ const n=Math.max(2,Math.min(6,Number(answers.daysCount)||3));
+ const chosen=Array.isArray(answers.days)&&answers.days.length?selectTrainingDays(answers.days,n):null;
+ const input={...answers,days:chosen||DEFAULT_DAYS[n]};
+ const method=chooseMethod(input);
+ const loop=method==='ppl'&&n<=5?3:method==='upperlower'&&n===3?2:n;
+ const collected=[];
+ for(let w=0;collected.length<loop&&w<6;w++)for(const d of buildProgram(input,w,{version:2}))if(d.ex.length&&collected.length<loop)collected.push(d);
+ const type=t=>t.replace(/ [A-Z]$/,'');
+ // Pas deux séances du même type d'affilée au bouclage (ex. Upper/Lower sur 5 jours).
+ while(collected.length>2&&ROTATING.includes(type(collected[0].title))&&type(collected[0].title)===type(collected[collected.length-1].title))collected.pop();
+ const sessions=collected.map((d,i)=>{
+  const exercises=d.ex.map(e=>{
+   const hit=Cat.resolveName(e.name);
+   if(!hit)throw Error('Exercice hors catalogue : '+e.name);
+   const entry=Cat.byKey(hit.key),[repsMin,repsMax]=parseReps(e.reps);
+   return {key:entry.key,name:entry.name,role:entry.role,sets:e.sets,repsMin,repsMax,rest:e.rest};
+  });
+  const focus=[...new Set(exercises.map(e=>Cat.byKey(e.key).muscle))];
+  return {position:i,code:String.fromCharCode(65+i),title:d.title,focus,exercises};
+ });
+ return {engineVersion:ENGINE_VERSION,method,weeks:6,sessionsPerWeek:n,preferredDays:chosen,answers,sessions};
+}
 // Conservative time budget: warm-up, working sets, inter-set rest and transitions.
 function estimatedMinutes(items){
  let minutes=6;
@@ -277,4 +308,4 @@ const steps=[
 ];
 const defaults={sex:'',age:'',height:'',weight:'',job:'mixed',activity:'medium',sleep:'7-8',goal:'muscle',level:'intermediate',currentSessions:'2',daysCount:'3',duration:'60',equipment:'gym',priority:[],days:[0,1,2,3,4,5],method:'auto',avoid:'',limitations:'no'};
 
-globalThis.NolsEngine={ENGINE_VERSION,VOLUME,methods,chooseMethod,buildProgram,steps,defaults,estimatedMinutes,exerciseCatalogue:catalogue.map(x=>({name:x.name,pattern:x.pattern,muscle:x.muscle,compound:x.compound}))};
+globalThis.NolsEngine={ENGINE_VERSION,VOLUME,buildCycle,parseReps,methods,chooseMethod,buildProgram,steps,defaults,estimatedMinutes,exerciseCatalogue:catalogue.map(x=>({name:x.name,pattern:x.pattern,muscle:x.muscle,compound:x.compound}))};

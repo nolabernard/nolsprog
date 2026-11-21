@@ -20,7 +20,8 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
   aux lignes très longues : chercher avec `grep -n` et ne lire que les passages utiles.
 - Modules purs, exposés en global navigateur et en `module.exports` pour les tests :
   `sport-rules.js` (validation), `sport-guide.js` (onboarding), `sport-progression.js`
-  (double progression), `program-engine.js` (génération de programme, déterministe),
+  (double progression), `program-engine.js` (génération de programme, déterministe ;
+  `buildProgram(p, semaine)` = V1 figée pour les programmes en cours, `{version: 2}` et `buildCycle(p)` = V2),
   `sport-session.js` (bilan de séance), `sport-import.js` (import texte/CSV/TSV local),
   `sport-ux.js` (aides UX, records).
 - `exercise-catalogue.js` : catalogue à clés permanentes (`SteroidCatalogue`), rôles base/finition, recherche
