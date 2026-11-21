@@ -9,7 +9,7 @@ function key(str){const s=(str+'='.repeat((4-str.length%4)%4)).replace(/-/g,'+')
 const clean=s=>({hour:Math.min(23,Math.max(0,Math.round(Number(s.hour))||0)),minute:[0,15,30,45].includes(Number(s.minute))?Number(s.minute):0,
  days:[...new Set((s.days||[]).map(Number).filter(d=>Number.isInteger(d)&&d>=0&&d<=6))].sort((a,b)=>a-b)});
 
-function create({nav=globalThis.navigator,win=globalThis,api,storage,userId,uuid=()=>globalThis.crypto.randomUUID()}){
+function create({nav=globalThis.navigator,win=globalThis,api,storage,userId}){
  const K='nolsprog-v2-reminders:'+(userId||'guest');
  const read=()=>{try{return {...DEFAULT,...JSON.parse(storage.getItem(K)||'{}')}}catch{return {...DEFAULT}}};
  const write=v=>{try{storage.setItem(K,JSON.stringify(v))}catch{}};
@@ -25,8 +25,9 @@ function create({nav=globalThis.navigator,win=globalThis,api,storage,userId,uuid
   return null;
  }
  function state(){return {...read(),blocker:blocker()}}
- async function save(row){await api.upsert('push_subscriptions',[row])}
- function rowOf(s){return {id:s.id,user_id:userId,endpoint:s.endpoint,p256dh:s.p256dh,auth:s.auth,enabled:s.enabled,hour:s.hour,minute:s.minute,days:s.days,
+ // Enregistré par la fonction : un appareil déjà abonné par un autre compte (ou sans stockage local) est rattaché au compte connecté.
+ async function save(row){const r=await api.fn('send-reminders',{method:'POST',body:{action:'save',sub:row}});if(!r?.id)throw Error('Rappels non enregistrés. Réessaie dans un instant.');return r.id}
+ function rowOf(s){return {endpoint:s.endpoint,p256dh:s.p256dh,auth:s.auth,enabled:s.enabled,hour:s.hour,minute:s.minute,days:s.days,
   timezone:(()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||'Europe/Paris'}catch{return 'Europe/Paris'}})()}}
  async function enable(settings={}){
   const b=blocker();if(b)throw Error(MESSAGES[b]);
@@ -38,18 +39,18 @@ function create({nav=globalThis.navigator,win=globalThis,api,storage,userId,uuid
   let sub=await reg.pushManager.getSubscription();
   if(!sub){const {publicKey}=await api.fn('send-reminders?vapid=1',{method:'GET'});sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key(publicKey)})}
   const j=sub.toJSON?.()||{};
-  const next={...s,enabled:true,id:s.endpoint===sub.endpoint&&s.id?s.id:uuid(),endpoint:sub.endpoint,p256dh:j.keys?.p256dh||b64(sub.getKey?.('p256dh')),auth:j.keys?.auth||b64(sub.getKey?.('auth'))};
-  await save(rowOf(next));write(next);return state();
+  const next={...s,enabled:true,endpoint:sub.endpoint,p256dh:j.keys?.p256dh||b64(sub.getKey?.('p256dh')),auth:j.keys?.auth||b64(sub.getKey?.('auth'))};
+  next.id=await save(rowOf(next));write(next);return state();
  }
  async function update(settings={}){
   const s={...read(),...clean({...read(),...settings})};
   if(s.enabled&&!s.days.length)throw Error('Choisis au moins un jour, ou désactive les rappels.');
-  if(s.enabled&&s.id)await save(rowOf(s));
+  if(s.enabled&&s.endpoint)s.id=await save(rowOf(s));
   write(s);return state();
  }
  async function disable(){
   const s=read();
-  if(s.id)await api.remove('push_subscriptions',s.id);
+  if(s.endpoint)await api.fn('send-reminders',{method:'POST',body:{action:'remove',endpoint:s.endpoint}});
   try{const reg=await nav.serviceWorker?.ready;const sub=await reg?.pushManager?.getSubscription();await sub?.unsubscribe()}catch{}
   const {id,endpoint,p256dh,auth,...rest}=s;write({...rest,enabled:false});return state();
  }

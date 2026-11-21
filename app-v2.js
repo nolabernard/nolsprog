@@ -324,7 +324,7 @@ function create(ctx){
    case 'v2-rem-on':await remRun(()=>Rem.enable({}),'Rappels activés.');return;
    case 'v2-rem-off':await remRun(()=>Rem.disable(),'Rappels désactivés sur ce téléphone.');return;
    case 'v2-rem-test':await remRun(()=>Rem.test(),n=>n?'Essai envoyé : la notification arrive dans quelques secondes.':'Aucun appareil abonné pour l’instant.');return;
-   case 'v2-rem-day':{if(!Rem)return;const st=Rem.state(),d=Number(d0(d));const days=st.days.includes(day)?st.days.filter(x=>x!==day):[...st.days,day];await remRun(()=>Rem.update({days}));return}
+   case 'v2-rem-day':{if(!Rem)return;const st=Rem.state(),day=Number(d.day);const days=st.days.includes(day)?st.days.filter(x=>x!==day):[...st.days,day];await remRun(()=>Rem.update({days}));return}
    case 'v2-progress-tab':S.tab=d.tab==='sessions'?'sessions':'exercises';S.open=null;break;
    case 'v2-history-open':S.open=d.id||null;break;
    case 'v2-history-close':S.open=null;break;
@@ -418,7 +418,9 @@ function create(ctx){
   if(S.rest&&left===0){S.rest=null;saveUi();return {rest:0,done:true,elapsed:S.store?.elapsedSeconds()||0}}
   return {rest:left,elapsed:S.store?.elapsedSeconds()||0,idle:idleMinutes()};
  }
- return {proposeNext,saveCardio,addCardioPlan,init,rebuild,whenFresh:()=>fresh,ready:()=>Boolean(S.cycle),todayHTML,statsHTML,programmeHTML,handle,input,change,tick,createExercise,flushNow,pending,
+ // Déconnexion : le téléphone cesse de recevoir les rappels de ce compte (au mieux, sans bloquer).
+ async function remindersOff(){try{if(Rem?.state().enabled)await Rem.disable()}catch{}}
+ return {remindersOff,proposeNext,saveCardio,addCardioPlan,init,rebuild,whenFresh:()=>fresh,ready:()=>Boolean(S.cycle),todayHTML,statsHTML,programmeHTML,handle,input,change,tick,createExercise,flushNow,pending,
   inSession:()=>Boolean(current())&&S.view==='session',busy:()=>Boolean(current())||pending()>0,state:()=>S};
 }
 return {create};

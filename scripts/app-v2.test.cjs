@@ -140,6 +140,11 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
   const b8=V2.create({...ctx,storage:st8b,api:lag,userId:U6});
   await b8.init();await b8.whenFresh();assert.equal(b8.state().cycle.id,nextId2);
  }
+ // Lot 7 : choix d'un jour enregistré (sans exception), même rappels désactivés.
+ { const st7=memory(),c7=V2.create({...ctx,storage:st7,api:{async select(){return []},async upsert(){},async remove(){},async fn(){return {}}},userId:'55555555-5555-4555-8555-555555555555'});
+   await c7.handle('v2-rem-day',{day:'6'});assert.deepEqual(JSON.parse(st7.getItem('nolsprog-v2-reminders:55555555-5555-4555-8555-555555555555')).days,[0,1,2,3,4,5]);
+   await c7.handle('v2-rem-day',{day:'6'});assert.deepEqual(JSON.parse(st7.getItem('nolsprog-v2-reminders:55555555-5555-4555-8555-555555555555')).days,[0,1,2,3,4,5,6]);
+   await c7.remindersOff(); }
  // Lot 7 : en invité, la carte Rappels explique qu'il faut un compte.
  assert.match(V2.create({...ctx,storage:memory()}).programmeHTML(),/Connecte-toi à ton compte pour recevoir des rappels/);
  // ----- Compte sans cycle V2 : construit puis envoyé dans l'ordre -----

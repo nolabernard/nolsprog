@@ -23,9 +23,10 @@ create table if not exists public.push_subscriptions (
 );
 create index if not exists push_subscriptions_user_idx on public.push_subscriptions (user_id);
 alter table public.push_subscriptions enable row level security;
+-- Lecture et retrait de ses lignes seulement : l'écriture passe par la fonction send-reminders (destinataires vérifiés).
 drop policy if exists "push_subscriptions_own" on public.push_subscriptions;
-create policy "push_subscriptions_own" on public.push_subscriptions for all to authenticated
-  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+create policy "push_subscriptions_read_own" on public.push_subscriptions for select to authenticated using ((select auth.uid()) = user_id);
+create policy "push_subscriptions_delete_own" on public.push_subscriptions for delete to authenticated using ((select auth.uid()) = user_id);
 drop trigger if exists push_subscriptions_updated_at on public.push_subscriptions;
 create trigger push_subscriptions_updated_at before update on public.push_subscriptions
   for each row execute function public.steroid_touch_updated_at();
