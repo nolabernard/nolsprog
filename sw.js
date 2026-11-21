@@ -4,7 +4,7 @@
  * Une seule copie par fichier (paramètres d'URL ignorés), pas d'accumulation.
  * Supabase et version.json ne passent jamais par le cache. */
 'use strict';
-const CACHE='steroide-v1';
+const CACHE='steroide-v2';
 const TIMEOUT_MS=4000;
 const FONT_HOSTS=['fonts.googleapis.com','fonts.gstatic.com'];
 

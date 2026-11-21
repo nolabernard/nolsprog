@@ -44,7 +44,7 @@ function createWorkoutStore({storage,api,userId,now=()=>Date.now(),uuid=defaultU
    enqueue('workout_set_logs',setRow(e,s));save();return s;
   },
   setRpe(exerciseId,rpe){const e=find(exerciseId);const v=Number(rpe);e.rpe=Number.isInteger(v)&&v>=1&&v<=10?v:null;enqueue('workout_exercises',exerciseRow(e));save()},
-  pause(){if(!workout||workout.paused_at)return;workout.paused_at=now();touchWorkout();save()},
+  pause(at){if(!workout||workout.paused_at)return;workout.paused_at=Math.max(workout.started_at,Math.min(now(),at??now()));touchWorkout();save()},
   resume(){if(!workout?.paused_at)return;workout.paused_seconds+=Math.round((now()-workout.paused_at)/1000);workout.paused_at=null;touchWorkout();save()},
   isPaused(){return Boolean(workout?.paused_at)},
   elapsedSeconds(){if(!workout)return 0;const end=workout.paused_at||now();return Math.max(0,Math.round((end-workout.started_at)/1000)-workout.paused_seconds)},
@@ -80,7 +80,8 @@ function createWorkoutStore({storage,api,userId,now=()=>Date.now(),uuid=defaultU
   },
   async flush(){
    if(flushing)return flushing;
-   flushing=(async()=>{
+   // Un envoi sans attente se termine avant l'affectation : on libère le verrou après coup.
+   const run=(async()=>{
     try{
      for(const table of TABLES){
       const items=Object.entries(queue).filter(([,v])=>v.table===table);
@@ -92,9 +93,9 @@ function createWorkoutStore({storage,api,userId,now=()=>Date.now(),uuid=defaultU
      }
      return true;
     }catch(err){return false}
-    finally{flushing=null}
    })();
-   return flushing;
+   flushing=run;run.finally(()=>{if(flushing===run)flushing=null});
+   return run;
   }
  };
 }

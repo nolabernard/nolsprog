@@ -1,0 +1,254 @@
+/* STÉROÏDE V2 — contrôleur des écrans Aujourd'hui, Progrès et Programme.
+ * Relie les modules purs (cycle, planificateur, séance, écrans) au stockage et à Supabase.
+ * app.js lui délègue l'affichage et les actions data-action="v2-…". Testé sous Node (scripts/app-v2.test.cjs). */
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.SteroidAppV2=api})(typeof globalThis!=='undefined'?globalThis:this,function(){
+'use strict';
+const G=()=>globalThis;
+const IDLE_MS=20*60e3;
+const DAYS=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'],MONTHS=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+const iso=ms=>new Date(ms).toISOString();
+const clone=v=>JSON.parse(JSON.stringify(v));
+
+function create(ctx){
+ const {storage,api,userId,now=()=>Date.now(),uuid=()=>G().crypto.randomUUID(),render=()=>{},notice=()=>{},confirm=async()=>true}=ctx;
+ const C=G().SteroidCycle,UI=G().SteroidUI,Planner=G().SteroidPlanner,Cat=G().SteroidCatalogue;
+ const owner=userId||'guest';
+ const K={cycle:'nolsprog-v2-cycle:'+owner,history:'nolsprog-v2-history:'+owner,ui:'nolsprog-v2-ui:'+owner,outbox:'nolsprog-v2-outbox:'+owner};
+ const read=(k,d)=>{try{const v=JSON.parse(storage.getItem(k)||'null');return v??d}catch{return d}};
+ const write=(k,v)=>{try{storage.setItem(k,JSON.stringify(v))}catch{notice('Espace de stockage plein sur ce téléphone.',true)}};
+ const S={cycle:null,workouts:[],setLogs:[],userExercises:[],store:null,view:'home',index:0,sheet:null,rest:null,summary:null,metric:'weight',selected:null,picking:null,query:'',creating:false,building:false};
+ let ui=read(K.ui,{lastAction:null,rest:null,view:'home',index:0});
+ let outbox=read(K.outbox,[]); // lignes de programme à envoyer (cycles, séances, exercices prévus, exercices perso)
+ let flushTimer=null,flushing=null;
+ const saveUi=()=>{ui={lastAction:ui.lastAction,rest:S.rest,view:S.view,index:S.index};write(K.ui,ui)};
+ const touch=()=>{ui.lastAction=now();saveUi()};
+ const remote=api?{upsert:(table,rows)=>api.upsert(table,rows)}:{upsert:async()=>{}};
+
+ function persistLocal(){
+  write(K.cycle,S.cycle);
+  write(K.history,{workouts:S.workouts.slice(0,500),setLogs:S.setLogs.slice(0,5000),userExercises:S.userExercises});
+ }
+ function queueRows(rows){
+  for(const [table,list] of Object.entries(rows))for(const row of list){
+   const i=outbox.findIndex(x=>x.table===table&&x.row.id===row.id&&x.row.key===row.key);
+   if(i>=0)outbox[i]={table,row};else outbox.push({table,row});
+  }
+  write(K.outbox,outbox);scheduleFlush();
+ }
+ const ORDER=['cycles','user_exercises','cycle_sessions','cycle_exercises'];
+ async function flushOutbox(){
+  if(!api||!userId)return true;
+  for(const table of ORDER){
+   const items=outbox.filter(x=>x.table===table);if(!items.length)continue;
+   await api.upsert(table,items.map(x=>x.row));
+   outbox=outbox.filter(x=>!items.includes(x));write(K.outbox,outbox);
+  }
+  return true;
+ }
+ async function flushNow(){
+  if(flushing)return flushing;
+  const run=(async()=>{try{if(!api||!userId)return true;await flushOutbox();return await S.store.flush()}catch{return false}finally{render()}})();
+  flushing=run;run.finally(()=>{if(flushing===run)flushing=null});
+  return run;
+ }
+ function scheduleFlush(){if(!api)return;clearTimeout(flushTimer);flushTimer=setTimeout(()=>{flushNow()},600)}
+ const pending=()=>(api&&userId?outbox.length+(S.store?.pending()||0):0);
+
+ function cycleRow(){const {sessions,user_exercises,...c}=S.cycle;return {...c,user_id:userId}}
+ function exRow(e){return {...e,user_id:userId}}
+ function sessionOf(ceId){for(const s of S.cycle.sessions){const e=s.exercises.find(x=>x.id===ceId);if(e)return {s,e}}return {}}
+ function refreshSession(s){s.exercises.forEach((e,i)=>e.position=i);const m=new Map();for(const e of s.exercises){const mu=Cat.byKey(e.exercise_key)?.muscle||S.userExercises.find(u=>u.key===e.exercise_key)?.muscle;if(mu&&!m.has(mu+'|'+e.role))m.set(mu+'|'+e.role,{muscle:mu,role:e.role})}s.muscles=[...m.values()];s.focus=[...new Set(s.muscles.map(x=>x.muscle))]}
+
+ async function init(){
+  S.store=G().SteroidWorkout.createWorkoutStore({storage,api:remote,userId:owner,now,uuid});
+  const local=read(K.history,null);
+  if(local){S.workouts=local.workouts||[];S.setLogs=local.setLogs||[];S.userExercises=local.userExercises||[]}
+  S.cycle=read(K.cycle,null);
+  if(api&&userId){
+   try{
+    const loaded=await C.loadCycle(api,userId);
+    S.workouts=mergeById(loaded.workouts,S.workouts.filter(w=>w.local_only));S.setLogs=[...loaded.setLogs,...S.setLogs.filter(r=>r.local_only)];S.userExercises=loaded.userExercises.length?loaded.userExercises:S.userExercises;
+    if(loaded.cycle)S.cycle=loaded.cycle;
+   }catch(e){if(!S.cycle)notice('Programme indisponible hors ligne. Reconnecte-toi au réseau.',true)}
+  }
+  if(!S.cycle)build();
+  if(S.cycle?.user_exercises?.length)S.userExercises=mergeByKey(S.userExercises,S.cycle.user_exercises);
+  persistLocal();
+  S.view=S.store.current()?(ui.view==='home'?'home':'session'):'home';S.index=S.store.current()?ui.index||0:0;S.rest=ui.rest||null;
+  if(api&&userId)flushNow();
+ }
+ function mergeById(a,b){const m=new Map();for(const x of [...a,...b])m.set(x.id,x);return [...m.values()].sort((x,y)=>Date.parse(y.ended_at||0)-Date.parse(x.ended_at||0))}
+ function mergeByKey(a,b){const m=new Map();for(const x of [...a,...b])m.set(x.key,x);return [...m.values()]}
+ function build(){
+  const plan=ctx.legacyPlan?.()||[];
+  try{
+   if(plan.some(d=>d?.ex?.length))S.cycle=C.fromLegacyPlan(plan,{uuid,startedAt:iso(now())});
+   else{const built=G().NolsEngine.buildCycle(ctx.answers?.()||G().NolsEngine.defaults||{});S.cycle=C.fromEngine(built,{uuid,startedAt:iso(now())})}
+  }catch(e){notice('Programme impossible à préparer : '+e.message,true);return}
+  S.userExercises=mergeByKey(S.userExercises,S.cycle.user_exercises||[]);
+  if(api&&userId)queueRows(C.toRows(S.cycle,userId));
+ }
+
+ // ----- Séance -----
+ const current=()=>S.store?.current();
+ const list=()=>[...(current()?.exercises||[])].sort((a,b)=>a.position-b.position).filter(e=>e.status!=='skipped');
+ const last=()=>C.lastPerformance(S.setLogs);
+ const answers=()=>S.cycle?.answers_snapshot&&Object.keys(S.cycle.answers_snapshot).length?S.cycle.answers_snapshot:(ctx.answers?.()||{});
+ function startRest(sec){S.rest={end:now()+sec*1000};saveUi()}
+ function restLeft(){if(!S.rest)return null;if(S.rest.frozen!=null)return S.rest.frozen;const left=Math.ceil((S.rest.end-now())/1000);return left>0?left:0}
+ function idleMinutes(){const w=current();if(!w||w.paused_at||S.view!=='session'||!ui.lastAction)return 0;const d=now()-ui.lastAction;return d>=IDLE_MS?Math.floor(d/60e3):0}
+ function sessionTitle(w){return S.cycle?.sessions.find(s=>s.id===w.cycle_session_id)?.title||'Séance'}
+ function startSession(id){
+  const s=S.cycle.sessions.find(x=>x.id===id);if(!s)return;
+  if(current()){S.view='session';return}
+  S.store.start({...s,cycle_id:S.cycle.id},{last:last()});S.view='session';S.index=0;S.rest=null;S.sheet=null;touch();scheduleFlush();
+ }
+ function finishSession(){
+  const done=S.store.finish();if(!done)return;
+  const row={id:done.id,cycle_id:done.cycle_id,cycle_session_id:done.cycle_session_id,status:'completed',started_at:iso(done.started_at),ended_at:iso(done.ended_at),duration_seconds:done.duration_seconds,local_only:!(api&&userId)};
+  S.workouts=[row,...S.workouts.filter(w=>w.id!==row.id)];
+  for(const e of done.exercises)for(const s of e.sets)if(s.completed)S.setLogs.unshift({exercise_key:e.exercise_key,weight:s.weight,reps:s.reps,completed:true,created_at:row.ended_at,workout_id:done.id,local_only:!(api&&userId)});
+  persistLocal();S.summary=done;S.view='summary';S.rest=null;S.sheet=null;saveUi();scheduleFlush();
+ }
+
+ // ----- Rendu -----
+ function dateText(){const d=new Date(now());return DAYS[d.getDay()]+' '+d.getDate()+' '+MONTHS[d.getMonth()]}
+ function minutes(s){try{return G().NolsEngine.estimatedMinutes(s.exercises.map(e=>({name:C.nameOf(e.exercise_key,S.userExercises),sets:e.sets,rest:e.rest_seconds})))}catch{return null}}
+ function weekLine(){
+  const d=new Date(now()),monday=new Date(d.getFullYear(),d.getMonth(),d.getDate()-((d.getDay()+6)%7)).getTime();
+  const done=S.workouts.filter(w=>w.cycle_id===S.cycle.id&&w.status==='completed'&&Date.parse(w.ended_at)>=monday).length,goal=S.cycle.sessions_per_week||S.cycle.sessions.length;
+  return done>=goal?'Objectif de la semaine atteint : '+done+' séance'+(done>1?'s':'')+'.':done?done+' séance'+(done>1?'s':'')+' cette semaine, encore '+(goal-done)+'.':'Objectif : '+goal+' séance'+(goal>1?'s':'')+' cette semaine.';
+ }
+ function todayHTML(){
+  if(!S.cycle)return UI.home({next:null,cycle:null,building:S.building});
+  if(S.view==='summary'&&S.summary)return UI.summary({workout:S.summary,pending:pending(),local:!(api&&userId),userExercises:S.userExercises});
+  const w=current();
+  if(w&&S.view==='session'){
+   const items=list();S.index=Math.max(0,Math.min(S.index,items.length-1));
+   const left=restLeft();
+   let html=UI.session({workout:w,index:S.index,elapsed:S.store.elapsedSeconds(),paused:S.store.isPaused(),pausedFor:w.paused_at?Math.round((now()-w.paused_at)/1000):0,rest:left?{remaining:left}:null,last:last(),userExercises:S.userExercises,pending:pending()});
+   const idle=idleMinutes();
+   if(idle)html+=UI.idlePrompt(idle);
+   else if(S.sheet?.type==='machine'){const e=w.exercises.find(x=>x.id===S.sheet.ex);if(e){const practiced={};for(const r of S.setLogs)if(r.completed)practiced[r.exercise_key]=(practiced[r.exercise_key]||0)+1;
+    const a=answers(),alts=Cat.alternatives(e.exercise_key,{equipment:a.equipment||'gym',avoid:String(a.avoid||'').split(/[,;\n]/).map(x=>x.trim()).filter(Boolean),exclude:w.exercises.map(x=>x.exercise_key),history:practiced});
+    html+=UI.machineSheet({exercise:e,alternatives:alts,canLater:items[items.length-1]?.id!==e.id,practiced})}}
+   else if(S.sheet?.type==='more')html+=UI.moreSheet({exercise:items[S.index]});
+   return html;
+  }
+  const next=Planner.nextSession(S.cycle,S.workouts,now());
+  const active=w?{title:sessionTitle(w),done:w.exercises.reduce((n,e)=>n+e.sets.filter(s=>s.completed).length,0),total:w.exercises.reduce((n,e)=>n+e.sets.length,0)}:null;
+  let html=UI.home({next,hasHistory:S.workouts.some(x=>x.cycle_id===S.cycle.id&&x.status==='completed'),cycle:S.cycle,progress:C.cycleProgress(S.cycle,S.workouts),minutes:next?minutes(next.session):null,firstName:ctx.firstName?.()||'',dateText:dateText(),weekLine:weekLine(),active});
+  if(S.sheet?.type==='choose')html+=UI.chooser({sessions:S.cycle.sessions,current:next?.session.id});
+  return html;
+ }
+ function statsHTML(){return UI.progress({progress:C.progress(S.setLogs,S.workouts),selected:S.selected,metric:S.metric,userExercises:S.userExercises})}
+ function searchResults(){
+  const q=S.query.trim();
+  const mine=S.userExercises.filter(u=>q&&Cat.normalize(u.name).includes(Cat.normalize(q))).map(u=>({key:u.key,name:u.name,muscle:u.muscle,role:'finition'}));
+  return [...mine,...(q?Cat.search(q).slice(0,8):Cat.CATALOGUE.slice(0,8).map(entry=>({entry})))];
+ }
+ function programmeHTML(){return UI.programme({cycle:S.cycle,userExercises:S.userExercises,picking:S.picking,query:S.query,results:S.picking?searchResults():[],creating:S.creating})}
+
+ // ----- Programme -----
+ function saveCycleExercise(e){persistLocal();if(api&&userId)queueRows({cycle_exercises:[exRow(e)]})}
+ function pickExercise(key){
+  const role=Cat.byKey(key)?.role||'finition';
+  if(S.picking?.ce){const {s,e}=sessionOf(S.picking.ce);if(!e)return;e.exercise_key=key;e.role=role;refreshSession(s);saveCycleExercise(e)}
+  else if(S.picking?.session){
+   const s=S.cycle.sessions.find(x=>x.id===S.picking.session);if(!s)return;
+   const base=role==='base';
+   const e={id:uuid(),cycle_session_id:s.id,position:s.exercises.length,exercise_key:key,role,sets:3,reps_min:base?6:10,reps_max:base?10:15,rest_seconds:base?150:75};
+   // Les exercices de base restent avant les finitions.
+   const at=base?s.exercises.findIndex(x=>x.role!=='base'):-1;if(at>=0)s.exercises.splice(at,0,e);else s.exercises.push(e);
+   refreshSession(s);persistLocal();if(api&&userId)queueRows({cycle_exercises:s.exercises.map(exRow)});
+  }
+  S.picking=null;S.query='';S.creating=false;
+ }
+ async function removeExercise(ceId){
+  const {s,e}=sessionOf(ceId);if(!e)return;
+  if(s.exercises.length<=1){notice('Une séance garde au moins un exercice.',true);return}
+  if(!await confirm(C.nameOf(e.exercise_key,S.userExercises)+' sera retiré de '+s.title+'. Son historique est conservé.',{title:'Retirer cet exercice ?',ok:'Retirer',cancel:'Garder'}))return;
+  s.exercises=s.exercises.filter(x=>x.id!==ceId);refreshSession(s);persistLocal();
+  if(api&&userId){try{await api.remove('cycle_exercises',ceId)}catch{notice('Retrait enregistré sur ce téléphone, envoi en attente.',true)}queueRows({cycle_exercises:s.exercises.map(exRow)})}
+ }
+ async function createExercise({name,muscle,pattern}){
+  name=String(name||'').trim().slice(0,100);if(!name){notice('Indique le nom de l’exercice.',true);return}
+  const u={key:'u-'+uuid(),name,muscle:muscle||null,pattern:pattern||null,equipment:null};
+  S.userExercises.push(u);persistLocal();if(api&&userId)queueRows({user_exercises:[{...u,user_id:userId}]});
+  pickExercise(u.key);render();
+ }
+
+ async function handle(action,d={}){
+  const w=current();
+  switch(action){
+   case 'v2-build':S.building=true;render();build();S.building=false;persistLocal();break;
+   case 'v2-start':case 'v2-pick-session':startSession(d.session);break;
+   case 'v2-choose':S.sheet={type:'choose'};break;
+   case 'v2-close-sheet':S.sheet=null;S.picking=null;S.creating=false;break;
+   case 'v2-back':S.view='session';touch();break;
+   case 'v2-exit':S.view='home';S.sheet=null;saveUi();break;
+   case 'v2-set':{
+    const e=w?.exercises.find(x=>x.id===d.ex),s=e?.sets.find(x=>x.set_number===Number(d.set));if(!s)return;
+    if(!s.completed&&s.reps==null){notice('Indique tes répétitions pour valider la série '+s.set_number+'.',true);return}
+    S.store.logSet(e.id,s.set_number,{completed:!s.completed});touch();
+    if(s.completed){startRest(e.plan.rest_seconds||90);if(e.sets.every(x=>x.completed)){const items=list(),i=items.findIndex(x=>x.id===e.id);if(i>=0&&i<items.length-1)S.index=i+1}}
+    saveUi();scheduleFlush();break;
+   }
+   case 'v2-pause':if(S.rest){const l=restLeft();S.rest=l?{frozen:l}:null}S.store.pause();touch();scheduleFlush();break;
+   case 'v2-resume':if(S.rest?.frozen!=null)S.rest={end:now()+S.rest.frozen*1000};S.store.resume();touch();scheduleFlush();break;
+   case 'v2-idle-yes':S.store.pause(ui.lastAction);S.store.resume();touch();scheduleFlush();break;
+   case 'v2-idle-no':touch();break;
+   case 'v2-rest-plus':if(S.rest?.frozen!=null)S.rest.frozen+=30;else if(S.rest)S.rest.end=Math.max(S.rest.end,now())+30e3;saveUi();break;
+   case 'v2-rest-skip':S.rest=null;saveUi();break;
+   case 'v2-next':S.index=Math.min(S.index+1,list().length-1);touch();break;
+   case 'v2-prev':S.index=Math.max(0,S.index-1);touch();break;
+   case 'v2-machine':S.sheet={type:'machine',ex:d.ex};break;
+   case 'v2-more':S.sheet={type:'more'};break;
+   case 'v2-later':S.store.later(d.ex);S.sheet=null;touch();scheduleFlush();break;
+   case 'v2-skip':S.store.skip(d.ex);S.sheet=null;S.index=Math.min(S.index,Math.max(0,list().length-1));touch();scheduleFlush();break;
+   case 'v2-sub':{
+    const e=w?.exercises.find(x=>x.id===d.ex);if(!e)return;
+    const keep=Boolean(d.keep),from=e.substituted_from_key||e.exercise_key;
+    S.store.substitute(e.id,d.key,{last:last()[d.key]});
+    if(keep&&e.cycle_exercise_id){const r=sessionOf(e.cycle_exercise_id);if(r.e){r.e.replaced_key=r.e.replaced_key||from;r.e.exercise_key=d.key;refreshSession(r.s);saveCycleExercise(r.e)}}
+    S.sheet=null;touch();scheduleFlush();break;
+   }
+   case 'v2-rpe':S.store.setRpe(d.ex,d.rpe);S.sheet=null;scheduleFlush();break;
+   case 'v2-finish':{
+    if(!w)return;
+    const open=w.exercises.some(e=>e.status!=='skipped'&&e.sets.some(s=>!s.completed));
+    if(open&&!await confirm('Les séries non validées ne seront pas comptées.',{title:'Terminer la séance ?',ok:'Terminer',cancel:'Continuer'}))return;
+    finishSession();break;
+   }
+   case 'v2-close-summary':S.summary=null;S.view='home';saveUi();break;
+   case 'v2-metric':S.metric=d.metric;break;
+   case 'v2-edit-ex':S.picking={ce:d.ce};S.query='';S.creating=false;break;
+   case 'v2-add-ex':S.picking={session:d.session};S.query='';S.creating=false;break;
+   case 'v2-pick':pickExercise(d.key);break;
+   case 'v2-remove-ex':await removeExercise(d.ce);break;
+   case 'v2-create':S.creating=true;break;
+   default:return;
+  }
+  render();
+ }
+ function input({ex,set,field,value}){
+  if(!current()||!['weight','reps'].includes(field))return;
+  const raw=String(value??'').trim().replace(',','.'),v=raw===''?null:Number(raw);
+  if(v!=null&&(!Number.isFinite(v)||v<0||v>(field==='weight'?3000:1000)))return;
+  try{S.store.logSet(ex,Number(set),{[field]:v});touch();scheduleFlush()}catch{}
+ }
+ function change({kind,value,ce}){
+  if(kind==='search'){S.query=String(value||'');return}
+  if(kind==='progress'){S.selected=value;render();return}
+  if(kind==='sets'){const {e}=sessionOf(ce);const n=Number(value);if(e&&Number.isInteger(n)&&n>=1&&n<=6){e.sets=n;saveCycleExercise(e)}render()}
+ }
+ function tick(){
+  const left=restLeft();
+  if(S.rest&&left===0){S.rest=null;saveUi();return {rest:0,done:true,elapsed:S.store?.elapsedSeconds()||0}}
+  return {rest:left,elapsed:S.store?.elapsedSeconds()||0,idle:idleMinutes()};
+ }
+ return {init,ready:()=>Boolean(S.cycle),todayHTML,statsHTML,programmeHTML,handle,input,change,tick,createExercise,flushNow,pending,
+  inSession:()=>Boolean(current())&&S.view==='session',busy:()=>Boolean(current())||pending()>0,state:()=>S};
+}
+return {create};
+});

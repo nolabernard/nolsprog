@@ -21,19 +21,20 @@ const totalSets=s=>(s?.exercises||[]).reduce((n,e)=>n+(Number(e.sets)||0),0);
 
 function ring(value){
  const pct=Math.round(Math.max(0,Math.min(1,value||0))*100),r=26,c=2*Math.PI*r;
- return '<div class="v2-ring" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct+'" aria-label="Avancée du cycle : '+pct+' %"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="'+r+'" class="v2-ring-track"/><circle cx="32" cy="32" r="'+r+'" class="v2-ring-value" stroke-dasharray="'+(c*pct/100).toFixed(1)+' '+c.toFixed(1)+'"/></svg><b>'+pct+'<small>%</small></b></div>';
+ return '<div class="v2-ring" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct+'" aria-label="Avancée du cycle : '+pct+' %"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="'+r+'" class="v2-ring-track"/>'+(pct?'<circle cx="32" cy="32" r="'+r+'" class="v2-ring-value" stroke-dasharray="'+(c*pct/100).toFixed(1)+' '+c.toFixed(1)+'"/>':'')+'</svg><b>'+pct+'<small>%</small></b></div>';
 }
 
-function home({next,cycle,progress=0,minutes,firstName,dateText,weekLine,record,building=false}={}){
+function home({next,hasHistory=false,cycle,progress=0,minutes,firstName,dateText,weekLine,record,building=false,active=null}={}){
  const head='<header class="v2-home-head"><div>'+(dateText?'<p class="v2-date">'+esc(dateText)+'</p>':'')+'<h1 class="v2-hello">'+esc(firstName?'Salut '+firstName:'Salut')+'</h1></div></header>';
  if(!cycle||!next)return '<section class="v2-home">'+head+'<div class="v2-card v2-empty"><h2>Ton programme t’attend</h2><p>Je prépare ta suite de séances à partir de tes réponses.</p><button type="button" class="v2-btn" data-action="v2-build" '+(building?'disabled':'')+'>'+(building?'Préparation…':'Préparer mon programme')+'</button></div></section>';
  const s=next.session,count=(s.exercises||[]).length;
+ if(active)return '<section class="v2-home">'+head+'<section class="v2-next" aria-label="Séance en cours"><p class="v2-next-kicker">Séance en cours</p><h2 class="v2-next-title">'+esc(active.title)+'</h2><p>'+active.done+' / '+plural(active.total,'série validée','séries validées')+'</p><button type="button" class="v2-btn v2-btn--light v2-btn--big" data-action="v2-back">'+icon('play')+'Reprendre la séance</button></section></section>';
  let html='<section class="v2-home">'+head+'<section class="v2-next" aria-label="Prochaine séance"><div class="v2-next-top"><div><p class="v2-next-kicker">Prochaine séance</p><h2 class="v2-next-title">'+esc(s.title)+'</h2></div>'+ring(progress)+'</div>'
   +'<div class="v2-chips">'+(s.focus||[]).map(f=>'<span>'+esc(f)+'</span>').join('')+'</div>'
   +'<dl class="v2-figures"><div><b>'+count+'</b> <span>exercices</span></div><div><b>'+totalSets(s)+'</b> <span>séries</span></div>'+(minutes?'<div><b>≈ '+Number(minutes)+'</b> <span>minutes</span></div>':'')+'</dl>'
   +'<button type="button" class="v2-btn v2-btn--light v2-btn--big" data-action="v2-start" data-session="'+esc(s.id)+'">'+icon('play')+'Démarrer</button></section>';
  const coach=next.reason==='recovery'||next.reason==='recovery-all';
- html+='<div class="v2-coach">'+icon('coach','v2-ic v2-coach-ic')+'<div><p>'+(coach?esc(next.message):'<b>'+esc(s.title)+'</b> suit ta dernière séance terminée. Aucune séance n’est jamais « manquée ».')+'</p>'
+ html+='<div class="v2-coach">'+icon('coach','v2-ic v2-coach-ic')+'<div><p>'+(coach?esc(next.message):(hasHistory?'On reprend la suite là où tu t’es arrêté, sans séance « manquée ».':'Première séance de ton cycle. Ensuite, chaque séance suit la précédente, quel que soit le jour.'))+'</p>'
   +(next.reason==='recovery'?'<div class="v2-coach-actions"><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-start" data-session="'+esc(s.id)+'">D’accord</button><button type="button" class="v2-link" data-action="v2-start" data-session="'+esc(next.planned.id)+'">Faire '+esc(next.planned.title)+' quand même</button></div>':'')
   +'<button type="button" class="v2-link" data-action="v2-choose">Changer de séance</button></div></div>';
  if(weekLine||record)html+='<section class="v2-card v2-week">'+(weekLine?'<p class="v2-week-line">'+esc(weekLine)+'</p>':'')+(record?'<p class="v2-muted">'+icon('trophy','v2-ic v2-ic--sm')+esc(record)+'</p>':'')+'</section>';
@@ -61,8 +62,8 @@ function session({workout,index=0,elapsed=0,paused=false,pausedFor=0,rest=null,l
  for(const s of e.sets){
   const n=s.set_number;
   html+='<div class="v2-set'+(s.completed?' is-done':'')+'"><span class="v2-set-num">'+n+'</span>'
-   +'<input class="v2-cell" aria-label="Charge série '+n+' (kg)" data-field="weight" data-ex="'+esc(e.id)+'" data-set="'+n+'" type="number" inputmode="decimal" min="0" step="0.5" placeholder="kg" value="'+(s.weight==null?'':esc(s.weight))+'">'
-   +'<input class="v2-cell" aria-label="Répétitions série '+n+'" data-field="reps" data-ex="'+esc(e.id)+'" data-set="'+n+'" type="number" inputmode="numeric" min="0" placeholder="reps" value="'+(s.reps==null?'':esc(s.reps))+'">'
+   +'<input class="v2-cell" aria-label="Charge série '+n+' (kg)" data-v2-field="weight" data-ex="'+esc(e.id)+'" data-set="'+n+'" type="number" inputmode="decimal" min="0" step="0.5" placeholder="kg" value="'+(s.weight==null?'':esc(s.weight))+'">'
+   +'<input class="v2-cell" aria-label="Répétitions série '+n+'" data-v2-field="reps" data-ex="'+esc(e.id)+'" data-set="'+n+'" type="number" inputmode="numeric" min="0" placeholder="reps" value="'+(s.reps==null?'':esc(s.reps))+'">'
    +'<button type="button" class="v2-ok" data-action="v2-set" data-ex="'+esc(e.id)+'" data-set="'+n+'" aria-pressed="'+s.completed+'" aria-label="'+(s.completed?'Série '+n+' validée':'Valider la série '+n)+'">'+icon('check')+'</button></div>';
  }
  html+='</div>';
@@ -97,13 +98,13 @@ function idlePrompt(minutes){
  return '<div class="v2-sheet-wrap"><section class="v2-sheet" role="alertdialog" aria-modal="true" aria-label="Tu étais en pause ?"><h2>Tu étais en pause ?</h2><p class="v2-muted">Aucune action depuis '+Number(minutes)+' min.</p><button type="button" class="v2-btn" data-action="v2-idle-yes">Oui, ne pas compter ce temps</button><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-idle-no">Non, je m’entraînais</button></section></div>';
 }
 
-function summary({workout,pending=0,userExercises=[]}={}){
+function summary({workout,pending=0,local=false,userExercises=[]}={}){
  const list=ordered(workout),done=list.reduce((n,e)=>n+e.sets.filter(s=>s.completed).length,0);
  const vol=list.reduce((n,e)=>n+e.sets.filter(s=>s.completed&&s.weight!=null&&s.reps!=null).reduce((a,s)=>a+s.weight*s.reps,0),0);
  const min=Math.round((workout.duration_seconds||0)/60);
  return '<section class="v2-summary"><div class="v2-done-mark">'+icon('check')+'</div><h1 class="v2-hello">Séance terminée</h1><dl class="v2-figures v2-figures--dark"><div><b>'+min+' min</b> <span>d’effort</span></div><div><b>'+plural(done,'série validée','séries validées').replace(/^(\d+) /,'$1</b> <span>')+'</span></div><div><b>'+Math.round(vol).toLocaleString('fr-FR')+'</b> <span>kg soulevés</span></div></dl>'
   +'<ul class="v2-sum-list">'+list.map(e=>{const d=e.sets.filter(s=>s.completed).length;return '<li><span>'+esc(nameOf(e.exercise_key,userExercises))+'</span><small>'+(e.status==='skipped'?'passé':d+'/'+e.sets.length)+'</small></li>'}).join('')+'</ul>'
-  +'<p class="v2-sync" role="status">'+(pending?'Enregistrée sur ce téléphone, envoi en attente.':'Enregistrée.')+'</p><button type="button" class="v2-btn v2-btn--big" data-action="v2-close-summary">Retour à l’accueil</button></section>';
+  +'<p class="v2-sync" role="status">'+(pending?'Enregistrée sur ce téléphone, envoi en attente.':local?'Enregistrée sur ce téléphone.':'Enregistrée.')+'</p><button type="button" class="v2-btn v2-btn--big" data-action="v2-close-summary">Retour à l’accueil</button></section>';
 }
 
 function chart(points,metric){
@@ -115,7 +116,7 @@ function chart(points,metric){
 
 function progress({progress,selected,metric='weight',userExercises=[]}={}){
  const keys=Object.keys(progress?.byKey||{}).sort((a,b)=>nameOf(a,userExercises).localeCompare(nameOf(b,userExercises),'fr'));
- let html='<section class="v2-progress"><h1 class="v2-hello">Tes progrès</h1><dl class="v2-figures v2-figures--card"><div><b>'+(progress?.totals.sets||0)+'</b> <span>séries validées</span></div><div><b>'+Math.round(progress?.totals.volume||0).toLocaleString('fr-FR')+'</b> <span>kg de volume</span></div></dl>';
+ let html='<section class="v2-progress"><h1 class="v2-hello">Tes progrès</h1><dl class="v2-figures v2-figures--card"><div><b>'+(progress?.totals.sets||0)+'</b> <span>'+((progress?.totals.sets||0)>1?'séries validées':'série validée')+'</span></div><div><b>'+Math.round(progress?.totals.volume||0).toLocaleString('fr-FR')+'</b> <span>kg de volume</span></div></dl>';
  if(!keys.length)return html+'<p class="v2-card v2-empty">Ton graphique apparaîtra après tes premières séries validées.</p></section>';
  const key=keys.includes(selected)?selected:keys[0],points=progress.byKey[key];
  const best=points.reduce((m,p)=>p.weight!=null&&(m==null||p.weight>m)?p.weight:m,null);
@@ -135,5 +136,20 @@ function picker({query='',results=[],creating=false}={}){
  return html+'</div>';
 }
 
-return {home,chooser,session,machineSheet,moreSheet,idlePrompt,summary,progress,picker,clock,esc};
+function programme({cycle,userExercises=[],picking=null,query='',results=[],creating=false}={}){
+ let html='<section class="v2-progress"><h1 class="v2-hello">Mon programme</h1><p class="v2-muted">Ta suite de séances tourne en boucle'+(cycle?.weeks?' pendant '+cycle.weeks+' semaines':'')+'. Les changements s’appliquent dès la prochaine séance.</p>';
+ for(const s of cycle?.sessions||[]){
+  html+='<section class="v2-card v2-prog-session"><h2>'+esc(s.title)+'</h2><p class="v2-muted">'+esc((s.focus||[]).join(', '))+'</p><ol class="v2-prog-list">';
+  for(const e of s.exercises){
+   html+='<li><div class="v2-prog-name"><b>'+esc(nameOf(e.exercise_key,userExercises))+'</b><small>'+reps(e.reps_min,e.reps_max)+' reps · repos '+restText(e.rest_seconds)+'</small></div>'
+    +'<label class="v2-prog-sets">Séries<select class="v2-select" data-v2-sets="'+esc(e.id)+'">'+[1,2,3,4,5,6].map(n=>'<option '+(n===Number(e.sets)?'selected':'')+'>'+n+'</option>').join('')+'</select></label>'
+    +'<div class="v2-prog-actions"><button type="button" class="v2-link" data-action="v2-edit-ex" data-ce="'+esc(e.id)+'">Changer</button><button type="button" class="v2-link v2-link--muted" data-action="v2-remove-ex" data-ce="'+esc(e.id)+'">Retirer</button></div></li>';
+  }
+  html+='</ol><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-add-ex" data-session="'+esc(s.id)+'">'+icon('plus')+'Ajouter un exercice</button></section>';
+ }
+ if(picking)html+='<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="Choisir un exercice"><i class="v2-grab"></i><h2>'+(picking.ce?'Changer d’exercice':'Ajouter un exercice')+'</h2>'+picker({query,results,creating})+'</section></div>';
+ return html+'</section>';
+}
+
+return {programme,home,chooser,session,machineSheet,moreSheet,idlePrompt,summary,progress,picker,clock,esc};
 });

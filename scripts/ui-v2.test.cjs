@@ -14,6 +14,9 @@ assert.match(h,/Haut A/);assert.match(h,/Pectoraux/);assert.match(h,/Dos/);
 assert.match(h,/>2<\/b>\s*<span>exercices/);assert.match(h,/>5<\/b>\s*<span>séries/);assert.match(h,/48/);
 assert.match(h,/data-action="v2-start" data-session="s1"/);assert.match(h,/role="progressbar"/);assert.match(h,/Salut Nolan/);
 assert(!/quand même/.test(h));
+assert.match(h,/Première séance de ton cycle/);
+assert(!/class="v2-ring-value"/.test(UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},progress:0})),'anneau vide sans point parasite');
+assert.match(UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},progress:0.1,hasHistory:true}),/On reprend la suite/);
 // Garde-fou : phrase expliquée + « D'accord » / « Faire X quand même ».
 h=UI.home({next:{session:haut,planned:bas,reason:'recovery',message:'Tu as travaillé les jambes il y a 20 h (Bas A).'},cycle:{sessions:[haut,bas]},progress:0});
 assert.match(h,/Tu as travaillé les jambes il y a 20 h/);assert.match(h,/D’accord/);
@@ -35,10 +38,13 @@ assert.match(s,/Dernière fois : 80 kg × 8/);assert.match(s,/18:42/);
 assert.equal((s.match(/data-action="v2-set"/g)||[]).length,3,'un bouton par série');
 assert.match(s,/aria-label="Série 1 validée"/);assert.match(s,/aria-label="Valider la série 2"/);
 assert.match(s,/data-action="v2-machine"/);assert.match(s,/Machine prise/);
-assert.match(s,/data-field="weight" data-ex="x1" data-set="3"[^>]*value=""/,'charge non saisie : champ vide, pas 0');
+assert.match(s,/data-v2-field="weight" data-ex="x1" data-set="3"[^>]*value=""/,'charge non saisie : champ vide, pas 0');
 assert(!/En pause/.test(s));
 assert.match(UI.session({workout,index:0,elapsed:10,paused:true,pausedFor:180}),/En pause depuis 3 min/);
 assert.match(UI.session({workout,index:0,elapsed:10,last:{'developpe-couche-barre':{weight:null,reps:12}}}),/Dernière fois : — × 12/);
+assert(!/ data-field=/.test(s),'champs V2 distincts de l’ancien écran');
+// Séance en cours quittée : l'accueil propose de la reprendre.
+assert.match(UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},active:{title:'Haut A',done:2,total:5}}),/data-action="v2-back">[\s\S]*?Reprendre la séance/);
 // Repos automatique : +30 s et Passer.
 s=UI.session({workout,index:0,elapsed:10,rest:{remaining:95}});
 assert.match(s,/1:35/);assert.match(s,/data-action="v2-rest-plus"/);assert.match(s,/data-action="v2-rest-skip"/);
@@ -74,4 +80,11 @@ assert.match(k,/data-action="v2-pick"/);assert.match(k,/Développé couché/);as
 for(const html of [h,s,m,f,p,k])assert(noEmoji(html)&&!/onclick=/i.test(html),'pas d’emoji ni de gestionnaire en ligne');
 // Échappement.
 assert(!/<script>/.test(UI.home({next:{session:{...haut,title:'<script>'},planned:haut,reason:'sequence'},cycle:{sessions:[haut]}})));
+// Programme : exercices du cycle modifiables via le catalogue.
+const prog=UI.programme({cycle:{sessions:[haut,bas]}});
+assert.match(prog,/Haut A/);assert.match(prog,/data-action="v2-edit-ex" data-ce="e1"/);assert.match(prog,/data-action="v2-add-ex" data-session="s1"/);
+assert.match(prog,/data-action="v2-remove-ex" data-ce="e1"/);assert.match(prog,/data-v2-sets="e1"/);
+assert(!/<input[^>]*name="name"/.test(prog),'pas de saisie libre du nom');
+assert.match(UI.progress({progress:{totals:{sets:1,volume:480},byKey:{'hack-squat':[{date:'2026-11-10T11:00:00Z',weight:60,reps:8,volume:480}]}}}),/>1<\/b> <span>série validée<\/span>/);
+assert.match(UI.summary({workout:{...workout,duration_seconds:60},pending:0,local:true}),/Enregistrée sur ce téléphone\./);
 console.log('ui-v2 : ok');
