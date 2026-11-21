@@ -40,6 +40,7 @@ function review(cycle,workouts,setLogs,userExercises=[],now=Date.now()){
 
  const strengths=[],improve=[];
  if(regularity>=0.75)strengths.push('Régularité : '+done+' séances sur '+plan+' prévues.');
+ else if(regularity>=0.6)strengths.push('Régularité correcte : '+done+' séances sur '+plan+' prévues.');
  else improve.push(done+' séances sur '+plan+' prévues : un rythme plus léger t’aidera à tenir.');
  const best=[...up].sort((x,y)=>(y.weight??0)-(x.weight??0)||y.reps-x.reps).slice(0,3);
  for(const e of best)strengths.push(nameOf(e.key,userExercises)+' : '+(e.weight?'+'+fr(e.weight)+' kg':'+'+plural(e.reps,'répétition','répétitions'))+' depuis le début du cycle.');
@@ -61,8 +62,10 @@ function review(cycle,workouts,setLogs,userExercises=[],now=Date.now()){
 }
 
 // Réponses du cycle suivant : photographie du cycle en cours + changements. Le cycle en cours n'est jamais modifié.
-function nextAnswers(cycle,changes={}){
- const a={...JSON.parse(JSON.stringify(cycle?.answers_snapshot||{})),...changes};
+// Photographie vide (cycle repris de la V1) : on part des réponses du profil, sinon des valeurs par défaut du générateur.
+function nextAnswers(cycle,changes={},fallback={}){
+ const snap=cycle?.answers_snapshot&&Object.keys(cycle.answers_snapshot).length?cycle.answers_snapshot:{...fallback,daysCount:String(Math.min(6,Math.max(2,cycle?.sessions_per_week||Number(fallback.daysCount)||3)))};
+ const a={...JSON.parse(JSON.stringify(snap)),...changes};
  const n=Number(a.daysCount)||3;
  if(a.planMode==='free')a.days=[];
  else if(!Array.isArray(a.days)||a.days.length<n)a.days=[];

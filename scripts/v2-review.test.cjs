@@ -54,4 +54,9 @@ r=R.review(cycle,[],[],[],start+9*7*DAY);assert.equal(r.done,0);assert.equal(r.e
 const next=R.nextAnswers(cycle,{daysCount:'2',duration:'45'});
 assert.equal(next.daysCount,'2');assert.equal(next.duration,'45');assert.equal(next.goal,'muscle');assert.equal(cycle.answers_snapshot.daysCount,'3');
 const built=globalThis.NolsEngine.buildCycle(next);assert.equal(built.sessionsPerWeek,2);
+// 12 sur 18 : ni « rythme plus léger » ni contradiction avec « garder ».
+d=make(12);r=R.review(cycle,d.workouts,d.logs,[],start+9*7*DAY);assert(!r.improve.some(s=>/plus léger/.test(s)));assert(r.strengths.some(s=>/Régularité correcte/.test(s)));
+// Photographie vide (cycle repris de la V1) : on part du profil.
+const legacy={...cycle,answers_snapshot:{},sessions_per_week:4};
+const na=R.nextAnswers(legacy,{},{goal:'strength',duration:'75',daysCount:'3'});assert.equal(na.goal,'strength');assert.equal(na.duration,'75');assert.equal(na.daysCount,'4');
 console.log('v2-review : ok');

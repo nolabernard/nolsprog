@@ -217,7 +217,7 @@ function create(ctx){
   const active=w?{title:sessionTitle(w),done:w.exercises.reduce((n,e)=>n+e.sets.filter(s=>s.completed).length,0),total:w.exercises.reduce((n,e)=>n+e.sets.length,0)}:null;
   const cardio={target:(S.cycle.cardio||[]).reduce((n,c)=>n+c.minutes*c.per_week,0),minutes:C.cardioWeek(S.cardioLogs,now())};
   let html=UI.home({next,rhythm:C.rhythm(S.cycle,S.workouts,now()),cardio,hasHistory:S.workouts.some(x=>x.cycle_id===S.cycle.id&&x.status==='completed'),cycle:S.cycle,progress:C.cycleProgress(S.cycle,S.workouts),minutes:next?minutes(next.session):null,firstName:ctx.firstName?.()||'',dateText:dateText(),weekLine:weekLine(),record:recentRecord(),active});
-  if(!w&&Rv.due(S.cycle,S.workouts,now()))html=html.replace('<section class="v2-next"',UI.reviewCard()+'<section class="v2-next"');
+  if(!w&&(S.proposal||Rv.due(S.cycle,S.workouts,now())))html=html.replace('<section class="v2-next"',UI.reviewCard({proposal:Boolean(S.proposal)})+'<section class="v2-next"');
   if(S.sheet?.type==='choose')html+=UI.chooser({sessions:S.cycle.sessions,current:next?.session.id});
   return html+cardioSheet;
  }
@@ -313,7 +313,8 @@ function create(ctx){
    }
    case 'v2-close-summary':S.summary=null;S.view='home';saveUi();break;
    case 'v2-metric':S.metric=d.metric;break;
-   case 'v2-review':if(!S.cycle)return;S.view='review';S.sheet=null;break;
+   case 'v2-review':if(!S.cycle)return;if(current()){notice('Termine d’abord ta séance en cours.',true);return}S.view='review';S.sheet=null;break;
+   case 'v2-proposal-open':if(!S.proposal)return;S.view='proposal';S.sheet=null;break;
    case 'v2-review-next':if(!S.cycle)return;S.view='next';break;
    case 'v2-review-close':S.view='home';saveUi();break;
    case 'v2-proposal-accept':await acceptProposal();break;
@@ -338,17 +339,18 @@ function create(ctx){
  }
 // ----- Bilan et cycle suivant (proposé localement, activé seulement après validation) -----
  const reviewNow=()=>Rv.review(S.cycle,S.workouts,S.setLogs,S.userExercises,now());
- function nextDefaults(){return Rv.nextAnswers(S.cycle,reviewNow().recommendation.changes)}
+ const fallbackAnswers=()=>({...(G().NolsEngine.defaults||{}),...(ctx.answers?.()||{})});
+ function nextDefaults(){return Rv.nextAnswers(S.cycle,reviewNow().recommendation.changes,fallbackAnswers())}
  const NEXT_FIELDS=['daysCount','duration','method','goal','level','equipment','avoid'];
  function proposeNext(form={}){
   if(!S.cycle)return false;
   const changes={};for(const k of NEXT_FIELDS)if(form[k]!=null)changes[k]=String(form[k]).trim().slice(0,200);
   const weeks=Math.min(8,Math.max(6,Number(form.weeks)||6));
-  const answers=Rv.nextAnswers(S.cycle,changes);
+  const answers=Rv.nextAnswers(S.cycle,changes,fallbackAnswers());
   try{
    const built=G().NolsEngine.buildCycle(answers);
    const next=C.fromEngine({...built,weeks,answers:built.answers||answers},{uuid,startedAt:iso(now())});
-   next.status='proposed';
+   next.status='proposed';next.from_cycle=S.cycle.id;
    // Le cardio prévu continue dans le cycle suivant.
    next.cardio=(S.cycle.cardio||[]).map(c=>({id:uuid(),cycle_id:next.id,type:c.type,minutes:c.minutes,per_week:c.per_week}));
    S.proposal=next;S.nextAnswers=answers;S.nextWeeks=weeks;write(K.proposal,next);S.view='proposal';
@@ -358,9 +360,11 @@ function create(ctx){
  async function acceptProposal(){
   const next=S.proposal;if(!next||!S.cycle)return;
   if(current()){notice('Termine d’abord ta séance en cours.',true);return}
+  // Le programme a changé ailleurs (autre appareil) depuis ce bilan : on ne remplace pas un cycle qu'on n'a pas évalué.
+  if(next.from_cycle!==S.cycle.id){S.proposal=null;storage.removeItem(K.proposal);S.view='home';saveUi();notice('Ton programme a changé depuis ce bilan. Refais le bilan pour préparer le cycle suivant.',true);return}
   if(!await confirm('Ton cycle actuel sera archivé (son historique est conservé) et le nouveau commencera dès ta prochaine séance.',{title:'Démarrer ce cycle ?',ok:'Démarrer',cancel:'Pas encore'}))return;
   const old=S.cycle;old.status='archived';old.ended_at=iso(now());
-  next.status='active';next.started_at=iso(now());
+  next.status='active';next.started_at=iso(now());delete next.from_cycle;
   // Archivé d'abord : un seul cycle actif par compte.
   if(api&&userId){queueRows({cycles:[{...old,user_id:userId}]});queueRows(C.toRows(next,userId))}
   S.cycle=next;S.proposal=null;S.nextAnswers=null;S.nextWeeks=null;storage.removeItem(K.proposal);

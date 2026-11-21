@@ -183,7 +183,9 @@ function progress({progress,selected,metric='weight',userExercises=[],cardio=nul
 }
 
 // ----- Bilan de fin de cycle (lot 6) -----
-function reviewCard(){return '<section class="v2-card v2-review-cta"><h2 class="v2-card-title">'+icon('trophy','v2-ic v2-ic--sm')+'Ton cycle est terminé</h2><p class="v2-muted">Fais le bilan et prépare le cycle suivant. Rien ne change tant que tu n’as pas validé.</p><button type="button" class="v2-btn" data-action="v2-review">Voir mon bilan</button></section>'}
+function reviewCard({proposal=false}={}){
+ if(proposal)return '<section class="v2-card v2-review-cta"><h2 class="v2-card-title">'+icon('trophy','v2-ic v2-ic--sm')+'Ton prochain cycle est prêt</h2><p class="v2-muted">Il n’est pas encore actif. Relis-le et valide-le quand tu veux.</p><button type="button" class="v2-btn" data-action="v2-proposal-open">Voir le programme proposé</button></section>';
+ return '<section class="v2-card v2-review-cta"><h2 class="v2-card-title">'+icon('trophy','v2-ic v2-ic--sm')+'Ton cycle est terminé</h2><p class="v2-muted">Fais le bilan et prépare le cycle suivant. Rien ne change tant que tu n’as pas validé.</p><button type="button" class="v2-btn" data-action="v2-review">Voir mon bilan</button></section>'}
 const listBlock=(title,items)=>items.length?'<section class="v2-card"><h2 class="v2-card-title">'+title+'</h2><ul class="v2-bullets">'+items.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></section>':'';
 function review({review:r,userExercises=[]}={}){
  const rec=r.recommendation,evo=[...r.evolutions].sort((a,b)=>(b.weight??0)-(a.weight??0)).slice(0,6);
