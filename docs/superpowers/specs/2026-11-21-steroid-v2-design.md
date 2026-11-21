@@ -96,6 +96,11 @@ Bouton « Machine prise » dans la séance → panneau, dans cet ordre :
 - Sans action depuis 20 min, au retour : « Tu étais en pause ? » → ne pas compter ce temps.
 - La séance est sauvegardée en continu (localement puis Supabase) et reprend après fermeture ou changement d'appareil.
 
+### 6.4 bis Choix d'interface (propriétaire)
+
+Proposition **P1 « Guidé »** retenue (canevas, page « V2 — 3 propositions ») : un exercice à la fois en plein écran, bouton « Machine prise » toujours visible.
+Accueil retravaillé : grande carte « Prochaine séance » (nom, muscles, exercices, séries, durée, anneau d'avancée du cycle, bouton Démarrer), phrase du coach qui explique le choix du jour et le garde-fou avec « Changer de séance », séances de la semaine faites et à venir, record et régularité.
+
 ### 6.5 Écran de séance (direction A)
 
 Un exercice à la fois, plein écran : nom, objectif (séries × répétitions, repos), « Dernière fois : 80 kg × 8 ».
