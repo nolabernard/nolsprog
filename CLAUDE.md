@@ -56,3 +56,13 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
 - Textes de l'interface en français, ton direct.
 - Maquette de base 390 × 844 px, cibles tactiles ≥ 44 px, focus visible,
   respect de `prefers-reduced-motion`, icônes SVG au trait (pas d'emoji).
+
+## Avancement V2 (cahier des charges : `docs/cahier-des-charges-v2.md`)
+Conception : `docs/superpowers/specs/2026-11-21-steroid-v2-design.md` (interface retenue : proposition P1 « Guidé »,
+maquettes sur le canevas « STÉROÏDE — refonte UX »). Plans : `docs/superpowers/plans/`.
+- Lot 1 Fondations : fait. Tables V2 créées dans Supabase et données V1 copiées (`select public.v2_copy_legacy()`,
+  rejouable ; correspondances des noms dans `public.v2_name_map`). L'app écrit encore dans les tables V1 :
+  relancer la copie au basculement (lot 3).
+- Lot 2 Générateur et cycles : fait (`buildCycle`, moteur `{version: 2}`, tests sur 4 050 combinaisons).
+- Lots 3 à 7 : à faire (séance P1 + bascule V2, planning en suite, historique, coach et bilan, rappels).
+- Migrations Supabase : uniquement sur accord explicite du propriétaire (« applique les migrations »).
