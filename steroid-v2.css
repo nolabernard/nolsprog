@@ -248,6 +248,12 @@ button:active{transform:translateY(1px)}
 .v2-results{display:flex;flex-direction:column;gap:8px}
 .v2-create{display:flex;flex-direction:column;gap:10px}
 
+/* Bilan de cycle (lot 6) */
+.v2-kicker--light{color:var(--accent)}
+.v2-bullets{margin:6px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.v2-review-cta .v2-card-title{display:flex;align-items:center;gap:8px}.v2-review-cta .v2-btn{margin-top:10px;width:100%}
+.v2-next-form{gap:8px}.v2-next-form .v2-btn{margin-top:12px}
+
 /* Historique et progrès (lot 5) */
 .v2-seg--2{grid-template-columns:repeat(2,1fr)}
 .v2-advice{display:flex;align-items:flex-start;gap:8px;margin:2px 0 0;font-size:14px;color:var(--accent)}.v2-advice .v2-ic{flex:none;margin-top:2px}

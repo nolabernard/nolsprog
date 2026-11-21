@@ -810,6 +810,7 @@ root.addEventListener('change',async e=>{const el=e.target;if(el.dataset?.v2Sets
 root.addEventListener('submit',async e=>{
  if('v2Cardio' in (e.target?.dataset||{})){e.preventDefault();const f=new FormData(e.target);await V2?.saveCardio({type:f.get('type'),minutes:f.get('minutes'),workout:f.get('workout')});return}
  if('v2CardioPlan' in (e.target?.dataset||{})){e.preventDefault();const f=new FormData(e.target);await V2?.addCardioPlan({type:f.get('type'),minutes:f.get('minutes'),per_week:f.get('per_week')});return}
+ if('v2Next' in (e.target?.dataset||{})){e.preventDefault();V2?.proposeNext(Object.fromEntries(new FormData(e.target)));return}
  if('v2Create' in (e.target?.dataset||{})){e.preventDefault();const f=new FormData(e.target);await V2?.createExercise({name:f.get('name'),muscle:f.get('muscle'),pattern:f.get('pattern')});return}
  if(e.target.id==='settings-form'){e.preventDefault();await saveAccountSettings(e.target);return}
  if(e.target.id==='password-form'){e.preventDefault();const password=String(new FormData(e.target).get('password')||'');if(password.length<8)return;try{await req('/auth/v1/user',{method:'PUT',token:token(),body:{password}});A.mode='login';await loadCloud();setNotice('Mot de passe enregistré')}catch(err){setNotice('Impossible de définir le mot de passe : '+err.message,true)}return}

@@ -182,6 +182,42 @@ function progress({progress,selected,metric='weight',userExercises=[],cardio=nul
  return html;
 }
 
+// ----- Bilan de fin de cycle (lot 6) -----
+function reviewCard(){return '<section class="v2-card v2-review-cta"><h2 class="v2-card-title">'+icon('trophy','v2-ic v2-ic--sm')+'Ton cycle est terminé</h2><p class="v2-muted">Fais le bilan et prépare le cycle suivant. Rien ne change tant que tu n’as pas validé.</p><button type="button" class="v2-btn" data-action="v2-review">Voir mon bilan</button></section>'}
+const listBlock=(title,items)=>items.length?'<section class="v2-card"><h2 class="v2-card-title">'+title+'</h2><ul class="v2-bullets">'+items.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></section>':'';
+function review({review:r,userExercises=[]}={}){
+ const rec=r.recommendation,evo=[...r.evolutions].sort((a,b)=>(b.weight??0)-(a.weight??0)).slice(0,6);
+ const one=x=>x.weight==null?x.reps+' reps':kg(x.weight)+' × '+x.reps;
+ return '<section class="v2-progress v2-review"><button type="button" class="v2-link v2-back" data-action="v2-review-close">'+icon('left','v2-ic v2-ic--sm')+'Accueil</button><h1 class="v2-hello">Bilan du cycle</h1>'
+  +'<dl class="v2-figures v2-figures--dark"><div><b>'+r.done+'/'+r.planned+'</b> <span>séances faites</span></div><div><b>'+r.weeks+'</b> <span>semaines</span></div><div><b>'+(r.rpe==null?'—':kg(r.rpe))+'</b> <span>ressenti moyen</span></div></dl>'
+  +listBlock('Points forts',r.strengths)+listBlock('À améliorer',r.improve)
+  +(evo.length?'<section class="v2-card"><h2 class="v2-card-title">Évolution par exercice</h2><ul class="v2-compare">'+evo.map(e=>'<li><div><b>'+esc(nameOf(e.key,userExercises))+'</b></div><span>'+one(e.from)+' → '+one(e.to)+'</span>'+(e.weight?'<span class="v2-diff'+(e.weight>0?' is-up':'')+'">'+(e.weight>0?'+':'−')+kg(Math.abs(e.weight))+' kg</span>':e.reps?'<span class="v2-diff'+(e.reps>0?' is-up':'')+'">'+(e.reps>0?'+':'−')+Math.abs(e.reps)+' rép.</span>':'<span class="v2-diff">=</span>')+'</li>').join('')+'</ul></section>':'')
+  +'<section class="v2-card v2-advice-card"><h2 class="v2-card-title">'+icon('coach','v2-ic v2-ic--sm')+'Ma recommandation : '+esc(rec.title.toLowerCase())+'</h2><p>'+esc(rec.text)+'</p></section>'
+  +'<button type="button" class="v2-btn v2-btn--big" data-action="v2-review-next">Préparer le cycle suivant</button><p class="v2-muted">Tu pourras tout modifier avant de valider. Ton historique est conservé.</p></section>';
+}
+function selectField(name,label,options,value){return '<label class="v2-field-label" for="v2-next-'+name+'">'+label+'</label><select id="v2-next-'+name+'" class="v2-select" name="'+name+'">'+options.map(([v,t])=>'<option value="'+esc(v)+'"'+(String(v)===String(value??'')?' selected':'')+'>'+esc(t)+'</option>').join('')+'</select>'}
+function nextForm({answers={},weeks=6,methods={},recommendation=null}={}){
+ const E=globalThis.NolsEngine,opt=k=>(E?.steps||[]).flatMap(s=>s.fields).find(f=>f.key===k)?.options||[];
+ return '<section class="v2-progress v2-review"><button type="button" class="v2-link v2-back" data-action="v2-review">'+icon('left','v2-ic v2-ic--sm')+'Bilan</button><h1 class="v2-hello">Cycle suivant</h1>'
+  +'<p class="v2-muted">Seulement ce qui a pu changer. '+(recommendation?.code&&recommendation.code!=='keep'?'Ma recommandation est déjà appliquée.':'')+'</p>'
+  +'<form class="v2-create v2-next-form" data-v2-next>'
+  +selectField('daysCount','Séances par semaine',opt('daysCount'),answers.daysCount)
+  +selectField('duration','Durée par séance',opt('duration'),answers.duration)
+  +selectField('method','Méthode',[['auto','Choix automatique'],...Object.entries(methods).map(([k,v])=>[k,v.name])],answers.method||'auto')
+  +selectField('goal','Objectif',opt('goal'),answers.goal)
+  +selectField('level','Expérience',opt('level'),answers.level)
+  +selectField('equipment','Lieu / équipement',opt('equipment'),answers.equipment)
+  +selectField('weeks','Durée du cycle',[['6','6 semaines'],['7','7 semaines'],['8','8 semaines']],weeks)
+  +'<label class="v2-field-label" for="v2-next-avoid">Exercices à éviter</label><input id="v2-next-avoid" class="v2-select" name="avoid" maxlength="200" value="'+esc(answers.avoid||'')+'" placeholder="Ex. tractions, dips">'
+  +'<button type="submit" class="v2-btn v2-btn--big">Voir le programme proposé</button></form></section>';
+}
+function proposal({cycle,userExercises=[],methods={}}={}){
+ return '<section class="v2-progress v2-review"><button type="button" class="v2-link v2-back" data-action="v2-review-next">'+icon('left','v2-ic v2-ic--sm')+'Modifier</button><p class="v2-next-kicker v2-kicker--light">Proposé · pas encore actif</p><h1 class="v2-hello">'+esc(methods[cycle.method]?.name||'Nouveau cycle')+'</h1>'
+  +'<p class="v2-muted">'+cycle.weeks+' semaines · '+plural(cycle.sessions_per_week,'séance','séances')+' par semaine · suite de '+plural(cycle.sessions.length,'séance','séances')+' en boucle.</p>'
+  +cycle.sessions.map(s=>'<section class="v2-card v2-prog-session"><h2>'+esc(s.code+' · '+s.title)+'</h2><ol class="v2-prog-list">'+s.exercises.map(e=>'<li><div class="v2-prog-name"><b>'+esc(nameOf(e.exercise_key,userExercises))+'</b><small>'+e.sets+' × '+reps(e.reps_min,e.reps_max)+' reps · repos '+restText(e.rest_seconds)+'</small></div></li>').join('')+'</ol></section>').join('')
+  +'<button type="button" class="v2-btn v2-btn--big" data-action="v2-proposal-accept">Valider et démarrer ce cycle</button><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-review-close">Plus tard</button><p class="v2-muted">Ton cycle actuel reste actif tant que tu n’as pas validé. Ton historique est conservé.</p></section>';
+}
+
 function picker({query='',results=[],creating=false}={}){
  let html='<div class="v2-picker"><label class="v2-search">'+icon('search','v2-ic v2-ic--sm')+'<input type="search" data-v2-search placeholder="Chercher un exercice (ex. dvlp couché)" value="'+esc(query)+'" aria-label="Chercher un exercice" autocomplete="off"></label><div class="v2-results">'
   +results.map(r=>{const e=r.entry||r;return '<button type="button" class="v2-opt" data-action="v2-pick" data-key="'+esc(e.key)+'"><span><b>'+esc(e.name)+'</b><small>'+esc(e.muscle||'')+' · '+(e.role==='base'?'Base':'Finition')+'</small></span></button>'}).join('')
@@ -206,9 +242,10 @@ function programme({cycle,userExercises=[],picking=null,query='',results=[],crea
  html+='<section class="v2-card v2-prog-session"><h2>Cardio</h2><p class="v2-muted">Fait seul un jour de repos ou en fin de séance. Noté à part des séries.</p>'
   +(cc.length?'<ul class="v2-prog-list">'+cc.map(c=>'<li><div class="v2-prog-name"><b>'+esc(cardioName(c.type))+' · '+Number(c.minutes)+' min · '+Number(c.per_week)+' fois par semaine</b></div><div class="v2-prog-actions"><button type="button" class="v2-link v2-link--muted" data-action="v2-cardio-plan-remove" data-id="'+esc(c.id)+'">Retirer</button></div></li>').join('')+'</ul>':'')
   +'<form class="v2-cardio-plan" data-v2-cardio-plan><select class="v2-select" name="type" aria-label="Activité">'+CARDIO.map(([v,t])=>'<option value="'+v+'">'+t+'</option>').join('')+'</select><input class="v2-select" name="minutes" type="number" inputmode="numeric" min="1" max="600" value="30" aria-label="Minutes"><select class="v2-select" name="per_week" aria-label="Fois par semaine">'+[1,2,3,4,5,6,7].map(n=>'<option value="'+n+'"'+(n===2?' selected':'')+'>'+n+' × / sem.</option>').join('')+'</select><button type="submit" class="v2-btn v2-btn--ghost">'+icon('plus')+'Ajouter du cardio</button></form></section>';
+ if(cycle)html+='<button type="button" class="v2-btn v2-btn--ghost" data-action="v2-review">'+icon('trophy')+'Faire le bilan de ce cycle</button>';
  if(picking)html+='<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="Choisir un exercice"><i class="v2-grab"></i><h2>'+(picking.ce?'Changer d’exercice':'Ajouter un exercice')+'</h2>'+picker({query,results,creating})+'</section></div>';
  return html+'</section>';
 }
 
-return {cardioSheet,programme,home,chooser,session,machineSheet,moreSheet,idlePrompt,summary,progress,picker,clock,esc};
+return {reviewCard,review,nextForm,proposal,cardioSheet,programme,home,chooser,session,machineSheet,moreSheet,idlePrompt,summary,progress,picker,clock,esc};
 });

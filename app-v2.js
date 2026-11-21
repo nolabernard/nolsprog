@@ -12,12 +12,12 @@ const clone=v=>JSON.parse(JSON.stringify(v));
 
 function create(ctx){
  const {storage,api,userId,now=()=>Date.now(),uuid=()=>G().crypto.randomUUID(),render=()=>{},notice=()=>{},confirm=async()=>true}=ctx;
- const C=G().SteroidCycle,H=G().SteroidHistory,UI=G().SteroidUI,Planner=G().SteroidPlanner,Cat=G().SteroidCatalogue;
+ const C=G().SteroidCycle,H=G().SteroidHistory,Rv=G().SteroidReview,UI=G().SteroidUI,Planner=G().SteroidPlanner,Cat=G().SteroidCatalogue;
  const owner=userId||'guest';
- const K={cycle:'nolsprog-v2-cycle:'+owner,history:'nolsprog-v2-history:'+owner,ui:'nolsprog-v2-ui:'+owner,outbox:'nolsprog-v2-outbox:'+owner};
+ const K={cycle:'nolsprog-v2-cycle:'+owner,history:'nolsprog-v2-history:'+owner,ui:'nolsprog-v2-ui:'+owner,outbox:'nolsprog-v2-outbox:'+owner,proposal:'nolsprog-v2-proposal:'+owner};
  const read=(k,d)=>{try{const v=JSON.parse(storage.getItem(k)||'null');return v??d}catch{return d}};
  const write=(k,v)=>{try{storage.setItem(k,JSON.stringify(v))}catch{notice('Espace de stockage plein sur ce téléphone.',true)}};
- const S={cardioLogs:[],cycle:null,workouts:[],setLogs:[],userExercises:[],store:null,view:'home',index:0,sheet:null,rest:null,summary:null,metric:'weight',selected:null,tab:'exercises',open:null,truncated:false,advice:null,picking:null,query:'',creating:false,building:false};
+ const S={cardioLogs:[],cycle:null,workouts:[],setLogs:[],userExercises:[],store:null,view:'home',index:0,sheet:null,rest:null,summary:null,metric:'weight',selected:null,tab:'exercises',open:null,truncated:false,advice:null,proposal:null,nextAnswers:null,picking:null,query:'',creating:false,building:false};
  let ui=read(K.ui,{lastAction:null,rest:null,view:'home',index:0});
  let outbox=read(K.outbox,[]); // lignes de programme à envoyer (cycles, séances, exercices prévus, exercices perso)
  let flushTimer=null,flushing=null;
@@ -101,7 +101,7 @@ function create(ctx){
   S.store=G().SteroidWorkout.createWorkoutStore({storage,api:remote,userId:owner,now,uuid,onReject:(t,row,err)=>rejected(t,err)});
   const local=read(K.history,null);
   if(local){S.workouts=local.workouts||[];S.setLogs=local.setLogs||[];S.truncated=Boolean(local.truncated)||S.setLogs.length>=5000||S.workouts.length>=500;S.userExercises=local.userExercises||[];S.cardioLogs=local.cardioLogs||[]}
-  S.cycle=read(K.cycle,null);
+  S.cycle=read(K.cycle,null);S.proposal=read(K.proposal,null);
   S.view=S.store.current()?(ui.view==='home'?'home':'session'):'home';S.index=S.store.current()?ui.index||0:0;S.rest=ui.rest||null;
   if(api&&userId){fresh=refresh();if(!S.cycle)await fresh;else fresh.then(()=>render())}
   else if(!S.cycle){build();persistLocal()}
@@ -115,7 +115,9 @@ function create(ctx){
    S.setLogs=[...loaded.setLogs,...S.setLogs.filter(r=>!ids.has(r.workout_id))];
    S.userExercises=mergeByKey(loaded.userExercises,S.userExercises);
    const cids=new Set((loaded.cardioLogs||[]).map(x=>x.id));S.cardioLogs=[...(loaded.cardioLogs||[]),...S.cardioLogs.filter(x=>!cids.has(x.id))];
-   if(loaded.cycle){
+   // Nouveau cycle validé sur cet appareil, pas encore envoyé : le serveur renvoie encore l'ancien, on garde le nôtre.
+   const localActive=outbox.some(x=>x.table==='cycles'&&!x.op&&x.row.status==='active'&&x.row.id===S.cycle?.id&&x.row.id!==loaded.cycle?.id);
+   if(loaded.cycle&&!localActive){
     // Cardio prévu modifié sur l'appareil et pas encore envoyé : on le réapplique sur la version du serveur.
     if(S.cycle?.id===loaded.cycle.id){
      const gone=new Set(outbox.filter(x=>x.table==='cycle_cardio'&&x.op==='delete').map(x=>x.id));
@@ -192,6 +194,9 @@ function create(ctx){
   if(!S.cycle)return UI.home({next:null,cycle:null,building:S.building,retry:loadFailed});
   const cardioSheet=S.sheet?.type==='cardio'?UI.cardioSheet({workoutId:S.sheet.workout||''}):'';
   if(S.view==='summary'&&S.summary)return UI.summary({records:H.newRecords(S.summary.id,S.setLogs,S.workouts,{truncated:S.truncated}),workout:S.summary,pending:pending(),local:!(api&&userId),userExercises:S.userExercises})+cardioSheet;
+  if(S.view==='review')return UI.review({review:Rv.review(S.cycle,S.workouts,S.setLogs,S.userExercises,now()),userExercises:S.userExercises});
+  if(S.view==='next')return UI.nextForm({answers:S.nextAnswers||nextDefaults(),weeks:S.nextWeeks||S.cycle.weeks||6,methods:G().NolsEngine.methods,recommendation:reviewNow().recommendation});
+  if(S.view==='proposal'&&S.proposal)return UI.proposal({cycle:S.proposal,userExercises:S.userExercises,methods:G().NolsEngine.methods});
   const w=current();
   if(w&&S.view==='session'){
    const items=list();S.index=Math.max(0,Math.min(S.index,items.length-1));
@@ -212,6 +217,7 @@ function create(ctx){
   const active=w?{title:sessionTitle(w),done:w.exercises.reduce((n,e)=>n+e.sets.filter(s=>s.completed).length,0),total:w.exercises.reduce((n,e)=>n+e.sets.length,0)}:null;
   const cardio={target:(S.cycle.cardio||[]).reduce((n,c)=>n+c.minutes*c.per_week,0),minutes:C.cardioWeek(S.cardioLogs,now())};
   let html=UI.home({next,rhythm:C.rhythm(S.cycle,S.workouts,now()),cardio,hasHistory:S.workouts.some(x=>x.cycle_id===S.cycle.id&&x.status==='completed'),cycle:S.cycle,progress:C.cycleProgress(S.cycle,S.workouts),minutes:next?minutes(next.session):null,firstName:ctx.firstName?.()||'',dateText:dateText(),weekLine:weekLine(),record:recentRecord(),active});
+  if(!w&&Rv.due(S.cycle,S.workouts,now()))html=html.replace('<section class="v2-next"',UI.reviewCard()+'<section class="v2-next"');
   if(S.sheet?.type==='choose')html+=UI.chooser({sessions:S.cycle.sessions,current:next?.session.id});
   return html+cardioSheet;
  }
@@ -307,6 +313,10 @@ function create(ctx){
    }
    case 'v2-close-summary':S.summary=null;S.view='home';saveUi();break;
    case 'v2-metric':S.metric=d.metric;break;
+   case 'v2-review':if(!S.cycle)return;S.view='review';S.sheet=null;break;
+   case 'v2-review-next':if(!S.cycle)return;S.view='next';break;
+   case 'v2-review-close':S.view='home';saveUi();break;
+   case 'v2-proposal-accept':await acceptProposal();break;
    case 'v2-progress-tab':S.tab=d.tab==='sessions'?'sessions':'exercises';S.open=null;break;
    case 'v2-history-open':S.open=d.id||null;break;
    case 'v2-history-close':S.open=null;break;
@@ -325,6 +335,37 @@ function create(ctx){
    default:return;
   }
   render();
+ }
+// ----- Bilan et cycle suivant (proposé localement, activé seulement après validation) -----
+ const reviewNow=()=>Rv.review(S.cycle,S.workouts,S.setLogs,S.userExercises,now());
+ function nextDefaults(){return Rv.nextAnswers(S.cycle,reviewNow().recommendation.changes)}
+ const NEXT_FIELDS=['daysCount','duration','method','goal','level','equipment','avoid'];
+ function proposeNext(form={}){
+  if(!S.cycle)return false;
+  const changes={};for(const k of NEXT_FIELDS)if(form[k]!=null)changes[k]=String(form[k]).trim().slice(0,200);
+  const weeks=Math.min(8,Math.max(6,Number(form.weeks)||6));
+  const answers=Rv.nextAnswers(S.cycle,changes);
+  try{
+   const built=G().NolsEngine.buildCycle(answers);
+   const next=C.fromEngine({...built,weeks,answers:built.answers||answers},{uuid,startedAt:iso(now())});
+   next.status='proposed';
+   // Le cardio prévu continue dans le cycle suivant.
+   next.cardio=(S.cycle.cardio||[]).map(c=>({id:uuid(),cycle_id:next.id,type:c.type,minutes:c.minutes,per_week:c.per_week}));
+   S.proposal=next;S.nextAnswers=answers;S.nextWeeks=weeks;write(K.proposal,next);S.view='proposal';
+  }catch(e){notice('Programme impossible à préparer : '+e.message,true);return false}
+  render();return true;
+ }
+ async function acceptProposal(){
+  const next=S.proposal;if(!next||!S.cycle)return;
+  if(current()){notice('Termine d’abord ta séance en cours.',true);return}
+  if(!await confirm('Ton cycle actuel sera archivé (son historique est conservé) et le nouveau commencera dès ta prochaine séance.',{title:'Démarrer ce cycle ?',ok:'Démarrer',cancel:'Pas encore'}))return;
+  const old=S.cycle;old.status='archived';old.ended_at=iso(now());
+  next.status='active';next.started_at=iso(now());
+  // Archivé d'abord : un seul cycle actif par compte.
+  if(api&&userId){queueRows({cycles:[{...old,user_id:userId}]});queueRows(C.toRows(next,userId))}
+  S.cycle=next;S.proposal=null;S.nextAnswers=null;S.nextWeeks=null;storage.removeItem(K.proposal);
+  S.userExercises=mergeByKey(S.userExercises,next.user_exercises||[]);
+  persistLocal();S.view='home';saveUi();notice('Nouveau cycle lancé. Bonne séance !');
  }
 // ----- Cardio (noté à part des séries) -----
  const CARDIO_TYPES=['marche','course','velo','elliptique','rameur','natation','escaliers','autre'];
@@ -365,7 +406,7 @@ function create(ctx){
   if(S.rest&&left===0){S.rest=null;saveUi();return {rest:0,done:true,elapsed:S.store?.elapsedSeconds()||0}}
   return {rest:left,elapsed:S.store?.elapsedSeconds()||0,idle:idleMinutes()};
  }
- return {saveCardio,addCardioPlan,init,rebuild,whenFresh:()=>fresh,ready:()=>Boolean(S.cycle),todayHTML,statsHTML,programmeHTML,handle,input,change,tick,createExercise,flushNow,pending,
+ return {proposeNext,saveCardio,addCardioPlan,init,rebuild,whenFresh:()=>fresh,ready:()=>Boolean(S.cycle),todayHTML,statsHTML,programmeHTML,handle,input,change,tick,createExercise,flushNow,pending,
   inSession:()=>Boolean(current())&&S.view==='session',busy:()=>Boolean(current())||pending()>0,state:()=>S};
 }
 return {create};
