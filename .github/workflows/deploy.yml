@@ -28,7 +28,7 @@ jobs:
       - name: Build versioned mobile site
         run: |
           mkdir -p dist
-          cp *.js *.css *.html *.webmanifest *.svg dist/
+          cp *.js *.css *.html *.webmanifest *.svg *.png dist/
           python3 - <<'PY'
           import json, os, pathlib, re
           sha = os.environ['GITHUB_SHA']

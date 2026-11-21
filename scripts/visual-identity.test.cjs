@@ -8,7 +8,7 @@ assert(html.includes('href="./steroid-v2.css"'));
 assert(v2.includes('font-family:Archivo'));
 assert(v2.includes('font-family:Inter'));
 assert(v2.includes('prefers-reduced-motion:reduce'));
-assert(html.includes('steroid-icon.svg'));
+assert(html.includes('apple-touch-icon.png'));
 assert(svg.includes('viewBox="0 0 158 160"'));
 assert.equal(manifest.theme_color,'#0B4D3B');
 assert(manifest.icons.some(x=>x.src==='./steroid-icon.svg'));
