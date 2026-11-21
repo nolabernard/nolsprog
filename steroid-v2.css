@@ -35,7 +35,7 @@ button{color:inherit}
 .hero .track i{background:#E6EFE5;border-radius:99px}
 .section-title{margin:28px 0 12px}
 .section-title h3{font-family:Archivo,Inter,sans-serif;font-size:23px;font-weight:900;text-transform:uppercase;letter-spacing:-.4px;color:var(--text)}
-.exercise,.edit-day,.stat,.chart,.rest,.import-panel,.settings-panel,.cardio-panel,.journal-entry,.next-session-hint,.simple-progress,.program-day,.empty-chart{
+.exercise,.edit-day,.stat,.chart,.rest,.import-panel,.settings-panel,.cardio-panel,.next-session-hint,.simple-progress,.program-day,.empty-chart{
  background:var(--surface);border:1px solid var(--line);color:var(--text);border-radius:20px;box-shadow:var(--shadow)
 }
 .exercise,.edit-day{margin:10px 0}
@@ -43,13 +43,13 @@ button{color:inherit}
 .ex-name strong,.program-day-label strong{color:var(--text)}
 .ex-name small,.program-day-label small,.hint,.previous,.session-estimate,.session-previous-note{color:var(--muted)}
 .set-row{border-color:var(--line)}
-.set-row input,.edit-fields input,.edit-name,.select,.auth-input,.profile-field .select,.cardio-entry input,.program-cardio-row input{
+.set-row input,.edit-fields input,.edit-name,.select,.profile-field .select,.cardio-entry input,.program-cardio-row input{
  min-height:46px;background:var(--bg);border:1px solid var(--line);border-radius:12px;color:var(--text)
 }
 .set-row input::placeholder{color:#75867D}
 .check{width:46px;height:46px;min-width:46px;border-radius:14px;background:var(--raised);border:1px solid var(--line);color:var(--accent);font-weight:900}
 .check.checked{background:var(--accent);border-color:var(--accent);color:var(--surface)}
-.fit-action,.primary,.wizard-actions .primary,.program-cardio-add button{
+.fit-action,.primary,.program-cardio-add button{
  min-height:52px;border:1px solid var(--accent);border-radius:16px;background:var(--accent);color:var(--surface);font-weight:850;box-shadow:0 8px 18px rgba(11,77,59,.18)
 }
 .fit-outline,.workout-action,.journal-edit,.settings-links button,.program-cardio-row button{
@@ -125,3 +125,19 @@ button:active{transform:translateY(1px)}
 @media(max-width:380px){.archive-calendar{gap:4px}.archive-day{min-height:38px;border-radius:10px}}
 
 .effort-panel{margin:16px 0;padding:15px;border:1px solid var(--line);border-radius:16px;background:var(--raised)}.effort-panel label{display:block;margin-bottom:8px;color:var(--text);font-size:13px;font-weight:800}.effort-panel .select{margin:0;min-height:48px}.effort-panel small{display:block;margin-top:7px;color:var(--muted);font-size:11px;line-height:1.5}
+
+/* Panneaux de dialogue intégrés (ui-dialog.js) */
+.steroid-dialog{border:0;padding:0;background:transparent;width:min(calc(100% - 32px),420px);max-width:none;color:var(--text)}
+.steroid-dialog::backdrop{background:rgba(7,53,40,.55)}
+.steroid-dialog-form{background:var(--surface);border-radius:24px;padding:24px;display:grid;gap:10px;box-shadow:var(--shadow)}
+.steroid-dialog h2{margin:0;font-family:Archivo,Inter,sans-serif;font-weight:900;font-size:22px;line-height:1.15;color:var(--accent)}
+.steroid-dialog-message{margin:0;color:var(--muted);line-height:1.5}
+.steroid-dialog label{font-weight:700;font-size:14px;margin-top:6px}
+.steroid-dialog input,.steroid-dialog select{min-height:48px;width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:14px;background:var(--bg);padding:0 14px;color:var(--text);font-size:16px}
+.steroid-dialog-actions{display:grid;gap:8px;margin-top:10px}
+.steroid-dialog-actions button{min-height:52px;border-radius:16px;border:1px solid var(--line);background:var(--bg);font-weight:800;cursor:pointer}
+.steroid-dialog-actions .primary{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.steroid-dialog-actions .danger{background:var(--danger);color:#fff;border-color:var(--danger)}
+.steroid-dialog button:focus-visible,.steroid-dialog input:focus-visible,.steroid-dialog select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.line-icon{width:1.15em;height:1.15em;vertical-align:-.2em;flex:none}
+.rest .symbol .line-icon{width:34px;height:34px}

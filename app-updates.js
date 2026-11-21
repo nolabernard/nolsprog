@@ -48,6 +48,7 @@
   function start(opts={}){
     if(started)return;started=true;options=opts;
     if(current==='dev')return;
+    if(global.navigator?.serviceWorker)global.navigator.serviceWorker.register('./sw.js').catch(err=>console.warn('Mode hors ligne indisponible',err));
     setTimeout(check,2500);
     setInterval(check,5*60*1000);
     setInterval(()=>{if(available)status('Une nouvelle version est disponible.')},15000);

@@ -22,8 +22,12 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
   `sport-rules.js` (validation), `sport-guide.js` (onboarding), `sport-progression.js`
   (double progression), `program-engine.js` (génération de programme, déterministe),
   `sport-session.js` (bilan de séance), `sport-import.js` (import texte/CSV/TSV local),
-  `sport-quality.js` (audit sportif), `sport-ux.js` (aides UX, records).
+  `sport-ux.js` (aides UX, records).
+- `ui-dialog.js` : panneaux de dialogue de l'app (`SteroidDialog.open/confirm/yesNo/ask`).
+  Interdit : `prompt`, `confirm`, `alert` natifs (vérifié par les tests).
 - `app-updates.js` : détection de nouvelle version (`version.json` généré au déploiement).
+- `sw.js` : mode hors ligne (réseau d'abord, cache en secours ; jamais Supabase ni `version.json`).
+  Enregistré seulement en production. Changer `CACHE` si la stratégie de cache change.
 - Styles : `styles.css` (historique, lourd) + `steroid-v2.css` (identité V2, chargé après).
   Référence visuelle : `DESIGN-SYSTEM-V2.md`. Toute nouvelle règle va dans `steroid-v2.css`.
 - `supabase/email-templates/` : e-mails de confirmation et de récupération.
