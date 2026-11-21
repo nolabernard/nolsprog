@@ -107,4 +107,5 @@ const pc=UI.programme({cycle:{sessions:[haut],cardio:[{id:'cc1',type:'velo',minu
 assert.match(pc,/Vélo · 30 min · 2 fois par semaine/);assert.match(pc,/data-action="v2-cardio-plan-remove" data-id="cc1"/);assert.match(pc,/data-v2-cardio-plan/);
 const pp=UI.progress({progress:{totals:{sets:0,volume:0},byKey:{}},cardio:[{week:'2026-11-16',minutes:30},{week:'2026-11-23',minutes:35}]});
 assert.match(pp,/Cardio/);assert.match(pp,/65 min sur 6 semaines|65 min/);assert.match(pp,/23 nov/);
+assert.match(UI.home({...base,cardio:{target:0,minutes:25}}),/Cardio : 25 min cette semaine/);
 console.log('ui-v2 : ok');

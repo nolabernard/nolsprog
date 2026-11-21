@@ -196,5 +196,9 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  // Rechargement : cardio et cardio prévu relus.
  const c12=V2.create({...ctx,storage:st11,api:{...fk,async select(p){if(p.startsWith('cardio_logs'))return [{id:'x',done_on:new Date().toISOString().slice(0,10),type:'course',minutes:15,workout_id:wid}];return []}},userId:U4});await c12.init();await c12.whenFresh();
  assert.match(c12.statsHTML(),/15 min/);
+ // Questionnaire : deux modes ; formulaires cardio branchés.
+ assert(/data-key="planMode"/.test(appSrc)&&/opt\('days','Je choisis mes jours'/.test(appSrc)&&/opt\('free'/.test(appSrc),'choix du mode de planning');
+ assert(/key==='planMode'&&v==='free'\)A\.answers\.days=\[0,1,2,3,4,5,6\]/.test(appSrc),'mode libre : semaine entière pour l’ancien moteur');
+ assert(/'v2Cardio' in/.test(appSrc)&&/'v2CardioPlan' in/.test(appSrc));
  console.log('app-v2 : ok');
 })().catch(e=>{console.error(e);process.exit(1)});

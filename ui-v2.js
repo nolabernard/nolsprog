@@ -36,7 +36,7 @@ function rhythmHTML(r){
 }
 function cardioHTML(c){
  if(!c)return '';
- return '<div class="v2-cardio-line">'+(c.target?'<p><b>Cardio : '+Number(c.minutes)+' / '+Number(c.target)+' min cette semaine</b></p>':'')+'<button type="button" class="v2-link" data-action="v2-cardio-open">'+icon('plus','v2-ic v2-ic--sm')+'Noter du cardio</button></div>';
+ return '<div class="v2-cardio-line">'+(c.target?'<p><b>Cardio : '+Number(c.minutes)+' / '+Number(c.target)+' min cette semaine</b></p>':c.minutes?'<p><b>Cardio : '+Number(c.minutes)+' min cette semaine</b></p>':'')+'<button type="button" class="v2-link" data-action="v2-cardio-open">'+icon('plus','v2-ic v2-ic--sm')+'Noter du cardio</button></div>';
 }
 function cardioSheet({workoutId=''}={}){
  return '<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="Noter du cardio"><i class="v2-grab"></i><h2>Noter du cardio</h2>'

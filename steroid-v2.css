@@ -279,3 +279,5 @@ button:active{transform:translateY(1px)}
 .v2-bars i{height:10px;border-radius:5px;background:var(--raised);position:relative;overflow:hidden}
 .v2-bars i::after{content:"";position:absolute;inset:0;width:calc(var(--v)*100%);background:var(--accent);border-radius:5px}
 .v2-bars b{text-align:right}
+.plan-mode .choice small{font-weight:600;color:inherit;opacity:.85}
+.v2-cardio-plan>*{min-width:0;width:100%;box-sizing:border-box}
