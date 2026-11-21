@@ -23,6 +23,8 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
   (double progression), `program-engine.js` (génération de programme, déterministe),
   `sport-session.js` (bilan de séance), `sport-import.js` (import texte/CSV/TSV local),
   `sport-ux.js` (aides UX, records).
+- `exercise-catalogue.js` : catalogue à clés permanentes (`SteroidCatalogue`), rôles base/finition, recherche
+  tolérante (`search`, `resolveName`). Une clé publiée ne change jamais et n'est jamais réutilisée.
 - `ui-dialog.js` : panneaux de dialogue de l'app (`SteroidDialog.open/confirm/yesNo/ask`).
   Interdit : `prompt`, `confirm`, `alert` natifs (vérifié par les tests).
 - `app-updates.js` : détection de nouvelle version (`version.json` généré au déploiement).
