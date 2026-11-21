@@ -33,6 +33,9 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
 - `v2-history.js` (`SteroidHistory`) : historique par clé (séances, séance par séance, records comparables, conseils de
   double progression fondés sur la dernière séance de la même clé, jamais appliqués automatiquement).
 - `v2-review.js` (`SteroidReview`) : bilan de fin de cycle (échéance, constats, recommandation) et réponses du cycle suivant.
+- `reminders.js` (`SteroidReminders`) : rappels côté app (abonnement de l'appareil, heure, jours) ; envoi par la fonction
+  Supabase `supabase/functions/send-reminders` (pg_cron toutes les 15 min). Clés VAPID et secret d'appel générés et gardés dans
+  `public.push_config` (aucun accès utilisateur) : jamais dans le dépôt.
 - `ui-v2.js` (`SteroidUI`) : écrans V2 en HTML pur (accueil, séance P1, machine prise, fin, progrès, programme, choix d'exercice).
 - `app-v2.js` (`SteroidAppV2.create`) : contrôleur V2 (stockage, envoi, actions `data-action="v2-…"`), testé sous Node.
   `app.js` lui délègue Aujourd'hui, Progrès et Programme (`v2Main`) ; l'ancien écran ne sert plus qu'en secours.
@@ -83,5 +86,7 @@ maquettes sur le canevas « STÉROÏDE — refonte UX »). Plans : `docs/superpo
   record récent sur l'accueil). Lecture enrichie : `set_number`, `rpe`, `substituted_from_key`, titre de séance. Aucune migration.
 - Lot 6 Coach et bilan : fait (carte « Ton cycle est terminé » sur l'accueil, bilan aussi accessible depuis Programme ;
   cycle suivant proposé sur l'appareil, activé seulement après validation ; ancien cycle archivé avant l'envoi du nouveau).
-- Lot 7 : à faire (rappels).
+- Lot 7 Rappels : fait (carte Rappels dans Programme ; comptes seulement ; iPhone : app installée sur l'écran d'accueil, iOS 16.4+ ;
+  pas de rappel un jour où la séance est faite). Table `push_subscriptions`, fonction `send-reminders` déployée (verify_jwt off,
+  authentification par secret d'appel ou jeton utilisateur).
 - Migrations Supabase : uniquement sur accord explicite du propriétaire (« applique les migrations »).

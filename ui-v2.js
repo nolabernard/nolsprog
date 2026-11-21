@@ -220,6 +220,22 @@ function proposal({cycle,userExercises=[],methods={}}={}){
   +'<button type="button" class="v2-btn v2-btn--big" data-action="v2-proposal-accept">Valider et démarrer ce cycle</button><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-review-close">Plus tard</button><p class="v2-muted">Ton cycle actuel reste actif tant que tu n’as pas validé. Ton historique est conservé.</p></section>';
 }
 
+// ----- Rappels (lot 7) -----
+const DAY_LETTERS=['L','M','M','J','V','S','D'],DAY_NAMES=['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];
+const hhmm=(h,m)=>String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+function remindersCard(r){
+ if(!r)return '';
+ let html='<section class="v2-card v2-prog-session v2-reminders"><h2>Rappels</h2>';
+ if(r.blocker)return html+'<p class="v2-muted">'+esc(r.message||'')+'</p></section>';
+ html+='<p class="v2-muted">'+(r.enabled?'Activés sur ce téléphone : '+hhmm(r.hour,r.minute)+', '+(r.days.length===7?'tous les jours':r.days.map(d=>DAY_NAMES[d]).join(', '))+'. Pas de rappel un jour où ta séance est déjà faite.':'Une notification à l’heure choisie, les jours choisis. Tu peux les couper quand tu veux.')+'</p>'
+  +'<label class="v2-field-label" for="v2-rem-time">Heure</label><select id="v2-rem-time" class="v2-select" data-v2-rem-time>';
+ for(let h=6;h<=22;h++)for(const m of [0,30])html+='<option value="'+h+':'+m+'"'+(h===r.hour&&m===r.minute?' selected':'')+'>'+hhmm(h,m)+'</option>';
+ html+='</select><div class="v2-daypick" role="group" aria-label="Jours">'+DAY_LETTERS.map((l,d)=>'<button type="button" data-action="v2-rem-day" data-day="'+d+'" aria-pressed="'+r.days.includes(d)+'" aria-label="'+DAY_NAMES[d]+'">'+l+'</button>').join('')+'</div>';
+ html+=r.enabled?'<div class="v2-row"><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-rem-test">Envoyer un essai</button><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-rem-off">Désactiver</button></div>'
+  :'<button type="button" class="v2-btn" data-action="v2-rem-on"'+(r.busy?' disabled':'')+'>Activer les rappels</button>';
+ return html+'</section>';
+}
+
 function picker({query='',results=[],creating=false}={}){
  let html='<div class="v2-picker"><label class="v2-search">'+icon('search','v2-ic v2-ic--sm')+'<input type="search" data-v2-search placeholder="Chercher un exercice (ex. dvlp couché)" value="'+esc(query)+'" aria-label="Chercher un exercice" autocomplete="off"></label><div class="v2-results">'
   +results.map(r=>{const e=r.entry||r;return '<button type="button" class="v2-opt" data-action="v2-pick" data-key="'+esc(e.key)+'"><span><b>'+esc(e.name)+'</b><small>'+esc(e.muscle||'')+' · '+(e.role==='base'?'Base':'Finition')+'</small></span></button>'}).join('')
@@ -229,7 +245,7 @@ function picker({query='',results=[],creating=false}={}){
  return html+'</div>';
 }
 
-function programme({cycle,userExercises=[],picking=null,query='',results=[],creating=false}={}){
+function programme({cycle,userExercises=[],picking=null,query='',results=[],creating=false,reminders=null}={}){
  let html='<section class="v2-progress"><h1 class="v2-hello">Mon programme</h1><p class="v2-muted">Ta suite de séances tourne en boucle'+(cycle?.weeks?' pendant '+cycle.weeks+' semaines':'')+'. Les changements s’appliquent dès la prochaine séance.</p>';
  for(const s of cycle?.sessions||[]){
   html+='<section class="v2-card v2-prog-session"><h2>'+esc(s.title)+'</h2><p class="v2-muted">'+esc((s.focus||[]).join(', '))+'</p><ol class="v2-prog-list">';
@@ -244,10 +260,11 @@ function programme({cycle,userExercises=[],picking=null,query='',results=[],crea
  html+='<section class="v2-card v2-prog-session"><h2>Cardio</h2><p class="v2-muted">Fait seul un jour de repos ou en fin de séance. Noté à part des séries.</p>'
   +(cc.length?'<ul class="v2-prog-list">'+cc.map(c=>'<li><div class="v2-prog-name"><b>'+esc(cardioName(c.type))+' · '+Number(c.minutes)+' min · '+Number(c.per_week)+' fois par semaine</b></div><div class="v2-prog-actions"><button type="button" class="v2-link v2-link--muted" data-action="v2-cardio-plan-remove" data-id="'+esc(c.id)+'">Retirer</button></div></li>').join('')+'</ul>':'')
   +'<form class="v2-cardio-plan" data-v2-cardio-plan><select class="v2-select" name="type" aria-label="Activité">'+CARDIO.map(([v,t])=>'<option value="'+v+'">'+t+'</option>').join('')+'</select><input class="v2-select" name="minutes" type="number" inputmode="numeric" min="1" max="600" value="30" aria-label="Minutes"><select class="v2-select" name="per_week" aria-label="Fois par semaine">'+[1,2,3,4,5,6,7].map(n=>'<option value="'+n+'"'+(n===2?' selected':'')+'>'+n+' × / sem.</option>').join('')+'</select><button type="submit" class="v2-btn v2-btn--ghost">'+icon('plus')+'Ajouter du cardio</button></form></section>';
+ html+=remindersCard(reminders);
  if(cycle)html+='<button type="button" class="v2-btn v2-btn--ghost" data-action="v2-review">'+icon('trophy')+'Faire le bilan de ce cycle</button>';
  if(picking)html+='<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="Choisir un exercice"><i class="v2-grab"></i><h2>'+(picking.ce?'Changer d’exercice':'Ajouter un exercice')+'</h2>'+picker({query,results,creating})+'</section></div>';
  return html+'</section>';
 }
 
-return {reviewCard,review,nextForm,proposal,cardioSheet,programme,home,chooser,session,machineSheet,moreSheet,idlePrompt,summary,progress,picker,clock,esc};
+return {remindersCard,reviewCard,review,nextForm,proposal,cardioSheet,programme,home,chooser,session,machineSheet,moreSheet,idlePrompt,summary,progress,picker,clock,esc};
 });

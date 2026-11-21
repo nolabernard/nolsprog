@@ -1,6 +1,6 @@
 // Contrôleur V2 : parcours complet invité et compte, sans navigateur.
 const assert=require('assert');
-for(const [g,f] of [['SteroidCatalogue','exercise-catalogue'],['SteroidCycle','v2-cycle'],['SteroidHistory','v2-history'],['SteroidReview','v2-review'],['SteroidUI','ui-v2'],['SteroidPlanner','session-planner'],['SteroidWorkout','workout-store']])globalThis[g]=require('../'+f+'.js');
+for(const [g,f] of [['SteroidCatalogue','exercise-catalogue'],['SteroidCycle','v2-cycle'],['SteroidHistory','v2-history'],['SteroidReview','v2-review'],['SteroidReminders','reminders'],['SteroidUI','ui-v2'],['SteroidPlanner','session-planner'],['SteroidWorkout','workout-store']])globalThis[g]=require('../'+f+'.js');
 require('../program-engine.js');
 const V2=require('../app-v2.js');
 
@@ -140,6 +140,8 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
   const b8=V2.create({...ctx,storage:st8b,api:lag,userId:U6});
   await b8.init();await b8.whenFresh();assert.equal(b8.state().cycle.id,nextId2);
  }
+ // Lot 7 : en invité, la carte Rappels explique qu'il faut un compte.
+ assert.match(V2.create({...ctx,storage:memory()}).programmeHTML(),/Connecte-toi à ton compte pour recevoir des rappels/);
  // ----- Compte sans cycle V2 : construit puis envoyé dans l'ordre -----
  const sent=[],api={online:true,async select(p){return []},async upsert(table,rows){if(!api.online)throw Error('Hors ligne');sent.push(table+':'+rows.length)}};
  const st2=memory();

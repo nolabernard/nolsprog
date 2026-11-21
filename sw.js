@@ -45,6 +45,16 @@ async function networkFirst(request){
   }
 }
 
+// Rappels (lot 7) : notification reçue de la fonction send-reminders.
+self.addEventListener('push',event=>{
+  let d={};try{d=event.data?event.data.json():{}}catch{d={body:event.data?.text()}}
+  event.waitUntil(self.registration.showNotification(d.title||'STÉROÏDE',{body:d.body||'Ta prochaine séance t’attend.',icon:'./icon-192.png',badge:'./icon-192.png',tag:'steroid-reminder',data:{url:d.url||'./'}}));
+});
+self.addEventListener('notificationclick',event=>{
+  event.notification.close();
+  const url=new URL(event.notification.data?.url||'./',self.registration.scope).href;
+  event.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(list=>{for(const c of list)if(c.url.startsWith(self.registration.scope)&&'focus' in c)return c.focus();return clients.openWindow(url)}));
+});
 self.addEventListener('fetch',event=>{
   if(cacheable(event.request))event.respondWith(networkFirst(event.request));
 });
