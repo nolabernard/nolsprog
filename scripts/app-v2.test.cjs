@@ -1,6 +1,6 @@
 // Contrôleur V2 : parcours complet invité et compte, sans navigateur.
 const assert=require('assert');
-for(const [g,f] of [['SteroidCatalogue','exercise-catalogue'],['SteroidCycle','v2-cycle'],['SteroidHistory','v2-history'],['SteroidUI','ui-v2'],['SteroidPlanner','session-planner'],['SteroidWorkout','workout-store']])globalThis[g]=require('../'+f+'.js');
+for(const [g,f] of [['SteroidCatalogue','exercise-catalogue'],['SteroidCycle','v2-cycle'],['SteroidHistory','v2-history'],['SteroidReview','v2-review'],['SteroidUI','ui-v2'],['SteroidPlanner','session-planner'],['SteroidWorkout','workout-store']])globalThis[g]=require('../'+f+'.js');
 require('../program-engine.js');
 const V2=require('../app-v2.js');
 
@@ -100,6 +100,46 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  const mine=c.state().cycle.sessions[1].exercises.at(-1);assert.match(mine.exercise_key,/^u-[0-9a-f-]{36}$/);
  assert.match(c.programmeHTML(),/Mon mollet maison/);
 
+ // ----- Lot 6 : bilan de fin de cycle, cycle suivant proposé puis validé -----
+ {
+  const sentRows=[],api6={async select(){return []},async upsert(table,rows){sentRows.push(...rows.map(r=>({table,...r})))},async remove(){}};
+  const U6='44444444-4444-4444-8444-444444444444',st6=memory();
+  const b6=V2.create({...ctx,storage:st6,api:api6,userId:U6});await b6.init();await b6.flushNow();
+  const firstId=b6.state().cycle.id;
+  assert.doesNotMatch(b6.todayHTML(),/Ton cycle est terminé/,'pas de bilan en début de cycle');
+  const t0=t;t+=9*7*24*3600e3;
+  assert.match(b6.todayHTML(),/Ton cycle est terminé/);
+  await b6.handle('v2-review');let h6=b6.todayHTML();assert.match(h6,/Bilan du cycle/);assert.match(h6,/0\/12/);assert.match(h6,/Ma recommandation/);
+  await b6.handle('v2-review-next');h6=b6.todayHTML();assert.match(h6,/data-v2-next/);assert.match(h6,/name="daysCount"/);
+  assert(b6.proposeNext({daysCount:'3',duration:'60',method:'auto',goal:'muscle',level:'intermediate',equipment:'gym',avoid:'',weeks:'7'}));
+  h6=b6.todayHTML();assert.match(h6,/pas encore actif/);assert.match(h6,/7 semaines/);
+  assert.equal(b6.state().cycle.id,firstId,'aucun cycle activé sans validation');
+  sentRows.length=0;await b6.flushNow();assert(!sentRows.some(r=>r.table==='cycles'),'la proposition reste sur l’appareil');
+  // Fermeture de l'app : la proposition est retrouvée, le cycle en cours inchangé.
+  const b7=V2.create({...ctx,storage:st6,api:api6,userId:U6});await b7.init();
+  assert.equal(b7.state().cycle.id,firstId);assert(b7.state().proposal);
+  await b7.handle('v2-review');await b7.handle('v2-review-next');b7.proposeNext({daysCount:'3',duration:'60',method:'auto',goal:'muscle',level:'intermediate',equipment:'gym',weeks:'6'});
+  const nextId=b7.state().proposal.id;
+  await b7.handle('v2-review-close');assert.match(b7.todayHTML(),/Ton prochain cycle est prêt/);await b7.handle('v2-proposal-open');assert.match(b7.todayHTML(),/pas encore actif/);
+  // Programme changé ailleurs depuis le bilan : la proposition n'écrase rien.
+  const saved=b7.state().proposal;b7.state().proposal={...saved,from_cycle:'autre'};await b7.handle('v2-proposal-accept');
+  assert.equal(b7.state().cycle.id,firstId);assert.equal(b7.state().proposal,null);
+  await b7.handle('v2-review');await b7.handle('v2-review-next');b7.proposeNext({daysCount:'3',duration:'60',method:'auto',goal:'muscle',level:'intermediate',equipment:'gym',weeks:'6'});
+  const nextId2=b7.state().proposal.id;
+  await b7.handle('v2-proposal-accept');await b7.flushNow();
+  assert.equal(b7.state().cycle.id,nextId2);assert.equal(b7.state().cycle.status,'active');assert.equal(b7.state().proposal,null);
+  const cyc=sentRows.filter(r=>r.table==='cycles');
+  assert.deepEqual(cyc.map(r=>[r.id,r.status]),[[firstId,'archived'],[nextId2,'active']],'archivé avant le nouveau actif');
+  assert(sentRows.some(r=>r.table==='cycle_sessions'&&r.cycle_id===nextId2));
+  assert.doesNotMatch(b7.todayHTML(),/Ton cycle est terminé/);
+  // Le serveur renvoie encore l'ancien cycle actif avant l'envoi : on garde le nouveau.
+  const lag={...api6,async select(p){if(p.startsWith('cycles'))return [{id:firstId,status:'active',weeks:6,sessions_per_week:2,started_at:new Date(t0).toISOString()}];return []},async upsert(){throw Error('Hors ligne')}};
+  const st8b=memory();
+  for(const [k,v] of st6.m)st8b.setItem(k,v);
+  st8b.setItem('nolsprog-v2-outbox:'+U6,JSON.stringify([{table:'cycles',row:{id:nextId2,status:'active',user_id:U6}}]));
+  const b8=V2.create({...ctx,storage:st8b,api:lag,userId:U6});
+  await b8.init();await b8.whenFresh();assert.equal(b8.state().cycle.id,nextId2);
+ }
  // ----- Compte sans cycle V2 : construit puis envoyé dans l'ordre -----
  const sent=[],api={online:true,async select(p){return []},async upsert(table,rows){if(!api.online)throw Error('Hors ligne');sent.push(table+':'+rows.length)}};
  const st2=memory();

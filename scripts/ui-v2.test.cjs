@@ -125,4 +125,15 @@ assert.match(pc,/Vélo · 30 min · 2 fois par semaine/);assert.match(pc,/data-a
 const pp=UI.progress({progress:{totals:{sets:0,volume:0},byKey:{}},cardio:[{week:'2026-11-16',minutes:30},{week:'2026-11-23',minutes:35}]});
 assert.match(pp,/Cardio/);assert.match(pp,/65 min sur 6 semaines|65 min/);assert.match(pp,/23 nov/);
 assert.match(UI.home({...base,cardio:{target:0,minutes:25}}),/Cardio : 25 min cette semaine/);
+// Lot 6 : bilan, formulaire du cycle suivant, proposition.
+require('../program-engine.js');
+const rv={done:14,planned:18,weeks:6,rpe:8.5,strengths:['Développé couché barre : +5 kg depuis le début du cycle.'],improve:['<b>x</b>'],evolutions:[{key:'hack-squat',from:{weight:100,reps:8},to:{weight:110,reps:8},weight:10,reps:0}],recommendation:{code:'keep',title:'Garder la méthode',text:'On garde.',changes:{}}};
+const rh=UI.review({review:rv});
+assert.match(rh,/14\/18/);assert.match(rh,/Points forts/);assert.match(rh,/&lt;b&gt;x/);assert.match(rh,/100 × 8 → 110 × 8/);assert.match(rh,/garder la méthode/);assert.match(rh,/data-action="v2-review-next"/);
+const nf=UI.nextForm({answers:{daysCount:'4',duration:'45',goal:'muscle'},weeks:7,methods:globalThis.NolsEngine.methods});
+assert.match(nf,/data-v2-next/);assert.match(nf,/<option value="4" selected>/);assert.match(nf,/<option value="7" selected>7 semaines/);assert.match(nf,/Upper \/ Lower/);
+const pr=UI.proposal({cycle:{method:'ppl',weeks:6,sessions_per_week:3,sessions:[{code:'A',title:'Push',exercises:[{exercise_key:'hack-squat',sets:3,reps_min:8,reps_max:10,rest_seconds:120}]}]},methods:globalThis.NolsEngine.methods});
+assert.match(pr,/pas encore actif/);assert.match(pr,/Push \/ Pull \/ Legs/);assert.match(pr,/data-action="v2-proposal-accept"/);
+assert.match(UI.programme({cycle:{weeks:6,sessions:[]}}),/data-action="v2-review"/);
+for(const html of [rh,nf,pr])assert(noEmoji(html)&&!/onclick=/i.test(html));
 console.log('ui-v2 : ok');
