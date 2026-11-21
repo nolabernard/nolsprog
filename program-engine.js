@@ -86,11 +86,12 @@ function patternMap(pattern,equipment){
  };
  return fallback[pattern]||pattern;
 }
-function parameters(x,p,index,sessionIndex){
+function parameters(x,p,index,sessionIndex,v2=false){
  const beginner=p.level==='beginner'||Number(p.currentSessions)<=1;
  const fatigue=p.job==='physical'||p.sleep==='under6'||p.activity==='high';
  const experienced=p.level==='advanced'&&Number(p.currentSessions)>=3;
- const compound=x.compound===2;
+ // V2 : tout polyarticulaire (compound 2 ou 3) est un exercice de base ; V1 conservé tel quel.
+ const compound=v2?x.compound>=2:x.compound===2;
  const focus=(p.priority||[]).includes(x.muscle);
  let sets=compound?(experienced?4:3):experienced?3:2;
  if(beginner||fatigue)sets=Math.max(2,sets-1);
@@ -108,6 +109,73 @@ function parameters(x,p,index,sessionIndex){
  if(x.pattern==='core')reps=/Gainage/i.test(x.name)?'25–45 s':'12–20';
  const rest=compound?(p.goal==='strength'?150:120):x.pattern==='core'?60:75;
  return ex(x.name,sets,reps,rest);
+}
+const ENGINE_VERSION='v2.0';
+// Séries hebdomadaires visées par groupe musculaire (identique à SteroidRules.VOLUME).
+const VOLUME={beginner:[6,8],intermediate:[8,12],advanced:[10,16]};
+const byName=name=>catalogue.find(x=>x.name===name);
+function orderRank(item){const x=byName(item.name);if(!x)return 1;if(x.pattern==='core')return 2;return x.compound>=2?0:1}
+// V2 : complète le volume des grands groupes jusqu'au minimum du niveau, sans dépasser le temps demandé.
+// D'abord des séries (4 max par exercice), puis un exercice du groupe dans une séance qui le travaille déjà ou en full body.
+function fillWeeklyVolume(sessions,p,addExercise){
+ const range=VOLUME[p.level]||VOLUME.intermediate,limit=Number(p.duration)||60;
+ const muscleOf=e=>byName(e.name)?.muscle;
+ const volume=m=>sessions.reduce((n,s)=>n+s.ex.filter(e=>muscleOf(e)===m).reduce((k,e)=>k+e.sets,0),0);
+ const fits=s=>estimatedMinutes(s.ex)<=limit*1.05;
+ for(const muscle of ['Pectoraux','Dos','Jambes']){
+  for(let guard=0;guard<60&&volume(muscle)<range[0];guard++){
+   let changed=false;
+   for(const s of sessions){
+    if(volume(muscle)>=range[0])break;
+    const target=s.ex.filter(e=>muscleOf(e)===muscle&&e.sets<4).sort((a,b)=>orderRank(a)-orderRank(b)||a.sets-b.sets)[0];
+    if(!target)continue;
+    target.sets++;
+    if(fits(s))changed=true;else target.sets--;
+   }
+   if(changed)continue;
+   for(const s of sessions){
+    if(volume(muscle)>=range[0])break;
+    const allowed=s.ex.some(e=>muscleOf(e)===muscle)||/^Full body/.test(s.title);
+    if(!allowed)continue;
+    const added=addExercise(s,muscle);
+    if(!added)continue;
+    if(fits(s)){changed=true;continue}
+    s.ex.splice(s.ex.indexOf(added),1);
+   }
+   if(!changed)break;
+  }
+ }
+}
+// V2 : répétitions « 6–10 » ou « 25–45 s » → [min, max].
+function parseReps(text){const nums=String(text||'').match(/\d+/g)||[];const a=Number(nums[0]||8),b=Number(nums[1]||nums[0]||12);return [Math.min(a,b),Math.max(a,b)]}
+const DEFAULT_DAYS={2:[0,3],3:[0,2,4],4:[0,1,3,4],5:[0,1,2,4,5],6:[0,1,2,3,4,5]};
+const ROTATING=['Push','Pull','Legs','Upper','Lower'];
+// V2 : un cycle = une suite de séances générée une fois, avec la photographie des réponses.
+function buildCycle(p){
+ const Cat=globalThis.SteroidCatalogue;
+ if(!Cat)throw Error('Catalogue d’exercices indisponible.');
+ const answers=JSON.parse(JSON.stringify(p||{}));
+ const n=Math.max(2,Math.min(6,Number(answers.daysCount)||3));
+ const chosen=Array.isArray(answers.days)&&answers.days.length?selectTrainingDays(answers.days,n):null;
+ const input={...answers,days:chosen||DEFAULT_DAYS[n]};
+ const method=chooseMethod(input);
+ const loop=method==='ppl'&&n<=5?3:method==='upperlower'&&n===3?2:n;
+ const collected=[];
+ for(let w=0;collected.length<loop&&w<6;w++)for(const d of buildProgram(input,w,{version:2}))if(d.ex.length&&collected.length<loop)collected.push(d);
+ const type=t=>t.replace(/ [A-Z]$/,'');
+ // Pas deux séances du même type d'affilée au bouclage (ex. Upper/Lower sur 5 jours).
+ while(collected.length>2&&ROTATING.includes(type(collected[0].title))&&type(collected[0].title)===type(collected[collected.length-1].title))collected.pop();
+ const sessions=collected.map((d,i)=>{
+  const exercises=d.ex.map(e=>{
+   const hit=Cat.resolveName(e.name);
+   if(!hit)throw Error('Exercice hors catalogue : '+e.name);
+   const entry=Cat.byKey(hit.key),[repsMin,repsMax]=parseReps(e.reps);
+   return {key:entry.key,name:entry.name,role:entry.role,sets:e.sets,repsMin,repsMax,rest:e.rest};
+  });
+  const focus=[...new Set(exercises.map(e=>Cat.byKey(e.key).muscle))];
+  return {position:i,code:String.fromCharCode(65+i),title:d.title,focus,exercises};
+ });
+ return {engineVersion:ENGINE_VERSION,method,weeks:6,sessionsPerWeek:n,preferredDays:chosen,answers,sessions};
 }
 // Conservative time budget: warm-up, working sets, inter-set rest and transitions.
 function estimatedMinutes(items){
@@ -135,7 +203,8 @@ function fitDuration(items,p){
  }
  return items;
 }
-function buildProgram(p,weekIndex=0){
+function buildProgram(p,weekIndex=0,{version=1}={}){
+ const v2=version>=2;
  if(!Number.isInteger(weekIndex)||weekIndex<0||weekIndex>51)throw Error('Semaine de programmation invalide.');
  const n=Math.max(2,Math.min(6,Number(p.daysCount)||3));
  const days=selectTrainingDays(Array.isArray(p.days)?p.days:[],n);
@@ -182,9 +251,11 @@ function buildProgram(p,weekIndex=0){
    const x=selectExercise(pattern,p,used,i,slot,history,avoid);
    if(!x)continue;
    used.add(x.name);history.set(x.name,(history.get(x.name)||0)+1);
-   items.push(parameters(x,p,items.length,i));
+   items.push(parameters(x,p,items.length,i,v2));
   }
   if(!items.length)throw Error('Aucun exercice compatible avec tes contraintes. Modifie les exercices à éviter ou ton équipement.');
+  // V2 : exercices de base d'abord, finitions ensuite, gainage en dernier (tri stable).
+  if(v2)items.sort((a,b)=>orderRank(a)-orderRank(b));
   if(method==='fullbody'){
    // Full body = au moins une poussée, un tirage et une dominante jambes, même en 30 min.
    // Réduire les séries plutôt que supprimer des groupes musculaires.
@@ -196,6 +267,19 @@ function buildProgram(p,weekIndex=0){
   const title=(types[method]||'Séance')+' '+String.fromCharCode(65+Math.floor((sessionOffset+i)/(method==='ppl'?3:method==='upperlower'?2:1))%6);
   return {day:names[day],title,focus:definitions[method].name,ex:items};
  });
+ if(v2){
+  const musclePatterns={Pectoraux:['pushH','chestIso'],Dos:['pullH','pullV'],Jambes:['squat','hinge','quadIso','hamIso']};
+  fillWeeklyVolume(sessions,p,(session,muscle)=>{
+   const used=new Set(session.ex.map(e=>e.name)),index=sessions.indexOf(session);
+   for(const pattern of musclePatterns[muscle].map(x=>patternMap(x,equipment))){
+    const x=selectExercise(pattern,p,used,index,session.ex.length,history,avoid);
+    if(!x)continue;
+    const item=parameters(x,p,session.ex.length,index,true);item.sets=Math.min(item.sets,3);
+    session.ex.push(item);session.ex.sort((a,b)=>orderRank(a)-orderRank(b));return item;
+   }
+   return null;
+  });
+ }
  return names.map(day=>sessions.find(s=>s.day===day)||{day,title:'Récupération',focus:'Repos / marche douce',ex:[]});
 }
 
@@ -224,4 +308,4 @@ const steps=[
 ];
 const defaults={sex:'',age:'',height:'',weight:'',job:'mixed',activity:'medium',sleep:'7-8',goal:'muscle',level:'intermediate',currentSessions:'2',daysCount:'3',duration:'60',equipment:'gym',priority:[],days:[0,1,2,3,4,5],method:'auto',avoid:'',limitations:'no'};
 
-globalThis.NolsEngine={methods,chooseMethod,buildProgram,steps,defaults,estimatedMinutes,exerciseCatalogue:catalogue.map(x=>({name:x.name,pattern:x.pattern,muscle:x.muscle,compound:x.compound}))};
+globalThis.NolsEngine={ENGINE_VERSION,VOLUME,buildCycle,parseReps,methods,chooseMethod,buildProgram,steps,defaults,estimatedMinutes,exerciseCatalogue:catalogue.map(x=>({name:x.name,pattern:x.pattern,muscle:x.muscle,compound:x.compound}))};

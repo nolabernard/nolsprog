@@ -20,7 +20,8 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
   aux lignes très longues : chercher avec `grep -n` et ne lire que les passages utiles.
 - Modules purs, exposés en global navigateur et en `module.exports` pour les tests :
   `sport-rules.js` (validation), `sport-guide.js` (onboarding), `sport-progression.js`
-  (double progression), `program-engine.js` (génération de programme, déterministe),
+  (double progression), `program-engine.js` (génération de programme, déterministe ;
+  `buildProgram(p, semaine)` = V1 figée pour les programmes en cours, `{version: 2}` et `buildCycle(p)` = V2),
   `sport-session.js` (bilan de séance), `sport-import.js` (import texte/CSV/TSV local),
   `sport-ux.js` (aides UX, records).
 - `exercise-catalogue.js` : catalogue à clés permanentes (`SteroidCatalogue`), rôles base/finition, recherche
@@ -55,3 +56,13 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
 - Textes de l'interface en français, ton direct.
 - Maquette de base 390 × 844 px, cibles tactiles ≥ 44 px, focus visible,
   respect de `prefers-reduced-motion`, icônes SVG au trait (pas d'emoji).
+
+## Avancement V2 (cahier des charges : `docs/cahier-des-charges-v2.md`)
+Conception : `docs/superpowers/specs/2026-11-21-steroid-v2-design.md` (interface retenue : proposition P1 « Guidé »,
+maquettes sur le canevas « STÉROÏDE — refonte UX »). Plans : `docs/superpowers/plans/`.
+- Lot 1 Fondations : fait. Tables V2 créées dans Supabase et données V1 copiées (`select public.v2_copy_legacy()`,
+  rejouable ; correspondances des noms dans `public.v2_name_map`). L'app écrit encore dans les tables V1 :
+  relancer la copie au basculement (lot 3).
+- Lot 2 Générateur et cycles : fait (`buildCycle`, moteur `{version: 2}`, tests sur 4 050 combinaisons).
+- Lots 3 à 7 : à faire (séance P1 + bascule V2, planning en suite, historique, coach et bilan, rappels).
+- Migrations Supabase : uniquement sur accord explicite du propriétaire (« applique les migrations »).
