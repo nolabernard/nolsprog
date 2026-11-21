@@ -5,6 +5,7 @@
 'use strict';
 const G=()=>globalThis;
 const IDLE_MS=20*60e3;
+const isRejection=err=>Number.isInteger(err?.status)&&err.status>=400&&err.status<500&&![401,403,408,429].includes(err.status);
 const DAYS=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'],MONTHS=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 const iso=ms=>new Date(ms).toISOString();
 const clone=v=>JSON.parse(JSON.stringify(v));
@@ -37,7 +38,7 @@ function create(ctx){
  }
  const ORDER=['cycles','user_exercises','cycle_sessions','cycle_exercises'];
  // Colonnes fixes par table : un envoi groupé exige les mêmes clés sur chaque ligne.
- const COLS={cycles:['id','user_id','status','method','weeks','sessions_per_week','preferred_days','answers_snapshot','engine_version','started_at'],
+ const COLS={cycles:['id','user_id','status','method','weeks','sessions_per_week','preferred_days','answers_snapshot','engine_version','started_at','ended_at'],
   user_exercises:['user_id','key','name','pattern','muscle','equipment'],
   cycle_sessions:['id','user_id','cycle_id','position','code','title','focus'],
   cycle_exercises:['id','user_id','cycle_session_id','position','exercise_key','role','sets','reps_min','reps_max','rest_seconds','replaced_key']};
@@ -45,20 +46,41 @@ function create(ctx){
  async function flushOutbox(){
   if(!api||!userId)return true;
   // Retraits d'abord : ils libèrent des places avant les décalages.
-  for(const item of outbox.filter(x=>x.op==='delete')){await api.remove(item.table,item.id);outbox=outbox.filter(x=>x!==item);write(K.outbox,outbox)}
+  for(const item of outbox.filter(x=>x.op==='delete')){
+   try{await api.remove(item.table,item.id)}catch(err){if(!isRejection(err))throw err}
+   outbox=outbox.filter(x=>x!==item);write(K.outbox,outbox);
+  }
   for(const table of ORDER){
    const items=outbox.filter(x=>x.table===table&&!x.op);if(!items.length)continue;
    const rows=items.map(x=>pick(table,x.row));
-   // (séance, place) est unique et vérifié ligne par ligne : on passe par des places provisoires.
-   if(table==='cycle_exercises')await api.upsert(table,rows.map(r=>({...r,position:r.position+1000})));
-   await api.upsert(table,rows);
+   try{
+    // (séance, place) est unique et vérifié ligne par ligne : on passe par des places provisoires.
+    if(table==='cycle_exercises')await api.upsert(table,rows.map(r=>({...r,position:r.position+1000})));
+    await api.upsert(table,rows);
+   }catch(err){
+    if(!isRejection(err))throw err;
+    // Un autre appareil a déjà un cycle actif : on abandonne le nôtre et on reprend celui du serveur.
+    if(table==='cycles'&&err.code==='23505'&&S.cycle&&items.some(x=>x.row.id===S.cycle.id)){await adoptServerCycle();return true}
+    // Refus définitif : ligne par ligne, les refusées sont écartées et signalées, jamais de blocage.
+    for(const [i,x] of items.entries()){try{await api.upsert(table,[rows[i]])}catch(e){if(!isRejection(e))throw e;outbox=outbox.filter(y=>y!==x);write(K.outbox,outbox);rejected(table,e)}}
+   }
    outbox=outbox.filter(x=>!items.includes(x));write(K.outbox,outbox);
   }
   return true;
  }
+ function rejected(table,err){notice('Une modification ('+(LABEL[table]||table)+') a été refusée par le serveur et n’a pas été enregistrée : '+err.message,true)}
+ const LABEL={cycles:'programme',cycle_sessions:'séance prévue',cycle_exercises:'exercice prévu',user_exercises:'exercice perso',workouts:'séance',workout_exercises:'exercice de séance',workout_set_logs:'série'};
+ async function adoptServerCycle(){
+  const mine=S.cycle,ids=new Set([mine.id,...mine.sessions.map(x=>x.id),...mine.sessions.flatMap(x=>x.exercises.map(e=>e.id))]);
+  outbox=outbox.filter(x=>x.table==='user_exercises'||!ids.has(x.row?.id??x.id));write(K.outbox,outbox);
+  S.store.forgetCycle(mine.id,mine.sessions.flatMap(x=>x.exercises.map(e=>e.id)));
+  for(const w of S.workouts)if(w.cycle_id===mine.id){w.cycle_id=null;w.cycle_session_id=null}
+  S.cycle=null;await refresh();
+  notice('Ton programme existait déjà sur un autre appareil : je reprends celui-là.');
+ }
  async function flushNow(){
   if(flushing)return flushing;
-  const run=(async()=>{try{if(!api||!userId)return true;await flushOutbox();return await S.store.flush()}catch{return false}finally{render()}})();
+  const run=(async()=>{try{if(!api||!userId||!S.store)return true;await flushOutbox();return await S.store.flush()}catch{return false}finally{render()}})();
   flushing=run;run.finally(()=>{if(flushing===run)flushing=null});
   return run;
  }
@@ -70,31 +92,53 @@ function create(ctx){
  function sessionOf(ceId){for(const s of S.cycle.sessions){const e=s.exercises.find(x=>x.id===ceId);if(e)return {s,e}}return {}}
  function refreshSession(s){s.exercises.forEach((e,i)=>e.position=i);const m=new Map();for(const e of s.exercises){const mu=Cat.byKey(e.exercise_key)?.muscle||S.userExercises.find(u=>u.key===e.exercise_key)?.muscle;if(mu&&!m.has(mu+'|'+e.role))m.set(mu+'|'+e.role,{muscle:mu,role:e.role})}s.muscles=[...m.values()];s.focus=[...new Set(s.muscles.map(x=>x.muscle))]}
 
+ let fresh=Promise.resolve(),loadFailed=false;
+ // Cache de l'appareil d'abord (jamais d'attente sur un réseau muet), puis rafraîchissement depuis Supabase.
  async function init(){
-  S.store=G().SteroidWorkout.createWorkoutStore({storage,api:remote,userId:owner,now,uuid});
+  S.store=G().SteroidWorkout.createWorkoutStore({storage,api:remote,userId:owner,now,uuid,onReject:(t,row,err)=>rejected(t,err)});
   const local=read(K.history,null);
   if(local){S.workouts=local.workouts||[];S.setLogs=local.setLogs||[];S.userExercises=local.userExercises||[]}
   S.cycle=read(K.cycle,null);
-  if(api&&userId){
-   try{
-    const loaded=await C.loadCycle(api,userId);
-    S.workouts=mergeById(loaded.workouts,S.workouts.filter(w=>w.local_only));S.setLogs=[...loaded.setLogs,...S.setLogs.filter(r=>r.local_only)];S.userExercises=loaded.userExercises.length?loaded.userExercises:S.userExercises;
-    if(loaded.cycle)S.cycle=loaded.cycle;
-   }catch(e){if(!S.cycle)notice('Programme indisponible hors ligne. Reconnecte-toi au réseau.',true)}
-  }
-  if(!S.cycle)build();
-  if(S.cycle?.user_exercises?.length)S.userExercises=mergeByKey(S.userExercises,S.cycle.user_exercises);
-  persistLocal();
   S.view=S.store.current()?(ui.view==='home'?'home':'session'):'home';S.index=S.store.current()?ui.index||0:0;S.rest=ui.rest||null;
-  if(api&&userId)flushNow();
+  if(api&&userId){fresh=refresh();if(!S.cycle)await fresh;else fresh.then(()=>render())}
+  else if(!S.cycle){build();persistLocal()}
+ }
+ async function refresh(){
+  try{
+   const loaded=await C.loadCycle(api,userId);loadFailed=false;
+   // Les séances pas encore confirmées par le serveur restent affichées.
+   const ids=new Set(loaded.workouts.map(w=>w.id));
+   S.workouts=mergeById(loaded.workouts,S.workouts.filter(w=>!ids.has(w.id)));
+   S.setLogs=[...loaded.setLogs,...S.setLogs.filter(r=>!ids.has(r.workout_id))];
+   S.userExercises=mergeByKey(loaded.userExercises,S.userExercises);
+   if(loaded.cycle)S.cycle=loaded.cycle;
+   else if(!S.cycle)build(); // le serveur a répondu : ce compte n'a vraiment pas de cycle
+  }catch(e){
+   // Jamais de second cycle fabriqué à l'aveugle pour un compte : on attend le réseau.
+   if(!S.cycle){loadFailed=true;notice('Programme indisponible hors ligne. Reconnecte-toi au réseau puis réessaie.',true)}
+  }
+  if(S.cycle?.user_exercises?.length)S.userExercises=mergeByKey(S.userExercises,S.cycle.user_exercises);
+  if(S.cycle)persistLocal();
+  flushNow();
+ }
+ async function rebuild(){
+  if(current()){notice('Termine d’abord ta séance en cours.',true);return false}
+  const old=S.cycle;
+  if(old)old.status='archived',old.ended_at=iso(now());
+  if(old&&api&&userId)queueRows({cycles:[{...old,user_id:userId}]});
+  S.cycle=null;build();
+  if(!S.cycle){if(old){old.status='active';old.ended_at=null;S.cycle=old}return false}
+  persistLocal();render();return true;
  }
  function mergeById(a,b){const m=new Map();for(const x of [...a,...b])m.set(x.id,x);return [...m.values()].sort((x,y)=>Date.parse(y.ended_at||0)-Date.parse(x.ended_at||0))}
  function mergeByKey(a,b){const m=new Map();for(const x of [...a,...b])m.set(x.key,x);return [...m.values()]}
  function build(){
-  const plan=ctx.legacyPlan?.()||[];
+  const plan=ctx.legacyPlan?.()||[],a=ctx.answers?.();
   try{
-   if(plan.some(d=>d?.ex?.length))S.cycle=C.fromLegacyPlan(plan,{uuid,startedAt:iso(now())});
-   else{const built=G().NolsEngine.buildCycle(ctx.answers?.()||G().NolsEngine.defaults||{});S.cycle=C.fromEngine(built,{uuid,startedAt:iso(now())})}
+   // Générateur V2 à partir du questionnaire ; l'ancien plan seulement s'il n'y a pas de questionnaire.
+   if(a&&Object.keys(a).length){const built=G().NolsEngine.buildCycle(a);S.cycle=C.fromEngine({...built,answers:built.answers||a},{uuid,startedAt:iso(now())})}
+   else if(plan.some(d=>d?.ex?.length))S.cycle=C.fromLegacyPlan(plan,{uuid,startedAt:iso(now())});
+   else{S.cycle=C.fromEngine(G().NolsEngine.buildCycle(G().NolsEngine.defaults||{}),{uuid,startedAt:iso(now())})}
   }catch(e){notice('Programme impossible à préparer : '+e.message,true);return}
   S.userExercises=mergeByKey(S.userExercises,S.cycle.user_exercises||[]);
   if(api&&userId)queueRows(C.toRows(S.cycle,userId));
@@ -131,7 +175,7 @@ function create(ctx){
   return done>=goal?'Objectif de la semaine atteint : '+done+' séance'+(done>1?'s':'')+'.':done?done+' séance'+(done>1?'s':'')+' cette semaine, encore '+(goal-done)+'.':'Objectif : '+goal+' séance'+(goal>1?'s':'')+' cette semaine.';
  }
  function todayHTML(){
-  if(!S.cycle)return UI.home({next:null,cycle:null,building:S.building});
+  if(!S.cycle)return UI.home({next:null,cycle:null,building:S.building,retry:loadFailed});
   if(S.view==='summary'&&S.summary)return UI.summary({workout:S.summary,pending:pending(),local:!(api&&userId),userExercises:S.userExercises});
   const w=current();
   if(w&&S.view==='session'){
@@ -180,6 +224,7 @@ function create(ctx){
   if(s.exercises.length<=1){notice('Une séance garde au moins un exercice.',true);return}
   if(!await confirm(C.nameOf(e.exercise_key,S.userExercises)+' sera retiré de '+s.title+'. Son historique est conservé.',{title:'Retirer cet exercice ?',ok:'Retirer',cancel:'Garder'}))return;
   s.exercises=s.exercises.filter(x=>x.id!==ceId);refreshSession(s);persistLocal();
+  S.store.forgetCycleExercise(ceId);
   if(api&&userId){outbox=outbox.filter(x=>!(x.table==='cycle_exercises'&&x.row?.id===ceId));outbox.push({table:'cycle_exercises',op:'delete',id:ceId});queueRows({cycle_exercises:s.exercises.map(exRow)})}
  }
  async function createExercise({name,muscle,pattern}){
@@ -192,7 +237,7 @@ function create(ctx){
  async function handle(action,d={}){
   const w=current();
   switch(action){
-   case 'v2-build':S.building=true;render();build();S.building=false;persistLocal();break;
+   case 'v2-build':S.building=true;render();if(api&&userId){fresh=refresh();await fresh}else{build();persistLocal()}S.building=false;break;
    case 'v2-start':case 'v2-pick-session':startSession(d.session);break;
    case 'v2-choose':S.sheet={type:'choose'};break;
    case 'v2-close-sheet':S.sheet=null;S.picking=null;S.creating=false;break;
@@ -258,7 +303,7 @@ function create(ctx){
   if(S.rest&&left===0){S.rest=null;saveUi();return {rest:0,done:true,elapsed:S.store?.elapsedSeconds()||0}}
   return {rest:left,elapsed:S.store?.elapsedSeconds()||0,idle:idleMinutes()};
  }
- return {init,ready:()=>Boolean(S.cycle),todayHTML,statsHTML,programmeHTML,handle,input,change,tick,createExercise,flushNow,pending,
+ return {init,rebuild,whenFresh:()=>fresh,ready:()=>Boolean(S.cycle),todayHTML,statsHTML,programmeHTML,handle,input,change,tick,createExercise,flushNow,pending,
   inSession:()=>Boolean(current())&&S.view==='session',busy:()=>Boolean(current())||pending()>0,state:()=>S};
 }
 return {create};

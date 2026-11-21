@@ -5,7 +5,9 @@
 'use strict';
 const Cat=()=>globalThis.SteroidCatalogue;
 const defaultUuid=()=>globalThis.crypto.randomUUID();
-function parseReps(text){const nums=String(text??'').match(/\d+/g)||[];const a=Number(nums[0]||8),b=Number(nums[1]||nums[0]||12);return [Math.min(a,b),Math.max(a,b)]}
+const clamp=(v,lo,hi,d)=>{v=Math.round(Number(v));return Number.isFinite(v)?Math.min(hi,Math.max(lo,v)):d};
+// Bornes identiques aux contraintes de la base (reps 1–100) : une valeur V1 farfelue ne bloque jamais l'envoi.
+function parseReps(text){const nums=String(text??'').match(/\d+/g)||[];let a=clamp(nums[0]||8,1,100,8),b=clamp(nums[1]||nums[0]||12,1,100,12);return [Math.min(a,b),Math.max(a,b)]}
 function muscleOf(key,userExercises=[]){return Cat()?.byKey(key)?.muscle||userExercises.find(u=>u.key===key)?.muscle||null}
 function nameOf(key,userExercises=[]){return Cat()?.byKey(key)?.name||userExercises.find(u=>u.key===key)?.name||'Exercice'}
 function musclesOf(exercises,userExercises){
@@ -28,7 +30,7 @@ function fromLegacyPlan(planWeek,{uuid=defaultUuid,startedAt=new Date().toISOStr
  const id=uuid(),custom=new Map(),days=[];
  const keyFor=name=>{
   const hit=Cat()?.resolveName(name);if(hit)return {key:hit.key,role:Cat().byKey(hit.key).role};
-  const label=String(name||'').trim()||'Exercice';
+  const label=String(name||'').trim().slice(0,100)||'Exercice';
   if(!custom.has(label.toLowerCase()))custom.set(label.toLowerCase(),{key:'u-'+uuid(),name:label,pattern:null,muscle:null,equipment:null});
   return {key:custom.get(label.toLowerCase()).key,role:'finition'};
  };
@@ -37,7 +39,7 @@ function fromLegacyPlan(planWeek,{uuid=defaultUuid,startedAt=new Date().toISOStr
   if(!d?.ex?.length)return;days.push(day);
   const sid=uuid(),pos=sessions.length;
   sessions.push({id:sid,cycle_id:id,position:pos,code:String.fromCharCode(65+pos),title:d.title||'Séance '+(pos+1),focus:[],
-   exercises:d.ex.map((e,i)=>{const k=keyFor(e.name),[a,b]=parseReps(e.reps);return {id:uuid(),cycle_session_id:sid,position:i,exercise_key:k.key,role:k.role,sets:Number(e.sets)||3,reps_min:a,reps_max:b,rest_seconds:Number(e.rest)||90}})});
+   exercises:d.ex.map((e,i)=>{const k=keyFor(e.name),[a,b]=parseReps(e.reps);return {id:uuid(),cycle_session_id:sid,position:i,exercise_key:k.key,role:k.role,sets:clamp(e.sets,1,20,3),reps_min:a,reps_max:b,rest_seconds:clamp(e.rest,0,3600,90)}})});
  });
  const user_exercises=[...custom.values()];
  for(const s of sessions){finishSession(s,user_exercises);s.focus=[...new Set(s.muscles.map(m=>m.muscle))]}
@@ -84,19 +86,25 @@ function cycleProgress(cycle,workouts){
  return Math.min(1,done/total);
 }
 
+// Supabase renvoie au plus 1000 lignes par réponse : lecture par pages.
+async function selectAll(api,path,maxPages=10){
+ const out=[];
+ for(let page=0;page<maxPages;page++){const rows=await api.select(path+'&limit=1000&offset='+page*1000)||[];out.push(...rows);if(rows.length<1000)break}
+ return out;
+}
 async function loadCycle(api,userId){
  const uid=encodeURIComponent(userId);
  const [cy]=await api.select('cycles?user_id=eq.'+uid+'&status=eq.active&select=*&limit=1');
  const [workouts,logs,userExercises]=await Promise.all([
   api.select('workouts?user_id=eq.'+uid+'&status=eq.completed&select=id,cycle_id,cycle_session_id,status,started_at,ended_at,duration_seconds&order=ended_at.desc&limit=500'),
-  api.select('workout_set_logs?user_id=eq.'+uid+'&select=exercise_key,weight,reps,completed,created_at,workout_exercises(workout_id)&order=created_at.desc&limit=5000'),
+  selectAll(api,'workout_set_logs?user_id=eq.'+uid+'&select=exercise_key,weight,reps,completed,created_at,workout_exercises(workout_id)&order=created_at.desc,id',10),
   api.select('user_exercises?user_id=eq.'+uid+'&select=key,name,pattern,muscle,equipment')]);
  const setLogs=(logs||[]).map(r=>({...r,workout_id:r.workout_id??r.workout_exercises?.workout_id}));
  if(!cy)return {cycle:null,workouts:workouts||[],setLogs,userExercises:userExercises||[]};
  const cid=encodeURIComponent(cy.id);
- const [sessions,exercises]=await Promise.all([
-  api.select('cycle_sessions?cycle_id=eq.'+cid+'&select=*&order=position'),
-  api.select('cycle_exercises?user_id=eq.'+uid+'&select=*&order=position')]);
+ const sessions=await api.select('cycle_sessions?cycle_id=eq.'+cid+'&select=*&order=position');
+ const [exercises]=await Promise.all([
+  sessions?.length?api.select('cycle_exercises?cycle_session_id=in.('+sessions.map(x=>encodeURIComponent(x.id)).join(',')+')&select=*&order=position'):[]]);
  const list=(sessions||[]).map(s=>({...s,exercises:(exercises||[]).filter(e=>e.cycle_session_id===s.id)})).sort((a,b)=>a.position-b.position);
  for(const s of list)finishSession(s,userExercises||[]);
  return {cycle:{...cy,user_exercises:userExercises||[],sessions:list},workouts:workouts||[],setLogs,userExercises:userExercises||[]};

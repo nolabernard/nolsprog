@@ -108,5 +108,59 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  const broken={async select(){throw Error('Réseau')},async upsert(){throw Error('Réseau')}};
  const again=V2.create({...ctx,storage:st2,api:broken,userId:'11111111-1111-4111-8111-111111111111'});await again.init();
  assert(again.ready());assert.equal(again.state().cycle.id,acc.state().cycle.id);
+
+ // ===== Revue finale =====
+ const U='33333333-3333-4333-8333-333333333333',reject=(code,status=409)=>{const e=Error('duplicate key value violates unique constraint');e.status=status;e.code=code;return e};
+ // C1a : compte, chargement en échec et aucun cache → on ne fabrique pas un second cycle actif.
+ const fail=V2.create({...ctx,storage:memory(),api:{async select(){throw Error('Réseau')},async upsert(){throw Error('Réseau')}},userId:U});await fail.init();
+ assert.equal(fail.ready(),false);assert.equal(fail.state().cycle,null);assert.equal(fail.pending(),0);
+ assert.match(fail.todayHTML(),/data-action="v2-build"[^>]*>Réessayer/);
+ // C1b : un autre appareil a déjà un cycle actif → refus 23505, file purgée, cycle du serveur repris, séances non bloquées.
+ const server={cycles:[]},sent2=[];
+ const race={async select(p){if(p.startsWith('cycles'))return server.cycles;if(p.startsWith('cycle_sessions'))return server.cycles.length?[{id:'srv-s',cycle_id:'srv',position:0,code:'A',title:'Serveur A',focus:[]}]:[];if(p.startsWith('cycle_exercises'))return server.cycles.length?[{id:'srv-e',cycle_session_id:'srv-s',position:0,exercise_key:'hack-squat',role:'base',sets:2,reps_min:8,reps_max:10,rest_seconds:120}]:[];return []},
+  async upsert(t,rows){if(t==='cycles'&&rows.some(r=>r.status==='active'&&r.id!=='srv')){server.cycles=[{id:'srv',status:'active',method:'ppl',weeks:6,sessions_per_week:3}];throw reject('23505')}sent2.push(t)},async remove(){}};
+ const st6=memory(),r1=V2.create({...ctx,storage:st6,api:race,userId:U});await r1.init();
+ await r1.flushNow();await r1.flushNow();
+ assert.equal(r1.state().cycle.id,'srv');assert.equal(r1.pending(),0);assert.match(r1.todayHTML(),/Serveur A/);
+ // C2 : retirer un exercice prévu pendant une séance → la séance ne le référence plus.
+ const st7=memory(),c7=V2.create({...ctx,storage:st7,api:{async select(){return []},async upsert(){},async remove(){}},userId:U});await c7.init();
+ const s7=c7.state().cycle.sessions[0];await c7.handle('v2-start',{session:s7.id});await c7.handle('v2-exit');
+ const gone=s7.exercises[0].id;await c7.handle('v2-remove-ex',{ce:gone});
+ assert(!c7.state().store.current().exercises.some(e=>e.cycle_exercise_id===gone));
+ // I4 : séance terminée hors ligne, réouverture en ligne avant l'envoi → elle reste visible et la suite avance.
+ const st8=memory(),down={async select(){return []},async upsert(){throw Error('Failed to fetch')},async remove(){throw Error('Failed to fetch')}};
+ const c8=V2.create({...ctx,storage:st8,api:down,userId:U});await c8.init();
+ const first=c8.state().cycle.sessions[0];await c8.handle('v2-start',{session:first.id});
+ const fx=c8.state().store.current().exercises[0];c8.input({ex:fx.id,set:1,field:'reps',value:'9'});await c8.handle('v2-set',{ex:fx.id,set:'1'});await c8.handle('v2-finish');await c8.handle('v2-close-summary');
+ const cycleRows=JSON.parse(st8.getItem('nolsprog-v2-cycle:'+U));
+ const back={async select(p){if(p.startsWith('cycles'))return [{...cycleRows,sessions:undefined,user_exercises:undefined}];if(p.startsWith('cycle_sessions'))return cycleRows.sessions.map(({exercises,muscles,...x})=>x);if(p.startsWith('cycle_exercises'))return cycleRows.sessions.flatMap(x=>x.exercises);return []},async upsert(){throw Error('Failed to fetch')}};
+ const c9=V2.create({...ctx,storage:st8,api:back,userId:U});await c9.init();await c9.whenFresh();
+ assert(c9.state().workouts.some(w=>w.cycle_session_id===first.id),'séance non envoyée conservée');
+ assert.match(c9.statsHTML(),/série validée/);assert(!c9.todayHTML().includes('>'+first.title+'<'),'la suite avance');
+ // I5 : réseau qui ne répond jamais → le cache s'affiche tout de suite.
+ const hang=V2.create({...ctx,storage:st8,api:{select:()=>new Promise(()=>{}),upsert:()=>new Promise(()=>{})},userId:U});
+ await Promise.race([hang.init(),new Promise((_,no)=>setTimeout(()=>no(Error('init bloqué')),500))]);assert(hang.ready());
+ // I8 : construction depuis le générateur V2 quand le questionnaire existe ; plan V1 borné aux contraintes sinon.
+ const gen=V2.create({...ctx,storage:memory(),api:null,userId:null,answers:()=>({goal:'muscle',level:'intermediate',days:3,equipment:'gym',duration:60})});await gen.init();
+ assert.notEqual(gen.state().cycle.engine_version,'v1-legacy');assert.equal(gen.state().cycle.sessions.length,3);
+ const wild=globalThis.SteroidCycle.fromLegacyPlan([{title:'X',ex:[{name:'A'.repeat(140),sets:40,reps:'0',rest:9999},{name:'Dips',sets:0,reps:'120 s',rest:60}]}],{uuid});
+ for(const e of wild.sessions[0].exercises){assert(e.sets>=1&&e.sets<=20);assert(e.reps_min>=1&&e.reps_max<=100&&e.reps_min<=e.reps_max);assert(e.rest_seconds<=3600)}
+ assert(wild.user_exercises[0].name.length<=100);
+ // I7 : questionnaire refait → nouveau cycle actif, l'ancien archivé dans le même envoi (ancien d'abord).
+ const order=[],st10=memory(),c10=V2.create({...ctx,storage:st10,api:{async select(){return []},async upsert(t,rows){if(t==='cycles')order.push(...rows.map(r=>r.status))},async remove(){}},userId:U,answers:()=>({goal:'muscle',level:'intermediate',days:4,equipment:'gym',duration:60})});
+ await c10.init();await c10.flushNow();order.length=0;const old=c10.state().cycle.id;
+ await c10.rebuild();await c10.flushNow();
+ assert.notEqual(c10.state().cycle.id,old);assert.deepEqual(order,['archived','active']);
+ // I9 : historique paginé (PostgREST limite à 1000 lignes par réponse) et exercices du cycle courant seulement.
+ const many=Array.from({length:2500},(_,i)=>({exercise_key:'hack-squat',weight:50,reps:5,completed:true,created_at:'2026-11-01T00:00:00Z',workout_exercises:{workout_id:'w'}}));
+ const paths=[];const loaded=await globalThis.SteroidCycle.loadCycle({async select(p){paths.push(p);if(p.startsWith('workout_set_logs')){const o=Number((p.match(/offset=(\d+)/)||[])[1]||0),l=Math.min(1000,Number((p.match(/limit=(\d+)/)||[])[1]||1000));return many.slice(o,o+l)}if(p.startsWith('cycles'))return [{id:'cy'}];if(p.startsWith('cycle_sessions'))return [{id:'s1',cycle_id:'cy',position:0}];return []}},U);
+ assert.equal(loaded.setLogs.length,2500);assert(paths.some(p=>p.startsWith('cycle_exercises')&&p.includes('cycle_session_id=in.(s1)')));
+ // C3 : l'en-tête et la déconnexion tiennent compte des envois V2 en attente ; la déconnexion efface les clés V2.
+ const appSrc=require('fs').readFileSync(require('path').join(__dirname,'../app.js'),'utf8');
+ assert(/function anyPending\(uid\)\{return hasPendingChanges\(uid\)\|\|Boolean\(v2Pending\(\)\)\}/.test(appSrc)&&/V2\?\.pending\(\)/.test(appSrc));
+ assert(!/hasPendingChanges\(A\.session\.user\.id\)/.test(appSrc),'statut de synchro : anyPending partout');
+ assert(/a==='logout'[\s\S]{0,200}anyPending\(A\.session\?\.user\?\.id\)/.test(appSrc));
+ assert(/clearPrivateCache[^\n]*nolsprog-v2-/.test(appSrc)&&/clearPrivateCache[^\n]*steroid-v2-/.test(appSrc));
+ assert(/if\(V2\?\.ready\(\)&&\(!A\.profile\|\|await globalThis\.SteroidDialog\.confirm/.test(appSrc),'pas de question à la première configuration');
  console.log('app-v2 : ok');
 })().catch(e=>{console.error(e);process.exit(1)});
