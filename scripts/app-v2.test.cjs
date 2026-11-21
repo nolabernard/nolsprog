@@ -162,5 +162,51 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  assert(/a==='logout'[\s\S]{0,200}anyPending\(A\.session\?\.user\?\.id\)/.test(appSrc));
  assert(/clearPrivateCache[^\n]*nolsprog-v2-/.test(appSrc)&&/clearPrivateCache[^\n]*steroid-v2-/.test(appSrc));
  assert(/if\(V2\?\.ready\(\)&&\(!A\.profile\|\|await globalThis\.SteroidDialog\.confirm/.test(appSrc),'pas de question à la première configuration');
+
+ // ===== Lot 4 : planning et cardio =====
+ const U4='44444444-4444-4444-8444-444444444444';
+ // Mode « quand je veux » : pas de jours conseillés ; mode jours : jours repris du questionnaire.
+ const free=V2.create({...ctx,storage:memory(),api:null,userId:null,answers:()=>({goal:'muscle',level:'intermediate',daysCount:'3',days:[0,1,2,3,4,5,6],planMode:'free',equipment:'gym',duration:'60'})});await free.init();
+ assert.equal(free.state().cycle.preferred_days,null);assert.match(free.todayHTML(),/3 séances par semaine, quand tu veux/);
+ const fixed=V2.create({...ctx,storage:memory(),api:null,userId:null,answers:()=>({goal:'muscle',level:'intermediate',daysCount:'3',days:[0,2,4],planMode:'days',equipment:'gym',duration:'60'})});await fixed.init();
+ assert.deepEqual(fixed.state().cycle.preferred_days,[0,2,4]);assert.match(fixed.todayHTML(),/Tes jours : lundi, mercredi, vendredi/);
+ // Cardio noté seul (invité) : bornes vérifiées, compté dans la semaine et dans Progrès.
+ await fixed.handle('v2-cardio-open');assert.match(fixed.todayHTML(),/Noter du cardio<\/h2>/);
+ assert.equal(await fixed.saveCardio({type:'velo',minutes:'0'}),false);assert.equal(await fixed.saveCardio({type:'velo',minutes:'900'}),false);assert.equal(await fixed.saveCardio({type:'yoga',minutes:'20'}),false);
+ assert.equal(await fixed.saveCardio({type:'velo',minutes:'25'}),true);assert(!/Noter du cardio<\/h2>/.test(fixed.todayHTML()),'panneau fermé');
+ assert.match(fixed.statsHTML(),/25 min/);
+ // Cardio prévu : ajouté puis retiré dans Programme ; objectif affiché sur l'accueil.
+ assert.equal(await fixed.addCardioPlan({type:'marche',minutes:'30',per_week:'2'}),true);
+ assert.match(fixed.todayHTML(),/Cardio : 25 \/ 60 min cette semaine/);assert.match(fixed.programmeHTML(),/Marche · 30 min · 2 fois par semaine/);
+ await fixed.handle('v2-cardio-plan-remove',{id:fixed.state().cycle.cardio[0].id});assert.equal(fixed.state().cycle.cardio.length,0);
+ // Compte, hors ligne : cardio lié à une séance non envoyée → envoyé APRÈS la séance, jamais refusé.
+ const seen=[],online={v:false};
+ const fk={async select(){return []},async remove(){},async upsert(t,rows){if(!online.v)throw Error('Failed to fetch');
+  if(t==='workouts')rows.forEach(r=>seen.push('w:'+r.id));
+  if(t==='cardio_logs')for(const r of rows){if(r.workout_id&&!seen.includes('w:'+r.workout_id)){const e=Error('violates foreign key');e.status=409;throw e}seen.push('cardio')}
+  if(t==='cycle_cardio')seen.push('plan')}};
+ const st11=memory(),c11=V2.create({...ctx,storage:st11,api:fk,userId:U4,answers:()=>({goal:'muscle',level:'intermediate',daysCount:'3',days:[0,2,4],planMode:'days',equipment:'gym',duration:'60'})});
+ online.v=true;await c11.init();await c11.flushNow();online.v=false;
+ await c11.handle('v2-start',{session:c11.state().cycle.sessions[0].id});const ex11=c11.state().store.current().exercises[0];
+ c11.input({ex:ex11.id,set:1,field:'reps',value:'8'});await c11.handle('v2-set',{ex:ex11.id,set:'1'});await c11.handle('v2-finish');
+ const wid=c11.state().summary.id;await c11.handle('v2-cardio-open',{workout:wid});assert.equal(await c11.saveCardio({type:'course',minutes:'15',workout:wid}),true);
+ await c11.addCardioPlan({type:'velo',minutes:'30',per_week:'1'});
+ assert(c11.pending()>0);online.v=true;assert(await c11.flushNow());assert.equal(c11.pending(),0);
+ assert(seen.indexOf('cardio')>seen.indexOf('w:'+wid),'cardio après la séance');assert(seen.includes('plan'));
+ // Rechargement : cardio et cardio prévu relus.
+ const c12=V2.create({...ctx,storage:st11,api:{...fk,async select(p){if(p.startsWith('cardio_logs'))return [{id:'x',done_on:new Date().toISOString().slice(0,10),type:'course',minutes:15,workout_id:wid}];return []}},userId:U4});await c12.init();await c12.whenFresh();
+ assert.match(c12.statsHTML(),/15 min/);
+ // Cardio prévu ajouté puis retiré hors ligne : la réouverture en ligne ne l'annule pas avant l'envoi.
+ const st13=memory(),srv13={cycle:null},off13={async select(p){if(!srv13.cycle)return [];const c=srv13.cycle;if(p.startsWith('cycles'))return [{...c,sessions:undefined,cardio:undefined}];if(p.startsWith('cycle_sessions'))return c.sessions.map(({exercises,muscles,...x})=>x);if(p.startsWith('cycle_exercises'))return c.sessions.flatMap(x=>x.exercises);if(p.startsWith('cycle_cardio'))return srv13.cardio||[];return []},async upsert(){throw Error('Failed to fetch')},async remove(){throw Error('Failed to fetch')}};
+ const c13=V2.create({...ctx,storage:st13,api:off13,userId:U4});await c13.init();
+ srv13.cycle=JSON.parse(JSON.stringify(c13.state().cycle));srv13.cardio=[{id:'old',cycle_id:srv13.cycle.id,type:'rameur',minutes:20,per_week:1}];
+ const c13b=V2.create({...ctx,storage:st13,api:off13,userId:U4});await c13b.init();await c13b.whenFresh();assert.match(c13b.programmeHTML(),/Rameur · 20 min/);
+ await c13b.addCardioPlan({type:'natation',minutes:'40',per_week:'1'});await c13b.handle('v2-cardio-plan-remove',{id:'old'});
+ const c14=V2.create({...ctx,storage:st13,api:off13,userId:U4});await c14.init();await c14.whenFresh();
+ const prog14=c14.programmeHTML();assert.match(prog14,/Natation · 40 min/);assert(!/Rameur · 20 min/.test(prog14),'retrait conservé');
+ // Questionnaire : deux modes ; formulaires cardio branchés.
+ assert(/data-key="planMode"/.test(appSrc)&&/opt\('days','Je choisis mes jours'/.test(appSrc)&&/opt\('free'/.test(appSrc),'choix du mode de planning');
+ assert(/key==='planMode'&&v==='free'\)A\.answers\.days=\[0,1,2,3,4,5,6\]/.test(appSrc),'mode libre : semaine entière pour l’ancien moteur');
+ assert(/'v2Cardio' in/.test(appSrc)&&/'v2CardioPlan' in/.test(appSrc));
  console.log('app-v2 : ok');
 })().catch(e=>{console.error(e);process.exit(1)});

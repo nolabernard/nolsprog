@@ -87,4 +87,25 @@ assert.match(prog,/data-action="v2-remove-ex" data-ce="e1"/);assert.match(prog,/
 assert(!/<input[^>]*name="name"/.test(prog),'pas de saisie libre du nom');
 assert.match(UI.progress({progress:{totals:{sets:1,volume:480},byKey:{'hack-squat':[{date:'2026-11-10T11:00:00Z',weight:60,reps:8,volume:480}]}}}),/>1<\/b> <span>série validée<\/span>/);
 assert.match(UI.summary({workout:{...workout,duration_seconds:60},pending:0,local:true}),/Enregistrée sur ce téléphone\./);
+
+// ===== Lot 4 : rythme et cardio =====
+const base={next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut,bas]}};
+let r4=UI.home({...base,rhythm:{mode:'days',days:[0,2,4],todayPlanned:false,nextDay:2,doneThisWeek:1,goal:3}});
+assert.match(r4,/Prochain jour conseillé : mercredi/);assert.match(r4,/aria-label="Tes jours : lundi, mercredi, vendredi"/);
+assert.match(UI.home({...base,rhythm:{mode:'days',days:[0,2,4],todayPlanned:true,nextDay:0,doneThisWeek:0,goal:3}}),/Aujourd’hui fait partie de tes jours/);
+r4=UI.home({...base,rhythm:{mode:'free',days:[],todayPlanned:false,nextDay:null,doneThisWeek:1,goal:4}});
+assert.match(r4,/4 séances par semaine, quand tu veux/);assert(!/Prochain jour/.test(r4));
+// Cardio : objectif seulement s'il est prévu ; « Noter du cardio » toujours possible.
+r4=UI.home({...base,cardio:{target:60,minutes:35}});assert.match(r4,/Cardio : 35 \/ 60 min cette semaine/);assert.match(r4,/data-action="v2-cardio-open"/);
+r4=UI.home({...base,cardio:{target:0,minutes:0}});assert(!/min cette semaine/.test(r4));assert.match(r4,/data-action="v2-cardio-open"/);
+const cs=UI.cardioSheet({workoutId:'w9'});
+assert.match(cs,/data-v2-cardio/);assert.match(cs,/name="workout" value="w9"/);
+for(const t of ['marche','course','velo','elliptique','rameur','natation','escaliers','autre'])assert.match(cs,new RegExp('value="'+t+'"'));
+assert.match(cs,/name="minutes"[^>]*min="1"[^>]*max="600"/);
+assert.match(UI.summary({workout:{...workout,duration_seconds:60}}),/data-action="v2-cardio-open" data-workout="w"/);
+const pc=UI.programme({cycle:{sessions:[haut],cardio:[{id:'cc1',type:'velo',minutes:30,per_week:2}]}});
+assert.match(pc,/Vélo · 30 min · 2 fois par semaine/);assert.match(pc,/data-action="v2-cardio-plan-remove" data-id="cc1"/);assert.match(pc,/data-v2-cardio-plan/);
+const pp=UI.progress({progress:{totals:{sets:0,volume:0},byKey:{}},cardio:[{week:'2026-11-16',minutes:30},{week:'2026-11-23',minutes:35}]});
+assert.match(pp,/Cardio/);assert.match(pp,/65 min sur 6 semaines|65 min/);assert.match(pp,/23 nov/);
+assert.match(UI.home({...base,cardio:{target:0,minutes:25}}),/Cardio : 25 min cette semaine/);
 console.log('ui-v2 : ok');

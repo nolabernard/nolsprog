@@ -59,7 +59,7 @@ let n=0;const uuid=()=>'00000000-0000-4000-8000-'+String(++n).padStart(12,'0');
   if(path.startsWith('workouts'))return wk;
   if(path.startsWith('workout_set_logs'))return sl;
   if(path.startsWith('user_exercises'))return [];
-  throw Error(path)}};
+  if(path.startsWith('cardio_logs')||path.startsWith('cycle_cardio'))return [];throw Error(path)}};
  const loaded=await C.loadCycle(api,'u1');
  assert.deepEqual(loaded.cycle.sessions.map(s=>s.id),['s1','s2']);
  assert.equal(loaded.cycle.sessions[0].exercises.length,1);assert.equal(loaded.cycle.sessions[1].exercises.length,0);
@@ -69,5 +69,32 @@ let n=0;const uuid=()=>'00000000-0000-4000-8000-'+String(++n).padStart(12,'0');
 
  // Avancée du cycle : séances faites ÷ (semaines × séances par semaine).
  assert.equal(C.cycleProgress({weeks:6,sessions_per_week:3,id:'cy'},[{cycle_id:'cy',status:'completed'},{cycle_id:'autre',status:'completed'}]),1/18);
+
+ // ===== Lot 4 : rythme et cardio =====
+ // Lundi 23 novembre 2026, 10 h (heure locale) ; 0 = lundi.
+ const mon=new Date(2026,10,23,10).getTime(),day=24*3600e3;
+ assert.equal(C.weekStart(mon),new Date(2026,10,23).getTime());
+ assert.equal(C.weekStart(mon-11*3600e3),new Date(2026,10,16).getTime(),'dimanche soir = semaine précédente');
+ const cyD={id:'cy',sessions_per_week:3,preferred_days:[0,2,4],sessions:[]};
+ let r=C.rhythm(cyD,[],mon);assert.equal(r.mode,'days');assert.equal(r.todayPlanned,true);assert.equal(r.nextDay,0);assert.equal(r.goal,3);
+ r=C.rhythm(cyD,[{cycle_id:'cy',status:'completed',ended_at:new Date(mon).toISOString()}],mon+3600e3);
+ assert.equal(r.doneThisWeek,1);assert.equal(r.todayPlanned,false,'séance du jour déjà faite');assert.equal(r.nextDay,2,'prochain jour : mercredi');
+ r=C.rhythm(cyD,[],mon+5*day);assert.equal(r.nextDay,0,'samedi → lundi suivant');
+ r=C.rhythm({id:'cy',sessions_per_week:4,preferred_days:null,sessions:[]},[],mon);assert.equal(r.mode,'free');assert.equal(r.nextDay,null);assert.equal(r.todayPlanned,false);
+ // Cardio : minutes de la semaine en cours, puis 6 dernières semaines.
+ const cl=[{done_on:'2026-11-23',minutes:20,type:'velo'},{done_on:'2026-11-22',minutes:30,type:'marche'},{done_on:'2026-11-25',minutes:15,type:'course'},{done_on:'2026-10-01',minutes:60,type:'marche'}];
+ assert.equal(C.cardioWeek(cl,mon),35);
+ const cp=C.cardioProgress(cl,mon);assert.equal(cp.length,6);assert.deepEqual(cp.at(-1),{week:'2026-11-23',minutes:35});assert.deepEqual(cp.at(-2),{week:'2026-11-16',minutes:30});
+ assert.equal(C.localDate(mon),'2026-11-23');
+ // Chargement : cardio prévu du cycle et cardio fait.
+ const capi={async select(p){if(p.startsWith('cycles'))return [{id:'cy',status:'active'}];if(p.startsWith('cycle_sessions'))return [];if(p.startsWith('cycle_cardio'))return [{id:'cc',cycle_id:'cy',type:'velo',minutes:30,per_week:2}];if(p.startsWith('cardio_logs'))return cl;return []}};
+ const lc=await C.loadCycle(capi,'u1');assert.equal(lc.cycle.cardio[0].type,'velo');assert.equal(lc.cardioLogs.length,4);
+ // Changement d'heure (mars, Paris) : un lundi n'est compté que dans sa propre semaine.
+ const out=require('child_process').execFileSync(process.execPath,['-e',`
+  globalThis.SteroidCatalogue=require('./exercise-catalogue.js');const C=require('./v2-cycle.js');
+  const l=[{done_on:'2026-03-30',minutes:40,type:'velo'}];
+  const p=C.cardioProgress(l,new Date(2026,3,1,12).getTime());
+  console.log(JSON.stringify({prev:C.cardioWeek(l,new Date(2026,2,27,12).getTime()),bars:p.filter(w=>w.minutes).map(w=>w.week)}))`],{cwd:require('path').join(__dirname,'..'),env:{...process.env,TZ:'Europe/Paris'}}).toString();
+ assert.deepEqual(JSON.parse(out),{prev:0,bars:['2026-03-30']});
  console.log('v2-cycle : ok');
 })().catch(e=>{console.error(e);process.exit(1)});

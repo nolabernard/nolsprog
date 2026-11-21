@@ -301,7 +301,7 @@ const steps=[
 {key:'equipment',label:'Lieu / équipement',type:'select',options:[['gym','Salle équipée'],['dumbbells','Domicile avec haltères'],['none','Domicile sans matériel']]},
 {key:'priority',label:'Muscles prioritaires (plusieurs choix)',type:'multi',options:['Pectoraux','Dos','Épaules','Bras','Jambes','Abdominaux']}]},
 {title:'Ton organisation',subtitle:'Choisis tes disponibilités et la méthode qui te plaît.',fields:[
-{key:'days',label:'Jours disponibles (sélection multiple)',type:'days',options:['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche']},
+{key:'days',label:'Ton rythme',type:'days',options:['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche']},
 {key:'method',label:'Méthode d’entraînement',type:'methods',options:Object.entries(definitions)},
 {key:'avoid',label:'Exercices à éviter (facultatif)',type:'text',placeholder:'Ex. tractions, dips, squat barre'},
 {key:'limitations',label:'Douleur ou limitation à prendre en compte ?',type:'select',options:[['no','Non'],['yes','Oui, je vérifierai avec un professionnel les mouvements adaptés']]}]}
