@@ -82,6 +82,28 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  assert(acc.pending()>0);assert.match(acc.todayHTML(),/envoi en attente/);
  api.online=true;await acc.flushNow();assert.equal(acc.pending(),0);
  assert(sent.some(s=>s.startsWith('workouts:'))&&sent.some(s=>s.startsWith('workout_set_logs:')));
+ // Fausse base aux contraintes réelles : colonnes identiques par envoi, (séance, place) unique, vérifiée ligne par ligne.
+ const db=new Map(),log=[];
+ const strict={async select(){return []},async remove(table,id){log.push('del');db.delete(id)},async upsert(table,rows){
+  const keys=JSON.stringify(Object.keys(rows[0]).sort());
+  if(rows.some(r=>JSON.stringify(Object.keys(r).sort())!==keys))throw Error('All object keys must match');
+  if(table!=='cycle_exercises')return;
+  for(const r of rows){db.set(r.id,{...r});const clash=[...db.values()].filter(x=>x.cycle_session_id===r.cycle_session_id&&x.position===r.position);if(clash.length>1)throw Error('duplicate key (cycle_session_id, position)')}
+ }};
+ const st3=memory(),db3=V2.create({...ctx,storage:st3,api:strict,userId:'22222222-2222-4222-8222-222222222222'});await db3.init();assert(await db3.flushNow());
+ const sess=db3.state().cycle.sessions[0];
+ // Un exercice de base ajouté s'insère avant les finitions : les places se décalent.
+ await db3.handle('v2-add-ex',{session:sess.id});await db3.handle('v2-pick',{key:'hack-squat'});
+ assert(await db3.flushNow(),'envoi accepté malgré le décalage des places');assert.equal(db3.pending(),0);
+ const rows=[...db.values()].filter(x=>x.cycle_session_id===sess.id).sort((a,b)=>a.position-b.position).map(x=>x.exercise_key);
+ assert.deepEqual(rows,sess.exercises.map(x=>x.exercise_key));
+ // Retrait hors ligne : rejoué au retour du réseau, avant les décalages.
+ const off={...strict,async remove(){throw Error('Hors ligne')}};
+ const db4=V2.create({...ctx,storage:st3,api:off,userId:'22222222-2222-4222-8222-222222222222'});await db4.init();
+ await db4.handle('v2-remove-ex',{ce:db4.state().cycle.sessions[0].exercises[0].id});
+ const db5=V2.create({...ctx,storage:st3,api:strict,userId:'22222222-2222-4222-8222-222222222222'});await db5.init();
+ assert(await db5.flushNow());assert.equal(db5.pending(),0);assert(log.includes('del'));
+ assert.deepEqual([...db.values()].filter(x=>x.cycle_session_id===sess.id).sort((a,b)=>a.position-b.position).map(x=>x.exercise_key),db5.state().cycle.sessions[0].exercises.map(x=>x.exercise_key));
  // Échec du chargement en ligne : le cache de l'appareil prend le relais.
  const broken={async select(){throw Error('Réseau')},async upsert(){throw Error('Réseau')}};
  const again=V2.create({...ctx,storage:st2,api:broken,userId:'11111111-1111-4111-8111-111111111111'});await again.init();

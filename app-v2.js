@@ -30,17 +30,28 @@ function create(ctx){
  }
  function queueRows(rows){
   for(const [table,list] of Object.entries(rows))for(const row of list){
-   const i=outbox.findIndex(x=>x.table===table&&x.row.id===row.id&&x.row.key===row.key);
+   const i=outbox.findIndex(x=>!x.op&&x.table===table&&x.row.id===row.id&&x.row.key===row.key);
    if(i>=0)outbox[i]={table,row};else outbox.push({table,row});
   }
   write(K.outbox,outbox);scheduleFlush();
  }
  const ORDER=['cycles','user_exercises','cycle_sessions','cycle_exercises'];
+ // Colonnes fixes par table : un envoi groupé exige les mêmes clés sur chaque ligne.
+ const COLS={cycles:['id','user_id','status','method','weeks','sessions_per_week','preferred_days','answers_snapshot','engine_version','started_at'],
+  user_exercises:['user_id','key','name','pattern','muscle','equipment'],
+  cycle_sessions:['id','user_id','cycle_id','position','code','title','focus'],
+  cycle_exercises:['id','user_id','cycle_session_id','position','exercise_key','role','sets','reps_min','reps_max','rest_seconds','replaced_key']};
+ const pick=(table,r)=>Object.fromEntries(COLS[table].map(c=>[c,r[c]??null]));
  async function flushOutbox(){
   if(!api||!userId)return true;
+  // Retraits d'abord : ils libèrent des places avant les décalages.
+  for(const item of outbox.filter(x=>x.op==='delete')){await api.remove(item.table,item.id);outbox=outbox.filter(x=>x!==item);write(K.outbox,outbox)}
   for(const table of ORDER){
-   const items=outbox.filter(x=>x.table===table);if(!items.length)continue;
-   await api.upsert(table,items.map(x=>x.row));
+   const items=outbox.filter(x=>x.table===table&&!x.op);if(!items.length)continue;
+   const rows=items.map(x=>pick(table,x.row));
+   // (séance, place) est unique et vérifié ligne par ligne : on passe par des places provisoires.
+   if(table==='cycle_exercises')await api.upsert(table,rows.map(r=>({...r,position:r.position+1000})));
+   await api.upsert(table,rows);
    outbox=outbox.filter(x=>!items.includes(x));write(K.outbox,outbox);
   }
   return true;
@@ -169,7 +180,7 @@ function create(ctx){
   if(s.exercises.length<=1){notice('Une séance garde au moins un exercice.',true);return}
   if(!await confirm(C.nameOf(e.exercise_key,S.userExercises)+' sera retiré de '+s.title+'. Son historique est conservé.',{title:'Retirer cet exercice ?',ok:'Retirer',cancel:'Garder'}))return;
   s.exercises=s.exercises.filter(x=>x.id!==ceId);refreshSession(s);persistLocal();
-  if(api&&userId){try{await api.remove('cycle_exercises',ceId)}catch{notice('Retrait enregistré sur ce téléphone, envoi en attente.',true)}queueRows({cycle_exercises:s.exercises.map(exRow)})}
+  if(api&&userId){outbox=outbox.filter(x=>!(x.table==='cycle_exercises'&&x.row?.id===ceId));outbox.push({table:'cycle_exercises',op:'delete',id:ceId});queueRows({cycle_exercises:s.exercises.map(exRow)})}
  }
  async function createExercise({name,muscle,pattern}){
   name=String(name||'').trim().slice(0,100);if(!name){notice('Indique le nom de l’exercice.',true);return}
