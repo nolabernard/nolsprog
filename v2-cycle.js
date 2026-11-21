@@ -47,12 +47,13 @@ function fromLegacyPlan(planWeek,{uuid=defaultUuid,startedAt=new Date().toISOStr
 }
 
 function toRows(cycle,userId){
- const {sessions,user_exercises,...c}=cycle;
+ const {sessions,user_exercises,cardio,...c}=cycle;
  return {
   cycles:[{...c,user_id:userId}],
   cycle_sessions:sessions.map(({exercises,muscles,...s})=>({...s,user_id:userId})),
   cycle_exercises:sessions.flatMap(s=>s.exercises.map(e=>({...e,user_id:userId}))),
-  user_exercises:(user_exercises||[]).map(u=>({...u,user_id:userId}))
+  user_exercises:(user_exercises||[]).map(u=>({...u,user_id:userId})),
+  cycle_cardio:(cardio||[]).map(x=>({...x,user_id:userId}))
  };
 }
 
