@@ -112,5 +112,15 @@ function resolveName(name){
  if(CATALOGUE.filter(e=>[e.name,...e.aliases].some(n=>prefixBonus(q,normalize(n))>0)).length>1)return null;
  return {key:best.entry.key,method:'fuzzy',score:Math.round(best.score*100)/100};
 }
-return {CATALOGUE,normalize,byKey,search,resolveName,MIN_SCORE};
+// « Machine prise » : même mouvement, même rôle, matériel disponible, hors exercices à éviter ou déjà dans la séance.
+function equipmentOk(entry,equipment){if(!equipment||equipment==='gym')return true;return entry.equipment.some(x=>x===equipment||x==='any'||(equipment==='dumbbells'&&x==='none'))}
+function alternatives(key,{equipment='gym',avoid=[],exclude=[],history={},limit=3}={}){
+ const from=byKey(key);if(!from)return [];
+ const banned=avoid.map(normalize).filter(a=>a.length>=3);
+ const muscleScore=e=>e.muscle===from.muscle?1:0,equipScore=e=>e.equipment.some(x=>from.equipment.includes(x))?1:0;
+ return CATALOGUE.filter(e=>e.key!==key&&e.pattern===from.pattern&&e.role===from.role&&!exclude.includes(e.key)&&equipmentOk(e,equipment)&&!banned.some(a=>normalize(e.name).includes(a)))
+  .sort((a,b)=>(history[b.key]||0)-(history[a.key]||0)||muscleScore(b)-muscleScore(a)||equipScore(b)-equipScore(a)||a.name.localeCompare(b.name))
+  .slice(0,limit);
+}
+return {CATALOGUE,normalize,byKey,search,resolveName,alternatives,MIN_SCORE};
 });

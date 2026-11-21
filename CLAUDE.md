@@ -26,6 +26,9 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
   `sport-ux.js` (aides UX, records).
 - `exercise-catalogue.js` : catalogue à clés permanentes (`SteroidCatalogue`), rôles base/finition, recherche
   tolérante (`search`, `resolveName`). Une clé publiée ne change jamais et n'est jamais réutilisée.
+- `session-planner.js` (`SteroidPlanner.nextSession`) : prochaine séance de la suite + garde-fou 48 h expliqué.
+- `workout-store.js` (`SteroidWorkout.createWorkoutStore`) : séance V2 en cours (séries, pause, plus tard,
+  remplacement, fin) et file d'envoi ordonnée vers les tables V2 (upsert sur `id`). Pas encore branché (lot 3b).
 - `ui-dialog.js` : panneaux de dialogue de l'app (`SteroidDialog.open/confirm/yesNo/ask`).
   Interdit : `prompt`, `confirm`, `alert` natifs (vérifié par les tests).
 - `app-updates.js` : détection de nouvelle version (`version.json` généré au déploiement).
@@ -64,5 +67,6 @@ maquettes sur le canevas « STÉROÏDE — refonte UX »). Plans : `docs/superpo
   rejouable ; correspondances des noms dans `public.v2_name_map`). L'app écrit encore dans les tables V1 :
   relancer la copie au basculement (lot 3).
 - Lot 2 Générateur et cycles : fait (`buildCycle`, moteur `{version: 2}`, tests sur 4 050 combinaisons).
-- Lots 3 à 7 : à faire (séance P1 + bascule V2, planning en suite, historique, coach et bilan, rappels).
+- Lot 3a Logique de séance : fait (modules ci-dessus + `alternatives` du catalogue).
+- Lots 3b à 7 : à faire (écrans P1 + bascule V2, planning en suite, historique, coach et bilan, rappels).
 - Migrations Supabase : uniquement sur accord explicite du propriétaire (« applique les migrations »).
