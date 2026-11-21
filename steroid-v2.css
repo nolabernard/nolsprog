@@ -261,3 +261,21 @@ button:active{transform:translateY(1px)}
 .shell.is-v2-session .v2-session{min-height:100dvh;padding-top:max(10px,env(safe-area-inset-top))}
 .v2-session-foot{position:sticky;bottom:0;background:linear-gradient(to top,var(--bg) 82%,transparent);padding:14px 0 calc(12px + env(safe-area-inset-bottom))}
 .v2-loading{min-height:50vh}
+/* Lot 4 : rythme et cardio */
+.v2-days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:8px 0}
+.v2-days span{height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:var(--muted);background:var(--bg)}
+.v2-days span.is-on{background:var(--raised);color:var(--accent)}.v2-days span.is-today{background:var(--accent);color:var(--accent-text)}
+.v2-cardio-line{display:flex;flex-direction:column;gap:2px;margin-top:8px;border-top:1px solid var(--line);padding-top:8px}.v2-cardio-line p{margin:0}
+.v2-types{border:0;padding:0;margin:0;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.v2-types legend{grid-column:1/-1;margin-bottom:6px}
+.v2-types label{position:relative}.v2-types input{position:absolute;opacity:0;inset:0}
+.v2-types span{min-height:46px;display:flex;align-items:center;justify-content:center;border:2px solid var(--line);border-radius:12px;font-weight:700;font-size:13px;text-align:center}
+.v2-types input:checked+span{background:var(--accent);border-color:var(--accent);color:var(--accent-text)}
+.v2-types input:focus-visible+span{outline:3px solid #2F8F6B;outline-offset:2px}
+.v2-cardio-plan{display:grid;grid-template-columns:1fr 84px 1fr;gap:8px}.v2-cardio-plan .v2-btn{grid-column:1/-1}
+.v2-card-title{margin:0 0 4px;font-family:Archivo,Inter,sans-serif;font-weight:900;font-size:20px}
+.v2-bars{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.v2-bars li{display:grid;grid-template-columns:64px 1fr 64px;align-items:center;gap:8px;font-size:13px}
+.v2-bars i{height:10px;border-radius:5px;background:var(--raised);position:relative;overflow:hidden}
+.v2-bars i::after{content:"";position:absolute;inset:0;width:calc(var(--v)*100%);background:var(--accent);border-radius:5px}
+.v2-bars b{text-align:right}

@@ -24,7 +24,28 @@ function ring(value){
  return '<div class="v2-ring" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct+'" aria-label="Avancée du cycle : '+pct+' %"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="'+r+'" class="v2-ring-track"/>'+(pct?'<circle cx="32" cy="32" r="'+r+'" class="v2-ring-value" stroke-dasharray="'+(c*pct/100).toFixed(1)+' '+c.toFixed(1)+'"/>':'')+'</svg><b>'+pct+'<small>%</small></b></div>';
 }
 
-function home({next,hasHistory=false,cycle,progress=0,minutes,firstName,dateText,weekLine,record,building=false,active=null,retry=false}={}){
+const DAYS=['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'],DAY1=['L','M','M','J','V','S','D'];
+const CARDIO=[['marche','Marche'],['course','Course'],['velo','Vélo'],['elliptique','Elliptique'],['rameur','Rameur'],['natation','Natation'],['escaliers','Escaliers'],['autre','Autre']];
+const cardioName=t=>(CARDIO.find(c=>c[0]===t)||[0,'Cardio'])[1];
+function rhythmHTML(r){
+ if(!r)return '';
+ if(r.mode==='free')return '<p class="v2-muted">'+r.goal+' séance'+(r.goal>1?'s':'')+' par semaine, quand tu veux.</p>';
+ const today=r.todayPlanned?r.nextDay:-1;
+ return '<div class="v2-days" role="img" aria-label="Tes jours : '+r.days.map(d=>DAYS[d]).join(', ')+'">'+DAY1.map((l,i)=>'<span class="'+(r.days.includes(i)?'is-on':'')+(i===today?' is-today':'')+'">'+l+'</span>').join('')+'</div>'
+  +'<p class="v2-muted">'+(r.todayPlanned?'Aujourd’hui fait partie de tes jours.':'Prochain jour conseillé : '+DAYS[r.nextDay]+'.')+' Rien n’est bloqué : tu t’entraînes quand tu peux.</p>';
+}
+function cardioHTML(c){
+ if(!c)return '';
+ return '<div class="v2-cardio-line">'+(c.target?'<p><b>Cardio : '+Number(c.minutes)+' / '+Number(c.target)+' min cette semaine</b></p>':'')+'<button type="button" class="v2-link" data-action="v2-cardio-open">'+icon('plus','v2-ic v2-ic--sm')+'Noter du cardio</button></div>';
+}
+function cardioSheet({workoutId=''}={}){
+ return '<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="Noter du cardio"><i class="v2-grab"></i><h2>Noter du cardio</h2>'
+  +'<form class="v2-create" data-v2-cardio><input type="hidden" name="workout" value="'+esc(workoutId)+'"><fieldset class="v2-types"><legend class="v2-sheet-label">Activité</legend>'
+  +CARDIO.map(([v,t],i)=>'<label><input type="radio" name="type" value="'+v+'" '+(i===0?'checked':'')+'><span>'+t+'</span></label>').join('')+'</fieldset>'
+  +'<label class="v2-field-label">Durée (minutes)<input name="minutes" type="number" inputmode="numeric" min="1" max="600" required value="30"></label>'
+  +'<button type="submit" class="v2-btn">Enregistrer le cardio</button></form></section></div>';
+}
+function home({next,hasHistory=false,cycle,progress=0,minutes,firstName,dateText,weekLine,record,building=false,active=null,retry=false,rhythm=null,cardio=null}={}){
  const head='<header class="v2-home-head"><div>'+(dateText?'<p class="v2-date">'+esc(dateText)+'</p>':'')+'<h1 class="v2-hello">'+esc(firstName?'Salut '+firstName:'Salut')+'</h1></div></header>';
  if(!cycle||!next)return '<section class="v2-home">'+head+'<div class="v2-card v2-empty">'+(retry?'<h2>Programme indisponible</h2><p>Impossible de joindre ton compte. Vérifie ta connexion.</p>':'<h2>Ton programme t’attend</h2><p>Je prépare ta suite de séances à partir de tes réponses.</p>')+'<button type="button" class="v2-btn" data-action="v2-build" '+(building?'disabled':'')+'>'+(building?'Préparation…':retry?'Réessayer':'Préparer mon programme')+'</button></div></section>';
  const s=next.session,count=(s.exercises||[]).length;
@@ -37,7 +58,7 @@ function home({next,hasHistory=false,cycle,progress=0,minutes,firstName,dateText
  html+='<div class="v2-coach">'+icon('coach','v2-ic v2-coach-ic')+'<div><p>'+(coach?esc(next.message):(hasHistory?'On reprend la suite là où tu t’es arrêté, sans séance « manquée ».':'Première séance de ton cycle. Ensuite, chaque séance suit la précédente, quel que soit le jour.'))+'</p>'
   +(next.reason==='recovery'?'<div class="v2-coach-actions"><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-start" data-session="'+esc(s.id)+'">D’accord</button><button type="button" class="v2-link" data-action="v2-start" data-session="'+esc(next.planned.id)+'">Faire '+esc(next.planned.title)+' quand même</button></div>':'')
   +'<button type="button" class="v2-link" data-action="v2-choose">Changer de séance</button></div></div>';
- if(weekLine||record)html+='<section class="v2-card v2-week">'+(weekLine?'<p class="v2-week-line">'+esc(weekLine)+'</p>':'')+(record?'<p class="v2-muted">'+icon('trophy','v2-ic v2-ic--sm')+esc(record)+'</p>':'')+'</section>';
+ if(weekLine||record||rhythm||cardio)html+='<section class="v2-card v2-week">'+(weekLine?'<p class="v2-week-line">'+esc(weekLine)+'</p>':'')+rhythmHTML(rhythm)+cardioHTML(cardio)+(record?'<p class="v2-muted">'+icon('trophy','v2-ic v2-ic--sm')+esc(record)+'</p>':'')+'</section>';
  return html+'</section>';
 }
 
@@ -104,7 +125,7 @@ function summary({workout,pending=0,local=false,userExercises=[]}={}){
  const min=Math.round((workout.duration_seconds||0)/60);
  return '<section class="v2-summary"><div class="v2-done-mark">'+icon('check')+'</div><h1 class="v2-hello">Séance terminée</h1><dl class="v2-figures v2-figures--dark"><div><b>'+min+' min</b> <span>d’effort</span></div><div><b>'+plural(done,'série validée','séries validées').replace(/^(\d+) /,'$1</b> <span>')+'</span></div><div><b>'+Math.round(vol).toLocaleString('fr-FR')+'</b> <span>kg soulevés</span></div></dl>'
   +'<ul class="v2-sum-list">'+list.map(e=>{const d=e.sets.filter(s=>s.completed).length;return '<li><span>'+esc(nameOf(e.exercise_key,userExercises))+'</span><small>'+(e.status==='skipped'?'passé':d+'/'+e.sets.length)+'</small></li>'}).join('')+'</ul>'
-  +'<p class="v2-sync" role="status">'+(pending?'Enregistrée sur ce téléphone, envoi en attente.':local?'Enregistrée sur ce téléphone.':'Enregistrée.')+'</p><button type="button" class="v2-btn v2-btn--big" data-action="v2-close-summary">Retour à l’accueil</button></section>';
+  +'<button type="button" class="v2-btn v2-btn--ghost" data-action="v2-cardio-open" data-workout="'+esc(workout.id)+'">'+icon('plus')+'Ajouter du cardio</button><p class="v2-sync" role="status">'+(pending?'Enregistrée sur ce téléphone, envoi en attente.':local?'Enregistrée sur ce téléphone.':'Enregistrée.')+'</p><button type="button" class="v2-btn v2-btn--big" data-action="v2-close-summary">Retour à l’accueil</button></section>';
 }
 
 function chart(points,metric){
@@ -114,16 +135,22 @@ function chart(points,metric){
  return '<svg class="v2-chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Évolution par séance"><line x1="24" y1="'+(H-24)+'" x2="'+(W-24)+'" y2="'+(H-24)+'"/>'+(pts.length>1?'<polyline points="'+pts.map(p=>p.map(n=>n.toFixed(1)).join(',')).join(' ')+'"/>':'')+pts.map(p=>'<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="4"/>').join('')+'</svg>';
 }
 
-function progress({progress,selected,metric='weight',userExercises=[]}={}){
+const MON=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+function cardioBlock(weeks){
+ if(!weeks?.length)return '';
+ const total=weeks.reduce((n,w)=>n+w.minutes,0),max=Math.max(1,...weeks.map(w=>w.minutes));
+ return '<section class="v2-card"><h2 class="v2-card-title">Cardio</h2><p class="v2-muted">'+total+' min sur '+weeks.length+' semaines</p><ul class="v2-bars">'+weeks.map(w=>{const [y,m,d]=w.week.split('-').map(Number);return '<li><span>'+d+' '+MON[m-1]+'</span><i style="--v:'+(w.minutes/max).toFixed(3)+'"></i><b>'+w.minutes+' min</b></li>'}).join('')+'</ul></section>';
+}
+function progress({progress,selected,metric='weight',userExercises=[],cardio=null}={}){
  const keys=Object.keys(progress?.byKey||{}).sort((a,b)=>nameOf(a,userExercises).localeCompare(nameOf(b,userExercises),'fr'));
  let html='<section class="v2-progress"><h1 class="v2-hello">Tes progrès</h1><dl class="v2-figures v2-figures--card"><div><b>'+(progress?.totals.sets||0)+'</b> <span>'+((progress?.totals.sets||0)>1?'séries validées':'série validée')+'</span></div><div><b>'+Math.round(progress?.totals.volume||0).toLocaleString('fr-FR')+'</b> <span>kg de volume</span></div></dl>';
- if(!keys.length)return html+'<p class="v2-card v2-empty">Ton graphique apparaîtra après tes premières séries validées.</p></section>';
+ if(!keys.length)return html+'<p class="v2-card v2-empty">Ton graphique apparaîtra après tes premières séries validées.</p>'+cardioBlock(cardio)+'</section>';
  const key=keys.includes(selected)?selected:keys[0],points=progress.byKey[key];
  const best=points.reduce((m,p)=>p.weight!=null&&(m==null||p.weight>m)?p.weight:m,null);
  html+='<label class="v2-field-label" for="v2-progress-ex">Exercice</label><select id="v2-progress-ex" class="v2-select" data-v2-progress>'+keys.map(k=>'<option value="'+esc(k)+'" '+(k===key?'selected':'')+'>'+esc(nameOf(k,userExercises))+'</option>').join('')+'</select>'
   +'<div class="v2-seg" role="group" aria-label="Mesure">'+[['weight','Charge max'],['reps','Répétitions'],['volume','Volume']].map(([v,t])=>'<button type="button" data-action="v2-metric" data-metric="'+v+'" aria-pressed="'+(metric===v)+'">'+t+'</button>').join('')+'</div>'
   +'<div class="v2-card">'+(chart(points,metric)||'<p class="v2-muted">Pas encore de valeur pour cette mesure.</p>')+'<p class="v2-muted">'+plural(points.length,'séance','séances')+(best!=null?' · Record : '+kg(best)+' kg':'')+'</p></div>'
-  +'<p class="v2-muted">Seules les séries validées comptent. Un exercice remplacé garde son propre historique.</p></section>';
+  +'<p class="v2-muted">Seules les séries validées comptent. Un exercice remplacé garde son propre historique.</p>'+cardioBlock(cardio)+'</section>';
  return html;
 }
 
@@ -147,9 +174,13 @@ function programme({cycle,userExercises=[],picking=null,query='',results=[],crea
   }
   html+='</ol><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-add-ex" data-session="'+esc(s.id)+'">'+icon('plus')+'Ajouter un exercice</button></section>';
  }
+ const cc=cycle?.cardio||[];
+ html+='<section class="v2-card v2-prog-session"><h2>Cardio</h2><p class="v2-muted">Fait seul un jour de repos ou en fin de séance. Noté à part des séries.</p>'
+  +(cc.length?'<ul class="v2-prog-list">'+cc.map(c=>'<li><div class="v2-prog-name"><b>'+esc(cardioName(c.type))+' · '+Number(c.minutes)+' min · '+Number(c.per_week)+' fois par semaine</b></div><div class="v2-prog-actions"><button type="button" class="v2-link v2-link--muted" data-action="v2-cardio-plan-remove" data-id="'+esc(c.id)+'">Retirer</button></div></li>').join('')+'</ul>':'')
+  +'<form class="v2-cardio-plan" data-v2-cardio-plan><select class="v2-select" name="type" aria-label="Activité">'+CARDIO.map(([v,t])=>'<option value="'+v+'">'+t+'</option>').join('')+'</select><input class="v2-select" name="minutes" type="number" inputmode="numeric" min="1" max="600" value="30" aria-label="Minutes"><select class="v2-select" name="per_week" aria-label="Fois par semaine">'+[1,2,3,4,5,6,7].map(n=>'<option value="'+n+'"'+(n===2?' selected':'')+'>'+n+' × / sem.</option>').join('')+'</select><button type="submit" class="v2-btn v2-btn--ghost">'+icon('plus')+'Ajouter du cardio</button></form></section>';
  if(picking)html+='<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="Choisir un exercice"><i class="v2-grab"></i><h2>'+(picking.ce?'Changer d’exercice':'Ajouter un exercice')+'</h2>'+picker({query,results,creating})+'</section></div>';
  return html+'</section>';
 }
 
-return {programme,home,chooser,session,machineSheet,moreSheet,idlePrompt,summary,progress,picker,clock,esc};
+return {cardioSheet,programme,home,chooser,session,machineSheet,moreSheet,idlePrompt,summary,progress,picker,clock,esc};
 });
