@@ -80,6 +80,7 @@ const CATALOGUE=Object.freeze([
 ].map(e=>Object.freeze(e)));
 
 const MIN_SCORE=0.82;
+const AMBIGUITY_GAP=0.05;
 function normalize(text){return String(text||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
 function bigrams(t){const s=t.replace(/ /g,''),out=new Map();for(let i=0;i<s.length-1;i++){const b=s.slice(i,i+2);out.set(b,(out.get(b)||0)+1)}return out}
 function dice(a,b){const A=bigrams(a),B=bigrams(b);let inter=0,total=0;for(const v of A.values())total+=v;for(const v of B.values())total+=v;for(const [k,v] of A)inter+=Math.min(v,B.get(k)||0);return total?2*inter/total:0}
@@ -103,8 +104,13 @@ function resolveName(name){
  const q=normalize(name);if(!q)return null;
  for(const e of CATALOGUE){if(normalize(e.name)===q)return {key:e.key,method:'exact',score:1}}
  for(const e of CATALOGUE){if(e.aliases.some(a=>normalize(a)===q))return {key:e.key,method:'alias',score:1}}
- const best=search(name,{limit:1})[0];
- return best&&best.score>=MIN_SCORE?{key:best.entry.key,method:'fuzzy',score:Math.round(best.score*100)/100}:null;
+ const [best,second]=search(name,{limit:2});
+ if(!best||best.score<MIN_SCORE)return null;
+ // Ambigu : un autre exercice est presque aussi proche → on ne choisit pas à la place de l'utilisateur.
+ if(second&&best.score-second.score<AMBIGUITY_GAP)return null;
+ // Tous les mots de la requête se retrouvent dans plusieurs exercices (« développé couché » : barre, haltères…).
+ if(CATALOGUE.filter(e=>[e.name,...e.aliases].some(n=>prefixBonus(q,normalize(n))>0)).length>1)return null;
+ return {key:best.entry.key,method:'fuzzy',score:Math.round(best.score*100)/100};
 }
 return {CATALOGUE,normalize,byKey,search,resolveName,MIN_SCORE};
 });

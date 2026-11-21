@@ -51,4 +51,8 @@ assert.equal(k('Oiseau à la machine'),'reverse-pec-deck');
 assert.equal(C.byKey('dips').role,'base');
 assert.equal(C.byKey('pull-over-poulie').role,'finition');
 assert(C.CATALOGUE.every(e=>e.aliases.every(a=>C.resolveName(a).key===e.key)),'alias sans ambiguïté');
+// Nom vague qui correspond à plusieurs exercices : on ne choisit pas au hasard.
+assert.equal(C.resolveName('developpe couche'),null,'ambigu : barre ou haltères');
+assert.equal(C.resolveName('tirage vertical'),null,'ambigu : prise large ou neutre');
+assert.equal(C.resolveName('mollet assis').key,'mollets-assis','faute simple toujours corrigée');
 console.log('Exercise catalogue checks passed');
