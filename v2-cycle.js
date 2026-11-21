@@ -123,12 +123,16 @@ async function loadCycle(api,userId){
  const uid=encodeURIComponent(userId);
  const [cy]=await api.select('cycles?user_id=eq.'+uid+'&status=eq.active&select=*&limit=1');
  const [workouts,logs,userExercises,cardioLogs]=await Promise.all([
-  api.select('workouts?user_id=eq.'+uid+'&status=eq.completed&select=id,cycle_id,cycle_session_id,status,started_at,ended_at,duration_seconds&order=ended_at.desc&limit=500'),
-  selectAll(api,'workout_set_logs?user_id=eq.'+uid+'&select=exercise_key,weight,reps,completed,created_at,workout_exercises(workout_id)&order=created_at.desc,id',10),
+  api.select('workouts?user_id=eq.'+uid+'&status=eq.completed&select=id,cycle_id,cycle_session_id,status,started_at,ended_at,duration_seconds,cycle_sessions(title)&order=ended_at.desc&limit=500'),
+  selectAll(api,'workout_set_logs?user_id=eq.'+uid+'&select=exercise_key,workout_exercise_id,set_number,weight,reps,rir,completed,created_at,workout_exercises(workout_id,position,substituted_from_key,rpe)&order=created_at.desc,id',10),
   api.select('user_exercises?user_id=eq.'+uid+'&select=key,name,pattern,muscle,equipment'),
   api.select('cardio_logs?user_id=eq.'+uid+'&select=id,workout_id,cycle_id,done_on,type,minutes&order=done_on.desc&limit=1000')]);
- const setLogs=(logs||[]).map(r=>({...r,workout_id:r.workout_id??r.workout_exercises?.workout_id}));
- if(!cy)return {cycle:null,workouts:workouts||[],setLogs,userExercises:userExercises||[],cardioLogs:cardioLogs||[]};
+ // Champs de l'exercice de séance aplatis sur chaque série : l'historique se lit sans jointure.
+ const setLogs=(logs||[]).map(({workout_exercises:we,...r})=>({...r,workout_id:r.workout_id??we?.workout_id,position:we?.position??null,substituted_from_key:we?.substituted_from_key??null,rpe:we?.rpe??null}));
+// Limites de lecture atteintes : l'historique le plus ancien manque (records non annoncés).
+ const truncated=(logs||[]).length>=10000||(workouts||[]).length>=500;
+ const done=(workouts||[]).map(({cycle_sessions:cs,...w})=>cs?.title?{...w,title:cs.title}:w);
+ if(!cy)return {truncated,cycle:null,workouts:done,setLogs,userExercises:userExercises||[],cardioLogs:cardioLogs||[]};
  const cid=encodeURIComponent(cy.id);
  const sessions=await api.select('cycle_sessions?cycle_id=eq.'+cid+'&select=*&order=position');
  const [exercises,cardio]=await Promise.all([
@@ -136,7 +140,7 @@ async function loadCycle(api,userId){
   api.select('cycle_cardio?cycle_id=eq.'+cid+'&select=id,cycle_id,type,minutes,per_week')]);
  const list=(sessions||[]).map(s=>({...s,exercises:(exercises||[]).filter(e=>e.cycle_session_id===s.id)})).sort((a,b)=>a.position-b.position);
  for(const s of list)finishSession(s,userExercises||[]);
- return {cycle:{...cy,user_exercises:userExercises||[],sessions:list,cardio:cardio||[]},workouts:workouts||[],setLogs,userExercises:userExercises||[],cardioLogs:cardioLogs||[]};
+ return {cycle:{...cy,user_exercises:userExercises||[],sessions:list,cardio:cardio||[]},truncated,workouts:done,setLogs,userExercises:userExercises||[],cardioLogs:cardioLogs||[]};
 }
 
 return {rhythm,weekStart,localDate,cardioWeek,cardioProgress,fromEngine,fromLegacyPlan,toRows,lastPerformance,progress,cycleProgress,loadCycle,nameOf,parseReps};

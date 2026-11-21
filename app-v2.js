@@ -12,12 +12,12 @@ const clone=v=>JSON.parse(JSON.stringify(v));
 
 function create(ctx){
  const {storage,api,userId,now=()=>Date.now(),uuid=()=>G().crypto.randomUUID(),render=()=>{},notice=()=>{},confirm=async()=>true}=ctx;
- const C=G().SteroidCycle,UI=G().SteroidUI,Planner=G().SteroidPlanner,Cat=G().SteroidCatalogue;
+ const C=G().SteroidCycle,H=G().SteroidHistory,UI=G().SteroidUI,Planner=G().SteroidPlanner,Cat=G().SteroidCatalogue;
  const owner=userId||'guest';
  const K={cycle:'nolsprog-v2-cycle:'+owner,history:'nolsprog-v2-history:'+owner,ui:'nolsprog-v2-ui:'+owner,outbox:'nolsprog-v2-outbox:'+owner};
  const read=(k,d)=>{try{const v=JSON.parse(storage.getItem(k)||'null');return v??d}catch{return d}};
  const write=(k,v)=>{try{storage.setItem(k,JSON.stringify(v))}catch{notice('Espace de stockage plein sur ce téléphone.',true)}};
- const S={cardioLogs:[],cycle:null,workouts:[],setLogs:[],userExercises:[],store:null,view:'home',index:0,sheet:null,rest:null,summary:null,metric:'weight',selected:null,picking:null,query:'',creating:false,building:false};
+ const S={cardioLogs:[],cycle:null,workouts:[],setLogs:[],userExercises:[],store:null,view:'home',index:0,sheet:null,rest:null,summary:null,metric:'weight',selected:null,tab:'exercises',open:null,truncated:false,advice:null,picking:null,query:'',creating:false,building:false};
  let ui=read(K.ui,{lastAction:null,rest:null,view:'home',index:0});
  let outbox=read(K.outbox,[]); // lignes de programme à envoyer (cycles, séances, exercices prévus, exercices perso)
  let flushTimer=null,flushing=null;
@@ -27,7 +27,7 @@ function create(ctx){
 
  function persistLocal(){
   write(K.cycle,S.cycle);
-  write(K.history,{workouts:S.workouts.slice(0,500),setLogs:S.setLogs.slice(0,5000),userExercises:S.userExercises,cardioLogs:S.cardioLogs.slice(0,1000)});
+  write(K.history,{truncated:S.truncated||S.setLogs.length>5000||S.workouts.length>500,workouts:S.workouts.slice(0,500),setLogs:S.setLogs.slice(0,5000),userExercises:S.userExercises,cardioLogs:S.cardioLogs.slice(0,1000)});
  }
  function queueRows(rows){
   for(const [table,list] of Object.entries(rows))for(const row of list){
@@ -100,7 +100,7 @@ function create(ctx){
  async function init(){
   S.store=G().SteroidWorkout.createWorkoutStore({storage,api:remote,userId:owner,now,uuid,onReject:(t,row,err)=>rejected(t,err)});
   const local=read(K.history,null);
-  if(local){S.workouts=local.workouts||[];S.setLogs=local.setLogs||[];S.userExercises=local.userExercises||[];S.cardioLogs=local.cardioLogs||[]}
+  if(local){S.workouts=local.workouts||[];S.setLogs=local.setLogs||[];S.truncated=Boolean(local.truncated)||S.setLogs.length>=5000||S.workouts.length>=500;S.userExercises=local.userExercises||[];S.cardioLogs=local.cardioLogs||[]}
   S.cycle=read(K.cycle,null);
   S.view=S.store.current()?(ui.view==='home'?'home':'session'):'home';S.index=S.store.current()?ui.index||0:0;S.rest=ui.rest||null;
   if(api&&userId){fresh=refresh();if(!S.cycle)await fresh;else fresh.then(()=>render())}
@@ -108,7 +108,7 @@ function create(ctx){
  }
  async function refresh(){
   try{
-   const loaded=await C.loadCycle(api,userId);loadFailed=false;
+   const loaded=await C.loadCycle(api,userId);loadFailed=false;S.truncated=Boolean(loaded.truncated);
    // Les séances pas encore confirmées par le serveur restent affichées.
    const ids=new Set(loaded.workouts.map(w=>w.id));
    S.workouts=mergeById(loaded.workouts,S.workouts.filter(w=>!ids.has(w.id)));
@@ -174,9 +174,9 @@ function create(ctx){
  }
  function finishSession(){
   const done=S.store.finish();if(!done)return;
-  const row={id:done.id,cycle_id:done.cycle_id,cycle_session_id:done.cycle_session_id,status:'completed',started_at:iso(done.started_at),ended_at:iso(done.ended_at),duration_seconds:done.duration_seconds,local_only:!(api&&userId)};
+  const row={id:done.id,cycle_id:done.cycle_id,cycle_session_id:done.cycle_session_id,title:sessionTitle(done),status:'completed',started_at:iso(done.started_at),ended_at:iso(done.ended_at),duration_seconds:done.duration_seconds,local_only:!(api&&userId)};
   S.workouts=[row,...S.workouts.filter(w=>w.id!==row.id)];
-  for(const e of done.exercises)for(const s of e.sets)if(s.completed)S.setLogs.unshift({exercise_key:e.exercise_key,weight:s.weight,reps:s.reps,completed:true,created_at:row.ended_at,workout_id:done.id,local_only:!(api&&userId)});
+  for(const e of done.exercises)for(const s of e.sets)if(s.completed)S.setLogs.unshift({workout_exercise_id:e.id,exercise_key:e.exercise_key,set_number:s.set_number,weight:s.weight,reps:s.reps,rir:s.rir??null,position:e.position,substituted_from_key:e.substituted_from_key||null,rpe:e.rpe??null,completed:true,created_at:row.ended_at,workout_id:done.id,local_only:!(api&&userId)});
   persistLocal();S.summary=done;S.view='summary';S.rest=null;S.sheet=null;saveUi();scheduleFlush();
  }
 
@@ -191,12 +191,15 @@ function create(ctx){
  function todayHTML(){
   if(!S.cycle)return UI.home({next:null,cycle:null,building:S.building,retry:loadFailed});
   const cardioSheet=S.sheet?.type==='cardio'?UI.cardioSheet({workoutId:S.sheet.workout||''}):'';
-  if(S.view==='summary'&&S.summary)return UI.summary({workout:S.summary,pending:pending(),local:!(api&&userId),userExercises:S.userExercises})+cardioSheet;
+  if(S.view==='summary'&&S.summary)return UI.summary({records:H.newRecords(S.summary.id,S.setLogs,S.workouts,{truncated:S.truncated}),workout:S.summary,pending:pending(),local:!(api&&userId),userExercises:S.userExercises})+cardioSheet;
   const w=current();
   if(w&&S.view==='session'){
    const items=list();S.index=Math.max(0,Math.min(S.index,items.length-1));
    const left=restLeft();
-   let html=UI.session({workout:w,index:S.index,elapsed:S.store.elapsedSeconds(),paused:S.store.isPaused(),pausedFor:w.paused_at?Math.round((now()-w.paused_at)/1000):0,rest:left?{remaining:left}:null,last:last(),userExercises:S.userExercises,pending:pending()});
+   // Conseils figés pour la séance : l'historique ne change pas avant la fin.
+   if(S.advice?.id!==w.id||S.advice.n!==w.exercises.length||w.exercises.some(e=>!(e.exercise_key in S.advice.map))){const map={};for(const e of w.exercises)map[e.exercise_key]=H.advice(e.plan,S.setLogs,S.workouts,e.exercise_key);S.advice={id:w.id,n:w.exercises.length,map}}
+   const advice=S.advice.map;
+   let html=UI.session({advice,workout:w,index:S.index,elapsed:S.store.elapsedSeconds(),paused:S.store.isPaused(),pausedFor:w.paused_at?Math.round((now()-w.paused_at)/1000):0,rest:left?{remaining:left}:null,last:last(),userExercises:S.userExercises,pending:pending()});
    const idle=idleMinutes();
    if(idle)html+=UI.idlePrompt(idle);
    else if(S.sheet?.type==='machine'){const e=w.exercises.find(x=>x.id===S.sheet.ex);if(e){const practiced={};for(const r of S.setLogs)if(r.completed)practiced[r.exercise_key]=(practiced[r.exercise_key]||0)+1;
@@ -208,11 +211,21 @@ function create(ctx){
   const next=Planner.nextSession(S.cycle,S.workouts,now());
   const active=w?{title:sessionTitle(w),done:w.exercises.reduce((n,e)=>n+e.sets.filter(s=>s.completed).length,0),total:w.exercises.reduce((n,e)=>n+e.sets.length,0)}:null;
   const cardio={target:(S.cycle.cardio||[]).reduce((n,c)=>n+c.minutes*c.per_week,0),minutes:C.cardioWeek(S.cardioLogs,now())};
-  let html=UI.home({next,rhythm:C.rhythm(S.cycle,S.workouts,now()),cardio,hasHistory:S.workouts.some(x=>x.cycle_id===S.cycle.id&&x.status==='completed'),cycle:S.cycle,progress:C.cycleProgress(S.cycle,S.workouts),minutes:next?minutes(next.session):null,firstName:ctx.firstName?.()||'',dateText:dateText(),weekLine:weekLine(),active});
+  let html=UI.home({next,rhythm:C.rhythm(S.cycle,S.workouts,now()),cardio,hasHistory:S.workouts.some(x=>x.cycle_id===S.cycle.id&&x.status==='completed'),cycle:S.cycle,progress:C.cycleProgress(S.cycle,S.workouts),minutes:next?minutes(next.session):null,firstName:ctx.firstName?.()||'',dateText:dateText(),weekLine:weekLine(),record:recentRecord(),active});
   if(S.sheet?.type==='choose')html+=UI.chooser({sessions:S.cycle.sessions,current:next?.session.id});
   return html+cardioSheet;
  }
- function statsHTML(){return UI.progress({progress:C.progress(S.setLogs,S.workouts),selected:S.selected,metric:S.metric,userExercises:S.userExercises,cardio:C.cardioProgress(S.cardioLogs,now())})}
+ // Dernier record des 14 derniers jours, affiché sur l'accueil.
+ function recentRecord(){const r=H.latestRecord(S.setLogs,S.workouts,{truncated:S.truncated});if(!r||now()-Date.parse(r.date)>14*24*3600e3)return null;return 'Record récent : '+C.nameOf(r.key,S.userExercises)+', '+Number(r.weight).toLocaleString('fr-FR')+' kg × '+r.reps}
+ function statsHTML(){
+  const prog=C.progress(S.setLogs,S.workouts),keys=Object.keys(prog.byKey);
+  const key=keys.includes(S.selected)?S.selected:keys.sort((a,b)=>C.nameOf(a,S.userExercises).localeCompare(C.nameOf(b,S.userExercises),'fr'))[0];
+  const titles={};for(const x of S.cycle?.sessions||[])titles[x.id]=x.title;
+  const plan=(S.cycle?.sessions||[]).flatMap(x=>x.exercises).find(e=>e.exercise_key===key);
+  return UI.progress({progress:prog,selected:S.selected,metric:S.metric,userExercises:S.userExercises,cardio:C.cardioProgress(S.cardioLogs,now()),
+   tab:S.tab,history:key?H.exercise(key,S.setLogs,S.workouts):null,advice:key&&plan?H.advice(plan,S.setLogs,S.workouts,key):null,
+   sessions:S.tab==='sessions'?H.sessions(S.workouts,S.setLogs,{titles,cardioLogs:S.cardioLogs}):[],open:S.open,records:S.open?H.newRecords(S.open,S.setLogs,S.workouts,{truncated:S.truncated}):[],truncated:S.truncated});
+ }
  function searchResults(){
   const q=S.query.trim();
   const mine=S.userExercises.filter(u=>q&&Cat.normalize(u.name).includes(Cat.normalize(q))).map(u=>({key:u.key,name:u.name,muscle:u.muscle,role:'finition'}));
@@ -294,6 +307,9 @@ function create(ctx){
    }
    case 'v2-close-summary':S.summary=null;S.view='home';saveUi();break;
    case 'v2-metric':S.metric=d.metric;break;
+   case 'v2-progress-tab':S.tab=d.tab==='sessions'?'sessions':'exercises';S.open=null;break;
+   case 'v2-history-open':S.open=d.id||null;break;
+   case 'v2-history-close':S.open=null;break;
    case 'v2-edit-ex':S.picking={ce:d.ce};S.query='';S.creating=false;break;
    case 'v2-add-ex':S.picking={session:d.session};S.query='';S.creating=false;break;
    case 'v2-pick':pickExercise(d.key);break;

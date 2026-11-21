@@ -25,3 +25,6 @@ assert(app.includes('function saveEffort(exId,value)'),'Perceived effort must be
 assert(app.includes('Ressenti moyen : RPE'),'Workout summary must report perceived effort');
 assert(css.includes('.effort-panel'),'Perceived-effort control must be styled');
 console.log('STÉROÏDE V2 design-system checks passed.');
+// Lot 5 : module d'historique chargé avant le contrôleur, styles présents.
+assert(html.indexOf('./v2-history.js')>0&&html.indexOf('./v2-history.js')<html.indexOf('./app-v2.js'),'v2-history.js doit être chargé avant app-v2.js');
+for(const c of ['.v2-compare','.v2-diff','.v2-records','.v2-hist','.v2-advice','.v2-seg--2'])assert(css.includes(c),'Style manquant : '+c);

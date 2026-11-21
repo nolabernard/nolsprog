@@ -30,6 +30,8 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
 - `workout-store.js` (`SteroidWorkout.createWorkoutStore`) : séance V2 en cours (séries, pause, plus tard,
   remplacement, fin) et file d'envoi ordonnée vers les tables V2 (upsert sur `id`).
 - `v2-cycle.js` (`SteroidCycle`) : cycle actif (construction, chargement Supabase), dernières performances et progrès par clé.
+- `v2-history.js` (`SteroidHistory`) : historique par clé (séances, séance par séance, records comparables, conseils de
+  double progression fondés sur la dernière séance de la même clé, jamais appliqués automatiquement).
 - `ui-v2.js` (`SteroidUI`) : écrans V2 en HTML pur (accueil, séance P1, machine prise, fin, progrès, programme, choix d'exercice).
 - `app-v2.js` (`SteroidAppV2.create`) : contrôleur V2 (stockage, envoi, actions `data-action="v2-…"`), testé sous Node.
   `app.js` lui délègue Aujourd'hui, Progrès et Programme (`v2Main`) ; l'ancien écran ne sert plus qu'en secours.
@@ -76,5 +78,7 @@ maquettes sur le canevas « STÉROÏDE — refonte UX »). Plans : `docs/superpo
   Le code V1 (todayUI, guidedWorkoutUI, editUI, statsUI) reste en secours : à supprimer dans un lot de nettoyage.
 - Lot 4 Planning et cardio : fait (`answers.planMode` 'days'|'free', `SteroidCycle.rhythm`, `cycle_cardio`/`cardio_logs`,
   cardio envoyé après les séances ; jours : 0 = lundi).
-- Lots 5 à 7 : à faire (historique, coach et bilan, rappels).
+- Lot 5 Historique et progrès : fait (Progrès : onglets Exercices / Séances ; conseil en séance ; nouveaux records en fin de séance ;
+  record récent sur l'accueil). Lecture enrichie : `set_number`, `rpe`, `substituted_from_key`, titre de séance. Aucune migration.
+- Lots 6 et 7 : à faire (coach et bilan, rappels).
 - Migrations Supabase : uniquement sur accord explicite du propriétaire (« applique les migrations »).
