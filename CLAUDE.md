@@ -74,5 +74,7 @@ maquettes sur le canevas « STÉROÏDE — refonte UX »). Plans : `docs/superpo
 - Lot 3a Logique de séance : fait (modules ci-dessus + `alternatives` du catalogue).
 - Lot 3b Écrans P1 et bascule : fait. Les nouvelles séances s'écrivent dans les tables V2 ; Progrès et Programme lisent la V2.
   Le code V1 (todayUI, guidedWorkoutUI, editUI, statsUI) reste en secours : à supprimer dans un lot de nettoyage.
-- Lots 4 à 7 : à faire (planning en suite et cardio, historique, coach et bilan, rappels).
+- Lot 4 Planning et cardio : fait (`answers.planMode` 'days'|'free', `SteroidCycle.rhythm`, `cycle_cardio`/`cardio_logs`,
+  cardio envoyé après les séances ; jours : 0 = lundi).
+- Lots 5 à 7 : à faire (historique, coach et bilan, rappels).
 - Migrations Supabase : uniquement sur accord explicite du propriétaire (« applique les migrations »).
