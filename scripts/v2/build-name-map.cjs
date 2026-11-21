@@ -17,10 +17,10 @@ function buildNameMap(rows,{overrides={}}={}){
  const forced=new Map(Object.entries(overrides).map(([k,v])=>[C.normalize(k),v]));
  return rows.map(({user_id,raw_name})=>{
   const n=C.normalize(raw_name);
-  if(forced.has(n))return {user_id,raw_name,exercise_key:forced.get(n),method:'manual',score:1};
+  if(forced.has(n))return {user_id,raw_name,exercise_key:forced.get(n),method:'manual',score:1,role:C.byKey(forced.get(n))?.role||'finition'};
   const hit=C.resolveName(raw_name);
-  if(hit)return {user_id,raw_name,exercise_key:hit.key,method:hit.method,score:hit.score};
-  return {user_id,raw_name,exercise_key:'u-'+uuidV5(user_id+'|'+n),method:'custom',score:0};
+  if(hit)return {user_id,raw_name,exercise_key:hit.key,method:hit.method,score:hit.score,role:C.byKey(hit.key).role};
+  return {user_id,raw_name,exercise_key:'u-'+uuidV5(user_id+'|'+n),method:'custom',score:0,role:'finition'};
  });
 }
 

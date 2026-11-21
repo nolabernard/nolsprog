@@ -14,6 +14,8 @@ const map=buildNameMap(rows),get=(u,n)=>map.find(r=>r.user_id===u&&r.raw_name===
 assert.equal(map.length,rows.length,'une ligne par nom saisi');
 assert.equal(get(A,'Hack squat').method,'exact');
 assert.equal(get(A,'Hack squat').exercise_key,'hack-squat');
+assert.equal(get(A,'Hack squat').role,'base');
+assert.equal(get(A,'butterfly').role,'finition');
 assert.equal(get(A,'butterfly').method,'alias');
 assert.equal(get(A,'butterfly').exercise_key,'pec-deck');
 assert.notEqual(get(A,'développer coucher inclinée').method,'exact');

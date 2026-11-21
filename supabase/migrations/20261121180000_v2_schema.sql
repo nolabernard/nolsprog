@@ -218,6 +218,7 @@ create table if not exists public.v2_name_map (
   raw_name text not null,
   exercise_key text not null,
   method text not null check (method in ('exact','alias','fuzzy','custom','manual')),
+  role text not null check (role in ('base','secondaire','finition')),
   primary key (user_id, raw_name)
 );
 alter table public.v2_name_map enable row level security;
