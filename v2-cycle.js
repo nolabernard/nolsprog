@@ -92,23 +92,50 @@ async function selectAll(api,path,maxPages=10){
  for(let page=0;page<maxPages;page++){const rows=await api.select(path+'&limit=1000&offset='+page*1000)||[];out.push(...rows);if(rows.length<1000)break}
  return out;
 }
+// ----- Rythme (jours conseillés, jamais bloquants) et cardio. 0 = lundi … 6 = dimanche. -----
+const DAY=24*3600e3;
+const dayIndex=ms=>(new Date(ms).getDay()+6)%7;
+function weekStart(ms){const d=new Date(ms);return new Date(d.getFullYear(),d.getMonth(),d.getDate()-dayIndex(ms)).getTime()}
+function localDate(ms){const d=new Date(ms),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())}
+const parseDay=s=>{const [y,m,d]=String(s).split('-').map(Number);return new Date(y,m-1,d).getTime()};
+function rhythm(cycle,workouts,now){
+ const days=Array.isArray(cycle?.preferred_days)&&cycle.preferred_days.length?[...cycle.preferred_days].sort((a,b)=>a-b):[];
+ const start=weekStart(now),today=new Date(now).setHours(0,0,0,0);
+ const mine=(workouts||[]).filter(w=>w.cycle_id===cycle?.id&&w.status==='completed');
+ const doneThisWeek=mine.filter(w=>Date.parse(w.ended_at)>=start).length;
+ const doneToday=mine.some(w=>Date.parse(w.ended_at)>=today);
+ const goal=cycle?.sessions_per_week||days.length||1;
+ if(!days.length)return {mode:'free',days:[],todayPlanned:false,nextDay:null,doneThisWeek,goal};
+ const t=dayIndex(now),todayPlanned=days.includes(t)&&!doneToday;
+ const after=days.find(d=>d>t);
+ return {mode:'days',days,todayPlanned,nextDay:todayPlanned?t:(after??days[0]),doneThisWeek,goal};
+}
+function cardioWeek(logs,now){const s=weekStart(now),e=s+7*DAY;return (logs||[]).filter(l=>{const t=parseDay(l.done_on);return t>=s&&t<e}).reduce((n,l)=>n+(Number(l.minutes)||0),0)}
+function cardioProgress(logs,now,weeks=6){
+ const cur=weekStart(now),out=[];
+ for(let i=weeks-1;i>=0;i--){const s=new Date(cur);s.setDate(s.getDate()-7*i);out.push({week:localDate(s.getTime()),minutes:cardioWeek(logs,s.getTime())})}
+ return out;
+}
+
 async function loadCycle(api,userId){
  const uid=encodeURIComponent(userId);
  const [cy]=await api.select('cycles?user_id=eq.'+uid+'&status=eq.active&select=*&limit=1');
- const [workouts,logs,userExercises]=await Promise.all([
+ const [workouts,logs,userExercises,cardioLogs]=await Promise.all([
   api.select('workouts?user_id=eq.'+uid+'&status=eq.completed&select=id,cycle_id,cycle_session_id,status,started_at,ended_at,duration_seconds&order=ended_at.desc&limit=500'),
   selectAll(api,'workout_set_logs?user_id=eq.'+uid+'&select=exercise_key,weight,reps,completed,created_at,workout_exercises(workout_id)&order=created_at.desc,id',10),
-  api.select('user_exercises?user_id=eq.'+uid+'&select=key,name,pattern,muscle,equipment')]);
+  api.select('user_exercises?user_id=eq.'+uid+'&select=key,name,pattern,muscle,equipment'),
+  api.select('cardio_logs?user_id=eq.'+uid+'&select=id,workout_id,cycle_id,done_on,type,minutes&order=done_on.desc&limit=1000')]);
  const setLogs=(logs||[]).map(r=>({...r,workout_id:r.workout_id??r.workout_exercises?.workout_id}));
- if(!cy)return {cycle:null,workouts:workouts||[],setLogs,userExercises:userExercises||[]};
+ if(!cy)return {cycle:null,workouts:workouts||[],setLogs,userExercises:userExercises||[],cardioLogs:cardioLogs||[]};
  const cid=encodeURIComponent(cy.id);
  const sessions=await api.select('cycle_sessions?cycle_id=eq.'+cid+'&select=*&order=position');
- const [exercises]=await Promise.all([
-  sessions?.length?api.select('cycle_exercises?cycle_session_id=in.('+sessions.map(x=>encodeURIComponent(x.id)).join(',')+')&select=*&order=position'):[]]);
+ const [exercises,cardio]=await Promise.all([
+  sessions?.length?api.select('cycle_exercises?cycle_session_id=in.('+sessions.map(x=>encodeURIComponent(x.id)).join(',')+')&select=*&order=position'):[],
+  api.select('cycle_cardio?cycle_id=eq.'+cid+'&select=id,cycle_id,type,minutes,per_week')]);
  const list=(sessions||[]).map(s=>({...s,exercises:(exercises||[]).filter(e=>e.cycle_session_id===s.id)})).sort((a,b)=>a.position-b.position);
  for(const s of list)finishSession(s,userExercises||[]);
- return {cycle:{...cy,user_exercises:userExercises||[],sessions:list},workouts:workouts||[],setLogs,userExercises:userExercises||[]};
+ return {cycle:{...cy,user_exercises:userExercises||[],sessions:list,cardio:cardio||[]},workouts:workouts||[],setLogs,userExercises:userExercises||[],cardioLogs:cardioLogs||[]};
 }
 
-return {fromEngine,fromLegacyPlan,toRows,lastPerformance,progress,cycleProgress,loadCycle,nameOf,parseReps};
+return {rhythm,weekStart,localDate,cardioWeek,cardioProgress,fromEngine,fromLegacyPlan,toRows,lastPerformance,progress,cycleProgress,loadCycle,nameOf,parseReps};
 });
