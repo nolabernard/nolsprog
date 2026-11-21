@@ -111,7 +111,8 @@ function rhythm(cycle,workouts,now){
  const after=days.find(d=>d>t);
  return {mode:'days',days,todayPlanned,nextDay:todayPlanned?t:(after??days[0]),doneThisWeek,goal};
 }
-function cardioWeek(logs,now){const s=weekStart(now),e=s+7*DAY;return (logs||[]).filter(l=>{const t=parseDay(l.done_on);return t>=s&&t<e}).reduce((n,l)=>n+(Number(l.minutes)||0),0)}
+// Fin de semaine calculée en jours calendaires : une semaine de changement d'heure dure 167 ou 169 h.
+function cardioWeek(logs,now){const s=weekStart(now),d=new Date(s),e=new Date(d.getFullYear(),d.getMonth(),d.getDate()+7).getTime();return (logs||[]).filter(l=>{const t=parseDay(l.done_on);return t>=s&&t<e}).reduce((n,l)=>n+(Number(l.minutes)||0),0)}
 function cardioProgress(logs,now,weeks=6){
  const cur=weekStart(now),out=[];
  for(let i=weeks-1;i>=0;i--){const s=new Date(cur);s.setDate(s.getDate()-7*i);out.push({week:localDate(s.getTime()),minutes:cardioWeek(logs,s.getTime())})}

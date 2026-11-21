@@ -115,7 +115,16 @@ function create(ctx){
    S.setLogs=[...loaded.setLogs,...S.setLogs.filter(r=>!ids.has(r.workout_id))];
    S.userExercises=mergeByKey(loaded.userExercises,S.userExercises);
    const cids=new Set((loaded.cardioLogs||[]).map(x=>x.id));S.cardioLogs=[...(loaded.cardioLogs||[]),...S.cardioLogs.filter(x=>!cids.has(x.id))];
-   if(loaded.cycle)S.cycle=loaded.cycle;
+   if(loaded.cycle){
+    // Cardio prévu modifié sur l'appareil et pas encore envoyé : on le réapplique sur la version du serveur.
+    if(S.cycle?.id===loaded.cycle.id){
+     const gone=new Set(outbox.filter(x=>x.table==='cycle_cardio'&&x.op==='delete').map(x=>x.id));
+     const added=outbox.filter(x=>x.table==='cycle_cardio'&&!x.op).map(x=>{const {user_id,...r}=x.row;return r});
+     const ids=new Set(added.map(r=>r.id));
+     loaded.cycle.cardio=[...(loaded.cycle.cardio||[]).filter(c=>!gone.has(c.id)&&!ids.has(c.id)),...added];
+    }
+    S.cycle=loaded.cycle;
+   }
    else if(!S.cycle)build(); // le serveur a répondu : ce compte n'a vraiment pas de cycle
   }catch(e){
    // Jamais de second cycle fabriqué à l'aveugle pour un compte : on attend le réseau.

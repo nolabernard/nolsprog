@@ -196,6 +196,14 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  // Rechargement : cardio et cardio prévu relus.
  const c12=V2.create({...ctx,storage:st11,api:{...fk,async select(p){if(p.startsWith('cardio_logs'))return [{id:'x',done_on:new Date().toISOString().slice(0,10),type:'course',minutes:15,workout_id:wid}];return []}},userId:U4});await c12.init();await c12.whenFresh();
  assert.match(c12.statsHTML(),/15 min/);
+ // Cardio prévu ajouté puis retiré hors ligne : la réouverture en ligne ne l'annule pas avant l'envoi.
+ const st13=memory(),srv13={cycle:null},off13={async select(p){if(!srv13.cycle)return [];const c=srv13.cycle;if(p.startsWith('cycles'))return [{...c,sessions:undefined,cardio:undefined}];if(p.startsWith('cycle_sessions'))return c.sessions.map(({exercises,muscles,...x})=>x);if(p.startsWith('cycle_exercises'))return c.sessions.flatMap(x=>x.exercises);if(p.startsWith('cycle_cardio'))return srv13.cardio||[];return []},async upsert(){throw Error('Failed to fetch')},async remove(){throw Error('Failed to fetch')}};
+ const c13=V2.create({...ctx,storage:st13,api:off13,userId:U4});await c13.init();
+ srv13.cycle=JSON.parse(JSON.stringify(c13.state().cycle));srv13.cardio=[{id:'old',cycle_id:srv13.cycle.id,type:'rameur',minutes:20,per_week:1}];
+ const c13b=V2.create({...ctx,storage:st13,api:off13,userId:U4});await c13b.init();await c13b.whenFresh();assert.match(c13b.programmeHTML(),/Rameur · 20 min/);
+ await c13b.addCardioPlan({type:'natation',minutes:'40',per_week:'1'});await c13b.handle('v2-cardio-plan-remove',{id:'old'});
+ const c14=V2.create({...ctx,storage:st13,api:off13,userId:U4});await c14.init();await c14.whenFresh();
+ const prog14=c14.programmeHTML();assert.match(prog14,/Natation · 40 min/);assert(!/Rameur · 20 min/.test(prog14),'retrait conservé');
  // Questionnaire : deux modes ; formulaires cardio branchés.
  assert(/data-key="planMode"/.test(appSrc)&&/opt\('days','Je choisis mes jours'/.test(appSrc)&&/opt\('free'/.test(appSrc),'choix du mode de planning');
  assert(/key==='planMode'&&v==='free'\)A\.answers\.days=\[0,1,2,3,4,5,6\]/.test(appSrc),'mode libre : semaine entière pour l’ancien moteur');

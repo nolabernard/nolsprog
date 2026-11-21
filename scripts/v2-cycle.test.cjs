@@ -89,5 +89,12 @@ let n=0;const uuid=()=>'00000000-0000-4000-8000-'+String(++n).padStart(12,'0');
  // Chargement : cardio prévu du cycle et cardio fait.
  const capi={async select(p){if(p.startsWith('cycles'))return [{id:'cy',status:'active'}];if(p.startsWith('cycle_sessions'))return [];if(p.startsWith('cycle_cardio'))return [{id:'cc',cycle_id:'cy',type:'velo',minutes:30,per_week:2}];if(p.startsWith('cardio_logs'))return cl;return []}};
  const lc=await C.loadCycle(capi,'u1');assert.equal(lc.cycle.cardio[0].type,'velo');assert.equal(lc.cardioLogs.length,4);
+ // Changement d'heure (mars, Paris) : un lundi n'est compté que dans sa propre semaine.
+ const out=require('child_process').execFileSync(process.execPath,['-e',`
+  globalThis.SteroidCatalogue=require('./exercise-catalogue.js');const C=require('./v2-cycle.js');
+  const l=[{done_on:'2026-03-30',minutes:40,type:'velo'}];
+  const p=C.cardioProgress(l,new Date(2026,3,1,12).getTime());
+  console.log(JSON.stringify({prev:C.cardioWeek(l,new Date(2026,2,27,12).getTime()),bars:p.filter(w=>w.minutes).map(w=>w.week)}))`],{cwd:require('path').join(__dirname,'..'),env:{...process.env,TZ:'Europe/Paris'}}).toString();
+ assert.deepEqual(JSON.parse(out),{prev:0,bars:['2026-03-30']});
  console.log('v2-cycle : ok');
 })().catch(e=>{console.error(e);process.exit(1)});
