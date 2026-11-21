@@ -67,7 +67,7 @@ function chooser({sessions=[],current}={}){
   +sessions.map(s=>'<button type="button" class="v2-opt'+(s.id===current?' is-current':'')+'" data-action="v2-pick-session" data-session="'+esc(s.id)+'"><span><b>'+esc(s.title)+'</b><small>'+esc((s.focus||[]).join(', '))+' · '+plural((s.exercises||[]).length,'exercice','exercices')+'</small></span></button>').join('')+'</section></div>';
 }
 
-function session({workout,index=0,elapsed=0,paused=false,pausedFor=0,rest=null,last={},userExercises=[],pending=0}={}){
+function session({workout,index=0,elapsed=0,paused=false,pausedFor=0,rest=null,last={},advice={},userExercises=[],pending=0}={}){
  const list=ordered(workout).filter(e=>e.status!=='skipped');
  const i=Math.max(0,Math.min(index,list.length-1)),e=list[i];
  if(!e)return '<section class="v2-session"><p>Aucun exercice dans cette séance.</p><button type="button" class="v2-btn" data-action="v2-finish">Terminer la séance</button></section>';
@@ -78,7 +78,7 @@ function session({workout,index=0,elapsed=0,paused=false,pausedFor=0,rest=null,l
   +'<div class="v2-steps" aria-label="Exercice '+(i+1)+' sur '+list.length+'">'+list.map((x,k)=>'<i class="'+(x.sets.every(s=>s.completed)?'is-done':k===i?'is-current':'')+'"></i>').join('')+'</div>';
  if(paused)html+='<div class="v2-paused" role="status">'+icon('pause','v2-ic v2-ic--sm')+'<span><b>En pause'+(pausedFor>=60?' depuis '+Math.floor(pausedFor/60)+' min':'')+'.</b> Ce temps ne compte pas.</span><button type="button" class="v2-link" data-action="v2-resume">Reprendre</button></div>';
  html+='<div class="v2-ex-head"><p class="v2-ex-count">Exercice '+(i+1)+' sur '+list.length+'</p><h1 class="v2-ex-title">'+esc(nameOf(e.exercise_key,userExercises))+'</h1><p class="v2-muted">'+plural(p.sets||e.sets.length,'série','séries')+' · '+reps(p.reps_min,p.reps_max)+' reps · repos '+restText(p.rest_seconds)+'</p>'
-  +(prev?'<span class="v2-chip">Dernière fois : '+(prev.weight==null?'—':kg(prev.weight)+' kg')+' × '+(prev.reps??'—')+'</span>':'')+'</div>';
+  +(prev?'<span class="v2-chip">Dernière fois : '+(prev.weight==null?'—':kg(prev.weight)+' kg')+' × '+(prev.reps??'—')+'</span>':'')+(advice[e.exercise_key]?'<p class="v2-advice">'+icon('coach','v2-ic v2-ic--sm')+'<span>'+esc(advice[e.exercise_key].text)+'</span></p>':'')+'</div>';
  html+='<div class="v2-sets"><div class="v2-set-labels" aria-hidden="true"><span>Série</span><span>kg</span><span>Reps</span><span></span></div>';
  for(const s of e.sets){
   const n=s.set_number;
@@ -119,12 +119,12 @@ function idlePrompt(minutes){
  return '<div class="v2-sheet-wrap"><section class="v2-sheet" role="alertdialog" aria-modal="true" aria-label="Tu étais en pause ?"><h2>Tu étais en pause ?</h2><p class="v2-muted">Aucune action depuis '+Number(minutes)+' min.</p><button type="button" class="v2-btn" data-action="v2-idle-yes">Oui, ne pas compter ce temps</button><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-idle-no">Non, je m’entraînais</button></section></div>';
 }
 
-function summary({workout,pending=0,local=false,userExercises=[]}={}){
+function summary({workout,pending=0,local=false,userExercises=[],records=[]}={}){
  const list=ordered(workout),done=list.reduce((n,e)=>n+e.sets.filter(s=>s.completed).length,0);
  const vol=list.reduce((n,e)=>n+e.sets.filter(s=>s.completed&&s.weight!=null&&s.reps!=null).reduce((a,s)=>a+s.weight*s.reps,0),0);
  const min=Math.round((workout.duration_seconds||0)/60);
  return '<section class="v2-summary"><div class="v2-done-mark">'+icon('check')+'</div><h1 class="v2-hello">Séance terminée</h1><dl class="v2-figures v2-figures--dark"><div><b>'+min+' min</b> <span>d’effort</span></div><div><b>'+plural(done,'série validée','séries validées').replace(/^(\d+) /,'$1</b> <span>')+'</span></div><div><b>'+Math.round(vol).toLocaleString('fr-FR')+'</b> <span>kg soulevés</span></div></dl>'
-  +'<ul class="v2-sum-list">'+list.map(e=>{const d=e.sets.filter(s=>s.completed).length;return '<li><span>'+esc(nameOf(e.exercise_key,userExercises))+'</span><small>'+(e.status==='skipped'?'passé':d+'/'+e.sets.length)+'</small></li>'}).join('')+'</ul>'
+  +(records.length?'<ul class="v2-records">'+records.map(r=>'<li>'+icon('trophy','v2-ic v2-ic--sm')+'<span>Nouveau record : '+recordText(r,userExercises)+'</span></li>').join('')+'</ul>':'')+'<ul class="v2-sum-list">'+list.map(e=>{const d=e.sets.filter(s=>s.completed).length;return '<li><span>'+esc(nameOf(e.exercise_key,userExercises))+'</span><small>'+(e.status==='skipped'?'passé':d+'/'+e.sets.length)+'</small></li>'}).join('')+'</ul>'
   +'<button type="button" class="v2-btn v2-btn--ghost" data-action="v2-cardio-open" data-workout="'+esc(workout.id)+'">'+icon('plus')+'Ajouter du cardio</button><p class="v2-sync" role="status">'+(pending?'Enregistrée sur ce téléphone, envoi en attente.':local?'Enregistrée sur ce téléphone.':'Enregistrée.')+'</p><button type="button" class="v2-btn v2-btn--big" data-action="v2-close-summary">Retour à l’accueil</button></section>';
 }
 
@@ -141,16 +141,44 @@ function cardioBlock(weeks){
  const total=weeks.reduce((n,w)=>n+w.minutes,0),max=Math.max(1,...weeks.map(w=>w.minutes));
  return '<section class="v2-card"><h2 class="v2-card-title">Cardio</h2><p class="v2-muted">'+total+' min sur '+weeks.length+' semaines</p><ul class="v2-bars">'+weeks.map(w=>{const [y,m,d]=w.week.split('-').map(Number);return '<li><span>'+d+' '+MON[m-1]+'</span><i style="--v:'+(w.minutes/max).toFixed(3)+'"></i><b>'+w.minutes+' min</b></li>'}).join('')+'</ul></section>';
 }
-function progress({progress,selected,metric='weight',userExercises=[],cardio=null}={}){
+const WD=['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];
+function dayText(iso){const d=new Date(iso);return Number.isNaN(d.getTime())?'':WD[d.getDay()]+' '+d.getDate()+' '+MON[d.getMonth()]}
+// Sans charge notée : seulement les répétitions (jamais « 0 kg »).
+const setText=s=>s.weight==null?(s.reps??'—')+' reps':kg(s.weight)+' × '+(s.reps??'—');
+function diffText(d){
+ if(!d)return '';
+ if(d.weight)return '<span class="v2-diff'+(d.weight>0?' is-up':'')+'">'+(d.weight>0?'+':'−')+kg(Math.abs(d.weight))+' kg</span>';
+ if(d.reps)return '<span class="v2-diff'+(d.reps>0?' is-up':'')+'">'+(d.reps>0?'+':'−')+plural(Math.abs(d.reps),'rép.','rép.')+'</span>';
+ return '<span class="v2-diff">=</span>';
+}
+const recordText=(r,ux)=>esc(nameOf(r.key,ux))+' : '+kg(r.weight)+' kg × '+r.reps+(r.kind==='reps'?' (+'+plural(r.delta,'répétition','répétitions')+')':' (+'+kg(r.delta)+' kg)');
+function tabs(tab){return '<div class="v2-seg v2-seg--2" role="group" aria-label="Affichage">'+[['exercises','Exercices'],['sessions','Séances']].map(([v,t])=>'<button type="button" data-action="v2-progress-tab" data-tab="'+v+'" aria-pressed="'+(tab===v)+'">'+t+'</button>').join('')+'</div>'}
+function sessionsHTML(list,open,userExercises,records){
+ const s=open&&list.find(x=>x.id===open);
+ if(s){
+  return '<button type="button" class="v2-link v2-back" data-action="v2-history-close">'+icon('left','v2-ic v2-ic--sm')+'Toutes les séances</button>'
+   +'<section class="v2-card"><p class="v2-muted">'+esc(dayText(s.date))+'</p><h2 class="v2-card-title">'+esc(s.title)+'</h2><p class="v2-muted">'+[s.minutes!=null?s.minutes+' min':null,plural(s.sets,'série validée','séries validées'),Math.round(s.volume).toLocaleString('fr-FR')+' kg'].filter(Boolean).join(' · ')+'</p>'
+   +(records?.length?'<ul class="v2-records">'+records.map(r=>'<li>'+icon('trophy','v2-ic v2-ic--sm')+'<span>Record : '+recordText(r,userExercises)+'</span></li>').join('')+'</ul>':'')+'</section>'
+   +(s.exercises.length?'<ul class="v2-sum-list">'+s.exercises.map(e=>'<li class="v2-hist-ex"><span><b>'+esc(nameOf(e.key,userExercises))+'</b>'+(e.from?'<small>à la place de '+esc(nameOf(e.from,userExercises))+'</small>':'')+'</span><small>'+e.sets.map(setText).join(' · ')+'</small></li>').join('')+'</ul>':'<p class="v2-card v2-empty">Aucune série validée dans cette séance.</p>')
+   +(s.cardio.length?'<p class="v2-muted">Cardio : '+s.cardio.map(c=>esc(cardioName(c.type))+' '+c.minutes+' min').join(', ')+'</p>':'');
+ }
+ if(!list.length)return '<p class="v2-card v2-empty">Tes séances terminées apparaîtront ici.</p>';
+ return '<ul class="v2-hist">'+list.slice(0,60).map(x=>'<li><button type="button" class="v2-opt" data-action="v2-history-open" data-id="'+esc(x.id)+'"><span><b>'+esc(x.title)+'</b><small>'+esc(dayText(x.date))+' · '+[x.minutes!=null?x.minutes+' min':null,plural(x.sets,'série','séries')].filter(Boolean).join(' · ')+(x.cardio.length?' · cardio':'')+'</small></span>'+icon('right','v2-ic v2-ic--sm')+'</button></li>').join('')+'</ul>';
+}
+function progress({progress,selected,metric='weight',userExercises=[],cardio=null,tab='exercises',history=null,advice=null,sessions=[],open=null,records=[]}={}){
  const keys=Object.keys(progress?.byKey||{}).sort((a,b)=>nameOf(a,userExercises).localeCompare(nameOf(b,userExercises),'fr'));
- let html='<section class="v2-progress"><h1 class="v2-hello">Tes progrès</h1><dl class="v2-figures v2-figures--card"><div><b>'+(progress?.totals.sets||0)+'</b> <span>'+((progress?.totals.sets||0)>1?'séries validées':'série validée')+'</span></div><div><b>'+Math.round(progress?.totals.volume||0).toLocaleString('fr-FR')+'</b> <span>kg de volume</span></div></dl>';
+ let html='<section class="v2-progress"><h1 class="v2-hello">Tes progrès</h1>'+tabs(tab);
+ if(tab==='sessions')return html+sessionsHTML(sessions,open,userExercises,records)+'</section>';
+ html+='<dl class="v2-figures v2-figures--card"><div><b>'+(progress?.totals.sets||0)+'</b> <span>'+((progress?.totals.sets||0)>1?'séries validées':'série validée')+'</span></div><div><b>'+Math.round(progress?.totals.volume||0).toLocaleString('fr-FR')+'</b> <span>kg de volume</span></div></dl>';
  if(!keys.length)return html+'<p class="v2-card v2-empty">Ton graphique apparaîtra après tes premières séries validées.</p>'+cardioBlock(cardio)+'</section>';
- const key=keys.includes(selected)?selected:keys[0],points=progress.byKey[key];
- const best=points.reduce((m,p)=>p.weight!=null&&(m==null||p.weight>m)?p.weight:m,null);
+ const key=keys.includes(selected)?selected:keys[0],points=progress.byKey[key],rec=history?.key===key?history.record:null;
  html+='<label class="v2-field-label" for="v2-progress-ex">Exercice</label><select id="v2-progress-ex" class="v2-select" data-v2-progress>'+keys.map(k=>'<option value="'+esc(k)+'" '+(k===key?'selected':'')+'>'+esc(nameOf(k,userExercises))+'</option>').join('')+'</select>'
   +'<div class="v2-seg" role="group" aria-label="Mesure">'+[['weight','Charge max'],['reps','Répétitions'],['volume','Volume']].map(([v,t])=>'<button type="button" data-action="v2-metric" data-metric="'+v+'" aria-pressed="'+(metric===v)+'">'+t+'</button>').join('')+'</div>'
-  +'<div class="v2-card">'+(chart(points,metric)||'<p class="v2-muted">Pas encore de valeur pour cette mesure.</p>')+'<p class="v2-muted">'+plural(points.length,'séance','séances')+(best!=null?' · Record : '+kg(best)+' kg':'')+'</p></div>'
-  +'<p class="v2-muted">Seules les séries validées comptent. Un exercice remplacé garde son propre historique.</p>'+cardioBlock(cardio)+'</section>';
+  +'<div class="v2-card">'+(chart(points,metric)||'<p class="v2-muted">Pas encore de valeur pour cette mesure.</p>')+'<p class="v2-muted">'+plural(points.length,'séance','séances')+(rec?' · Record : '+kg(rec.weight)+' kg × '+rec.reps:'')+'</p></div>';
+ if(advice)html+='<section class="v2-card v2-advice-card"><h2 class="v2-card-title">'+icon('coach','v2-ic v2-ic--sm')+'Prochaine fois</h2><p>'+esc(advice.text)+'</p><p class="v2-muted">Un conseil, pas une obligation : c’est toi qui décides de la charge.</p></section>';
+ const entries=history?.key===key?history.entries.slice(0,8):[];
+ if(entries.length)html+='<section class="v2-card"><h2 class="v2-card-title">Séance par séance</h2><ul class="v2-compare">'+entries.map(e=>'<li><div><b>'+esc(dayText(e.date))+'</b>'+(e.from?'<small>à la place de '+esc(nameOf(e.from,userExercises))+'</small>':'')+'</div><span>'+e.sets.map(setText).join(' · ')+'</span>'+diffText(e.diff)+'</li>').join('')+'</ul></section>';
+ html+='<p class="v2-muted">Seules les séries validées comptent. Un exercice remplacé garde son propre historique.</p>'+cardioBlock(cardio)+'</section>';
  return html;
 }
 

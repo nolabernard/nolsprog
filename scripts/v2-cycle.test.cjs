@@ -66,6 +66,16 @@ let n=0;const uuid=()=>'00000000-0000-4000-8000-'+String(++n).padStart(12,'0');
  assert.deepEqual(loaded.cycle.sessions[0].muscles,[{muscle:'Pectoraux',role:'base'}]);
  assert.equal(loaded.workouts.length,2);assert.equal(loaded.setLogs.length,4);
  const none=await C.loadCycle({async select(p){return []}},'u1');assert.equal(none.cycle,null);
+ // Lot 5 : numéro de série, ressenti, substitution et titre de séance lus avec l'historique.
+ const paths=[],rich={async select(p){paths.push(p);
+  if(p.startsWith('workouts'))return [{id:'w9',status:'completed',ended_at:'2026-11-01T00:00:00Z',cycle_session_id:'old',cycle_sessions:{title:'Haut ancien'}}];
+  if(p.startsWith('workout_set_logs'))return [{exercise_key:'dips',set_number:2,weight:null,reps:10,rir:2,completed:true,workout_exercises:{workout_id:'w9',position:3,substituted_from_key:'pompes',rpe:8}}];
+  return []}};
+ const lr=await C.loadCycle(rich,'u1');
+ assert.equal(lr.workouts[0].title,'Haut ancien');assert.equal('cycle_sessions' in lr.workouts[0],false);
+ assert.deepEqual(lr.setLogs[0],{exercise_key:'dips',set_number:2,weight:null,reps:10,rir:2,completed:true,workout_id:'w9',position:3,substituted_from_key:'pompes',rpe:8});
+ assert(paths.some(p=>/^workouts.*cycle_sessions\(title\)/.test(p)));
+ assert(paths.some(p=>/^workout_set_logs.*set_number.*workout_exercises\(workout_id,position,substituted_from_key,rpe\)/.test(p)));
 
  // Avancée du cycle : séances faites ÷ (semaines × séances par semaine).
  assert.equal(C.cycleProgress({weeks:6,sessions_per_week:3,id:'cy'},[{cycle_id:'cy',status:'completed'},{cycle_id:'autre',status:'completed'}]),1/18);

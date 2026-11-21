@@ -1,6 +1,6 @@
 // Contrôleur V2 : parcours complet invité et compte, sans navigateur.
 const assert=require('assert');
-for(const [g,f] of [['SteroidCatalogue','exercise-catalogue'],['SteroidCycle','v2-cycle'],['SteroidUI','ui-v2'],['SteroidPlanner','session-planner'],['SteroidWorkout','workout-store']])globalThis[g]=require('../'+f+'.js');
+for(const [g,f] of [['SteroidCatalogue','exercise-catalogue'],['SteroidCycle','v2-cycle'],['SteroidHistory','v2-history'],['SteroidUI','ui-v2'],['SteroidPlanner','session-planner'],['SteroidWorkout','workout-store']])globalThis[g]=require('../'+f+'.js');
 require('../program-engine.js');
 const V2=require('../app-v2.js');
 
@@ -55,6 +55,36 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  assert.match(c.statsHTML(),/Développé couché barre/);
  // L'historique invité survit à la fermeture.
  c=V2.create(ctx);await c.init();assert.match(c.statsHTML(),/Développé couché barre/);assert.match(c.todayHTML(),/Legs/);
+ // Lot 5 : historique des séances, conseil en séance, record à la séance suivante.
+ {
+  const st=memory(),one=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',sets:2,reps:'6–8',rest:120}]}];
+  const h5=V2.create({...ctx,storage:st,legacyPlan:()=>one});await h5.init();
+  const run=async(weight,reps)=>{
+   await h5.handle('v2-start',{session:h5.state().cycle.sessions[0].id});
+   const e=h5.state().store.current().exercises[0];
+   for(const n of [1,2]){h5.input({ex:e.id,set:n,field:'weight',value:String(weight)});h5.input({ex:e.id,set:n,field:'reps',value:String(reps)});await h5.handle('v2-set',{ex:e.id,set:String(n)})}
+   await h5.handle('v2-finish');
+  };
+  await run(60,8);
+  assert.doesNotMatch(h5.todayHTML(),/Nouveau record/,'pas de record à la première séance');
+  await h5.handle('v2-close-summary');t+=3*24*3600e3;
+  await h5.handle('v2-start',{session:h5.state().cycle.sessions[0].id});
+  assert.match(h5.todayHTML(),/class="v2-advice"[^]*tente 62,5 kg/,'conseil fondé sur la séance précédente');
+  assert.match(h5.todayHTML(),/value="60"/,'les cases restent préremplies avec la dernière performance');
+  await h5.handle('v2-exit');
+  const e=h5.state().store.current().exercises[0];
+  for(const n of [1,2]){h5.input({ex:e.id,set:n,field:'weight',value:'62.5'});await h5.handle('v2-set',{ex:e.id,set:String(n)})}
+  await h5.handle('v2-back');await h5.handle('v2-finish');
+  assert.match(h5.todayHTML(),/Nouveau record : Développé couché barre : 62,5 kg × 8 \(\+2,5 kg\)/);
+  await h5.handle('v2-close-summary');
+  assert.match(h5.todayHTML(),/Record récent : Développé couché barre, 62,5 kg × 8/);
+  let st5=h5.statsHTML();assert.match(st5,/Séance par séance/);assert.match(st5,/62,5 × 8 · 62,5 × 8/);assert.match(st5,/Record : 62,5 kg × 8/);assert.match(st5,/Prochaine fois/);
+  await h5.handle('v2-progress-tab',{tab:'sessions'});st5=h5.statsHTML();
+  const ids=[...st5.matchAll(/data-action="v2-history-open" data-id="([^"]+)"/g)].map(m=>m[1]);assert.equal(ids.length,2);
+  await h5.handle('v2-history-open',{id:ids[0]});st5=h5.statsHTML();assert.match(st5,/Push A/);assert.match(st5,/Record : Développé couché barre/);
+  await h5.handle('v2-history-close');assert.match(h5.statsHTML(),/v2-history-open/);
+  await h5.handle('v2-progress-tab',{tab:'exercises'});assert.match(h5.statsHTML(),/Séance par séance/);
+ }
  // Programme : changer un exercice via le catalogue.
  const ce=c.state().cycle.sessions[1].exercises[0];
  await c.handle('v2-edit-ex',{ce:ce.id});c.change({kind:'search',value:'presse'});
