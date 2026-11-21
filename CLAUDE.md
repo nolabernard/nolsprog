@@ -24,6 +24,8 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
   `sport-session.js` (bilan de séance), `sport-import.js` (import texte/CSV/TSV local),
   `sport-ux.js` (aides UX, records).
 - `app-updates.js` : détection de nouvelle version (`version.json` généré au déploiement).
+- `sw.js` : mode hors ligne (réseau d'abord, cache en secours ; jamais Supabase ni `version.json`).
+  Enregistré seulement en production. Changer `CACHE` si la stratégie de cache change.
 - Styles : `styles.css` (historique, lourd) + `steroid-v2.css` (identité V2, chargé après).
   Référence visuelle : `DESIGN-SYSTEM-V2.md`. Toute nouvelle règle va dans `steroid-v2.css`.
 - `supabase/email-templates/` : e-mails de confirmation et de récupération.
