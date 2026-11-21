@@ -21,6 +21,8 @@ Situations réelles à couvrir (demandées par le propriétaire) :
 
 **Non-objectifs** : app native (App Store), IA générative, réseau social, paiement, nutrition.
 
+**Ajouté par le propriétaire** : lot 7 « Rappels » (notifications).
+
 **Anti-objectifs** (échec même si « ça marche ») :
 - une séance non faite affichée comme « manquée » ou à rattraper ;
 - un exercice de base remplacé par un exercice de finition ;
@@ -64,6 +66,7 @@ Reconstruire avec un autre framework est exclu par le cahier des charges.
 - Le questionnaire propose deux modes : **choisir ses jours** (lundi, mercredi, vendredi) ou **« N séances par semaine »**. Les jours choisis ne servent que de rythme conseillé et de repère dans l'accueil ; ils ne bloquent rien.
 - **Prochaine séance** = celle qui suit la dernière séance terminée du cycle. Jamais de séance « manquée ».
 - **Garde-fou récupération** : si la dernière séance date de moins de 48 h et que la séance proposée sollicite en exercice de base les mêmes groupes musculaires, l'app propose la suivante compatible (« Hier : jambes. Aujourd'hui je te conseille Haut du corps »). L'utilisateur peut toujours choisir une autre séance.
+- Le garde-fou **explique toujours son choix** en une phrase concrète (« Hier : jambes. Tes jambes ont besoin d'environ 48 h. Je te propose Haut B. ») avec deux boutons : « D'accord » et « Faire Bas B quand même ». Jamais de blocage, jamais de jargon.
 - **Avancement du cycle** = séances faites ÷ (semaines × séances par semaine). Le bilan est proposé quand ce total est atteint **ou** quand la durée du cycle + 2 semaines est dépassée.
 
 ### 6.2 Catalogue et identité des exercices
@@ -91,7 +94,6 @@ Bouton « Machine prise » dans la séance → panneau, dans cet ordre :
 - Toucher le chrono de séance = pause. Bandeau discret « En pause · Reprendre » ; chrono et repos figés.
 - Durée de séance = temps total − pauses (`paused_seconds`).
 - Sans action depuis 20 min, au retour : « Tu étais en pause ? » → ne pas compter ce temps.
-- Après plus de 10 min de pause sur un exercice de base : suggestion d'une série d'échauffement.
 - La séance est sauvegardée en continu (localement puis Supabase) et reprend après fermeture ou changement d'appareil.
 
 ### 6.5 Écran de séance (direction A)
@@ -105,7 +107,7 @@ Terminer sans tout valider reste possible.
 
 - Un cycle conserve une **photographie** : réponses du questionnaire, version du moteur, méthode, durée, séances par semaine, jours choisis.
 - Modifier son profil n'affecte **pas** le cycle en cours ; cela servira au cycle suivant.
-- Durée : 6 semaines par défaut, réglable entre 6 et 8 sur l'écran récapitulatif *(choix du développeur, à confirmer)*.
+- Durée : 6 semaines par défaut, réglable entre 6 et 8 sur l'écran récapitulatif.
 - Le générateur produit la suite de séances une fois, au début du cycle. Il ne régénère plus chaque semaine (aujourd'hui chaque semaine est régénérée depuis le profil actuel, avec de nouveaux identifiants).
 - La progression d'une semaine à l'autre passe par des **recommandations** (double progression), jamais par une modification automatique.
 - Tests automatiques sur la matrice méthode × fréquence (2–6) × niveau × matériel × objectif. Invariants vérifiés : structure de la méthode, volume hebdomadaire par groupe musculaire dans une fourchette, exercices de base avant les finitions, repos cohérents avec le rôle, matériel respecté, mouvements à éviter exclus, durée estimée ≤ durée demandée.
@@ -167,6 +169,7 @@ Chaque lot = une ou plusieurs PR, tests verts, démonstration mobile, validation
 | 4 Planning | Prochaine séance, garde-fou récupération, deux modes jours / N par semaine, cardio | Aucune séance « manquée » ; enchaînements incohérents évités |
 | 5 Historique et progrès | Historique par clé, comparaison, records, recommandations | Remplacements jamais fusionnés ; recommandations fondées sur des séries réelles |
 | 6 Coach et bilan | Bilan de cycle, questionnaire actualisé, cycle suivant proposé | Aucun cycle activé sans validation |
+| 7 Rappels | Notifications web (iPhone : app installée, iOS 16.4+), heure et jours au choix, désactivables ; envoi par une fonction Supabase programmée, table des abonnements | Rappel reçu le jour choisi à l'heure choisie ; aucun rappel si désactivé |
 
 ## 11. Laissé au développeur
 
@@ -174,8 +177,8 @@ Noms exacts des fichiers et fonctions, algorithme de recherche tolérante, seuil
 
 ## 12. Choix du développeur à confirmer
 
-- Durée de cycle par défaut : 6 semaines, réglable 6–8.
-- Garde-fou récupération : 48 h, basé sur les groupes travaillés en exercice de base.
-- Seuils pause : question après 20 min sans action ; échauffement suggéré après 10 min.
+- Durée de cycle par défaut : 6 semaines, réglable 6–8 *(validé)*.
+- Garde-fou récupération : 48 h, basé sur les groupes travaillés en exercice de base, toujours expliqué *(validé)*.
+- Pause : question après 20 min sans action *(validé)* ; pas de suggestion d'échauffement *(décision du propriétaire)*.
 - Mode invité conservé avec le même modèle, en local.
-- Pas de notifications de rappel en V2 (les jours choisis s'affichent seulement dans l'app).
+- Notifications : ajoutées en lot 7 *(décision du propriétaire)*.
