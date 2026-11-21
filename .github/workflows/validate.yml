@@ -1,7 +1,7 @@
 name: Validate NolsProg
 on:
   push:
-    branches: [main, 'fix/data-integrity-offline-isolation', 'ux-v2-design-system']
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -12,41 +12,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check JavaScript syntax
-        run: node --check app.js
-      - name: Check workout summary engine
-        run: node scripts/sport-session.test.cjs
-      - name: Simulate new user journey
-        run: node scripts/audit-user-journey.test.cjs
-      - name: Test safe mobile updates
-        run: node scripts/mobile-updates.test.cjs
-      - name: Test mobile UI structure
-        run: node scripts/mobile-ui.test.cjs
-      - name: Test identity and navigation
-        run: node scripts/account-nav.test.cjs
-      - name: Test account settings
-        run: node scripts/account-settings.test.cjs
-      - name: Test exercise reordering
-        run: node scripts/reorder-exercises.test.cjs
-      - name: Test custom program import
-        run: node scripts/sport-import.test.cjs
-      - name: Check interactive sessions
-        run: node scripts/smoke.cjs
-      - name: Validate sports rules phase 1
-        run: node scripts/sport-rules.test.cjs
-      - name: Validate generator integration phase 2
-        run: node scripts/sport-engine-integration.test.cjs
-      - name: Audit sports quality phase 4
-        run: node scripts/sport-quality.test.cjs
-      - name: Validate calendar integration
-        run: node scripts/calendar-integration.test.cjs
-      - name: Test double progression and RIR
-        run: node scripts/sport-progression.test.cjs
-      - name: Validate visual identity
-        run: node scripts/visual-identity.test.cjs
-      - name: Validate STÉROÏDE V2 design system
-        run: node scripts/steroid-v2-ui.test.cjs
-      - name: Test personalized coherence guide
-        run: node scripts/sport-guide.test.cjs
-      - name: Verify required files
-        run: test -s index.html && test -s app.js && test -s styles.css && test -s manifest.webmanifest
+      - name: Run all checks
+        run: ./scripts/test-all.sh
