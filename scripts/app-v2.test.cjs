@@ -105,7 +105,7 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  const pick=c.programmeHTML().match(/data-action="v2-pick" data-key="([^"]+)"/)[1];
  // Brouillon : rien n'est appliqué avant « Enregistrer » ; « Annuler » rend le programme d'origine.
  await c.handle('v2-pick',{key:pick});assert.notEqual(c.state().cycle.sessions[1].exercises[0].exercise_key,pick,'pas appliqué avant enregistrement');
- assert.match(c.programmeHTML(),/Modifications non enregistrées[^]*data-action="v2-edit-save"/);assert.equal(c.hasDraft(),true);
+ assert.match(c.programmeHTML(),/Non enregistré[^]*data-action="v2-edit-save"/);assert.equal(c.hasDraft(),true);
  await c.handle('v2-edit-cancel');assert.equal(c.hasDraft(),false);assert.doesNotMatch(c.programmeHTML(),/v2-savebar/);
  await c.handle('v2-edit-ex',{ce:ce.id});c.change({kind:'search',value:'presse'});
  await c.handle('v2-pick',{key:pick});await c.handle('v2-edit-save');assert.equal(c.hasDraft(),false);assert.equal(c.state().cycle.sessions[1].exercises[0].exercise_key,pick);

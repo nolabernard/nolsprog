@@ -311,10 +311,12 @@ button:active{transform:translateY(1px)}
 .v2-warmup b{display:block;font-size:14px}.v2-warmup ol{margin:6px 0;padding-left:20px;display:flex;gap:18px;font-weight:700;font-variant-numeric:tabular-nums}
 .v2-warmup small{color:var(--muted)}
 
-/* Barre d'enregistrement du programme */
-.v2-savebar{position:sticky;bottom:calc(92px + env(safe-area-inset-bottom));z-index:20;display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:8px;margin:16px 0 0;padding:12px;border-radius:18px;background:#0B4D3B;color:#F5F0E5;box-shadow:0 10px 28px rgba(7,53,40,.28)}
-.v2-savebar span{grid-column:1/-1;display:flex;flex-direction:column;gap:2px}.v2-savebar small{opacity:.8;font-size:12px}
-.v2-savebar .v2-btn{min-height:44px;padding:0 14px}.v2-savebar .v2-btn--ghost{background:transparent;color:#F5F0E5;border-color:rgba(245,240,229,.5)}
+/* Barre d'enregistrement du programme : prend la place de la barre de navigation (même endroit, même taille),
+   donc elle ne recouvre jamais le contenu ; les messages temporaires s'affichent au-dessus. */
+.shell.is-editing .tabbar{display:none!important}
+.v2-savebar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(8px + env(safe-area-inset-bottom));z-index:30;width:min(410px,calc(100% - 28px));min-height:60px;box-sizing:border-box;display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:6px;padding:6px 6px 6px 14px;border-radius:23px;background:#0B4D3B;color:#F5F0E5;box-shadow:0 10px 28px rgba(7,53,40,.28)}
+.v2-savebar span{display:flex;flex-direction:column;line-height:1.15;font-size:13px}.v2-savebar small{opacity:.8;font-size:11px}
+.v2-savebar .v2-btn{min-height:46px;padding:0 14px;border-radius:17px;font-size:14px}.v2-savebar .v2-btn--ghost{background:transparent;color:#F5F0E5;border-color:rgba(245,240,229,.45)}
 .v2-savebar .v2-btn:not(.v2-btn--ghost){background:#F5F0E5;color:#0B4D3B}
 
 /* Rappels (lot 7) */

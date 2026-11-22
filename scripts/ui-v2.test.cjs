@@ -180,7 +180,7 @@ assert.doesNotMatch(UI.cardioSheet({}),/v2-cardio-delete/);
   assert.doesNotMatch(UI.session({workout}),/Échauffement|Semaine allégée/);
   assert.match(UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},deload:true}),/semaine allégée/); }
 // Programme : barre « Annuler / Enregistrer » ; menus du bas : poignée qui ferme.
-assert.match(UI.programme({cycle:{weeks:6,sessions:[]},editing:2}),/Modifications non enregistrées[^]*v2-edit-cancel[^]*v2-edit-save/);
+assert.match(UI.programme({cycle:{weeks:6,sessions:[]},editing:2}),/Non enregistré[^]*v2-edit-cancel[^]*v2-edit-save/);
 assert.doesNotMatch(UI.programme({cycle:{weeks:6,sessions:[]}}),/v2-savebar/);
 assert.match(UI.chooser({sessions:[haut]}),/<button type="button" class="v2-grab" data-action="v2-close-sheet" aria-label="Fermer/);
 assert.doesNotMatch(UI.idlePrompt?UI.idlePrompt({}):'',/v2-grab/,'la question « en pause ? » attend une réponse');
