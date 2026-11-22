@@ -152,4 +152,12 @@ assert.match(cl,/data-action="v2-cardio-edit" data-id="c1"/);assert.match(cl,/V�
 const ce=UI.cardioSheet({edit:{id:'c1',type:'course',minutes:40,workout_id:'w1'}});
 assert.match(ce,/Modifier le cardio/);assert.match(ce,/name="id" value="c1"/);assert.match(ce,/value="course" checked/);assert.match(ce,/value="40"/);assert.match(ce,/data-action="v2-cardio-delete" data-id="c1"/);
 assert.doesNotMatch(UI.cardioSheet({}),/v2-cardio-delete/);
+// Questionnaire : récapitulatif avant génération et présentation du programme.
+{ require('../sport-rules.js');const E=globalThis.NolsEngine,a={...E.defaults,goal:'strength'},pv=E.buildCycle(a);
+  const rc=UI.recapCard({answers:a,preview:pv,methods:E.methods});
+  assert.match(rc,/Méthode<\/dt><dd>Full body/);assert.match(rc,/Durée du cycle<\/dt><dd>6 semaines/);assert.match(rc,/Gagner en force/);assert.match(rc,/Répartition des séances/);assert.match(rc,/Full body A/);assert.match(rc,/lundi, mercredi, vendredi/);
+  assert.match(rc,/Exercices de base : \d+ à \d+ répétitions/);assert.doesNotMatch(rc,/45 répétitions/,'gainage exclu des fourchettes');
+  const pi=UI.programIntro({cycle:{method:'fullbody',weeks:6,sessions_per_week:3,sessions:[{},{},{}]},methods:E.methods});
+  assert.match(pi,/Ton programme est prêt/);assert.match(pi,/Full body · 6 semaines/);assert.match(pi,/3 séances différentes/);assert.match(pi,/data-action="intro-start"/);assert.equal(UI.programIntro({}),'');
+  for(const h of [rc,pi])assert(noEmoji(h)&&!/onclick=/i.test(h)); }
 console.log('ui-v2 : ok');

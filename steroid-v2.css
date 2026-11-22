@@ -255,6 +255,13 @@ button:active{transform:translateY(1px)}
 .v2-last b{font-size:17px}.v2-last small{color:var(--muted)}
 /* Cardio : modifier / supprimer */
 .v2-danger{color:#9B2C2C;margin-top:8px;width:100%}
+/* Récapitulatif du questionnaire et présentation du programme */
+.v2-recap-body{display:flex;flex-direction:column;gap:14px;padding:8px 20px 32px}
+.v2-recap{display:flex;flex-direction:column;margin:0;background:var(--surface);border-radius:18px;padding:4px 16px}
+.v2-recap div{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}.v2-recap div:last-child{border:0}
+.v2-recap dt{color:var(--muted);font-weight:600}.v2-recap dd{margin:0;font-weight:800;text-align:right}
+.v2-recap-sessions{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px}.v2-recap-sessions small{display:block;color:var(--muted)}
+.v2-intro .v2-btn{margin-top:12px;width:100%}
 
 /* Rappels (lot 7) */
 .v2-daypick{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:10px 0}

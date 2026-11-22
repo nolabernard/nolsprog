@@ -20,5 +20,6 @@ assert(html.indexOf('./v2-review.js')>0&&html.indexOf('./v2-review.js')<html.ind
 const sw=fs.readFileSync('sw.js','utf8');assert(sw.includes("addEventListener('push'")&&sw.includes('notificationclick'),'Service worker : rappels');
 assert(html.indexOf('./reminders.js')>0&&html.indexOf('./reminders.js')<html.indexOf('./app-v2.js'),'reminders.js avant app-v2.js');
 assert(!/service_role|vapid_private\s*[:=]/i.test(fs.readFileSync('reminders.js','utf8')+app),'aucun secret côté app');
+assert(app.includes('function recapUI()')&&app.includes("a==='onboard-confirm'")&&app.includes('S.programIntro=true'),'Récapitulatif du questionnaire et présentation du programme');
 assert(app.includes("'v2Next' in"),'Formulaire du cycle suivant branché');
 for(const c of ['.v2-bullets','.v2-kicker--light','.v2-compare','.v2-diff','.v2-records','.v2-hist','.v2-advice','.v2-seg--2'])assert(css.includes(c),'Style manquant : '+c);
