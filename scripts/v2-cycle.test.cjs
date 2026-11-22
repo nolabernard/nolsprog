@@ -107,5 +107,11 @@ let n=0;const uuid=()=>'00000000-0000-4000-8000-'+String(++n).padStart(12,'0');
   const p=C.cardioProgress(l,new Date(2026,3,1,12).getTime());
   console.log(JSON.stringify({prev:C.cardioWeek(l,new Date(2026,2,27,12).getTime()),bars:p.filter(w=>w.minutes).map(w=>w.week)}))`],{cwd:require('path').join(__dirname,'..'),env:{...process.env,TZ:'Europe/Paris'}}).toString();
  assert.deepEqual(JSON.parse(out),{prev:0,bars:['2026-03-30']});
- console.log('v2-cycle : ok');
+ // Semaine allégée : la dernière semaine de séances réellement faites.
+{ const cy={id:'c',weeks:6,sessions_per_week:3},ws=n=>Array.from({length:n},(_,i)=>({id:'w'+i,cycle_id:'c',status:'completed'}));
+  assert.equal(C.deload(cy,ws(14)),false);assert.equal(C.deload(cy,ws(15)),true);assert.equal(C.deload(cy,ws(17)),true);assert.equal(C.deload(cy,ws(18)),false,'cycle terminé : place au bilan');
+  assert.equal(C.deload(null,[]),false);assert.equal(C.deloadSets(3),2);assert.equal(C.deloadSets(4),2);assert.equal(C.deloadSets(1),1);
+  assert.deepEqual(C.warmup(100),[{weight:50,reps:8},{weight:75,reps:4}]);assert.deepEqual(C.warmup(42),[{weight:21,reps:8},{weight:32,reps:4}]);
+  assert.equal(C.warmup(null),null);assert.equal(C.warmup(12),null,'charge légère : pas d’échauffement chiffré'); }
+console.log('v2-cycle : ok');
 })().catch(e=>{console.error(e);process.exit(1)});
