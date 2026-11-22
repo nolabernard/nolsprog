@@ -38,12 +38,15 @@ function cardioHTML(c){
  if(!c)return '';
  return '<div class="v2-cardio-line">'+(c.target?'<p><b>Cardio : '+Number(c.minutes)+' / '+Number(c.target)+' min cette semaine</b></p>':c.minutes?'<p><b>Cardio : '+Number(c.minutes)+' min cette semaine</b></p>':'')+'<button type="button" class="v2-link" data-action="v2-cardio-open">'+icon('plus','v2-ic v2-ic--sm')+'Noter du cardio</button></div>';
 }
-function cardioSheet({workoutId=''}={}){
- return '<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="Noter du cardio"><i class="v2-grab"></i><h2>Noter du cardio</h2>'
-  +'<form class="v2-create" data-v2-cardio><input type="hidden" name="workout" value="'+esc(workoutId)+'"><fieldset class="v2-types"><legend class="v2-sheet-label">Activité</legend>'
-  +CARDIO.map(([v,t],i)=>'<label><input type="radio" name="type" value="'+v+'" '+(i===0?'checked':'')+'><span>'+t+'</span></label>').join('')+'</fieldset>'
-  +'<label class="v2-field-label">Durée (minutes)<input name="minutes" type="number" inputmode="numeric" min="1" max="600" required value="30"></label>'
-  +'<button type="submit" class="v2-btn">Enregistrer le cardio</button></form></section></div>';
+// Noter du cardio, ou modifier / supprimer une activité déjà enregistrée (edit = la ligne existante).
+function cardioSheet({workoutId='',edit=null}={}){
+ const title=edit?'Modifier le cardio':'Noter du cardio',type=edit?.type||CARDIO[0][0];
+ return '<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="'+title+'"><i class="v2-grab"></i><h2>'+title+'</h2>'
+  +'<form class="v2-create" data-v2-cardio><input type="hidden" name="workout" value="'+esc(edit?edit.workout_id||'':workoutId)+'">'+(edit?'<input type="hidden" name="id" value="'+esc(edit.id)+'">':'')+'<fieldset class="v2-types"><legend class="v2-sheet-label">Activité</legend>'
+  +CARDIO.map(([v,t])=>'<label><input type="radio" name="type" value="'+v+'" '+(v===type?'checked':'')+'><span>'+t+'</span></label>').join('')+'</fieldset>'
+  +'<label class="v2-field-label">Durée (minutes)<input name="minutes" type="number" inputmode="numeric" min="1" max="600" required value="'+(edit?Number(edit.minutes):30)+'"></label>'
+  +'<button type="submit" class="v2-btn">'+(edit?'Enregistrer la modification':'Enregistrer le cardio')+'</button></form>'
+  +(edit?'<button type="button" class="v2-btn v2-btn--ghost v2-danger" data-action="v2-cardio-delete" data-id="'+esc(edit.id)+'">Supprimer cette activité</button>':'')+'</section></div>';
 }
 function home({next,hasHistory=false,cycle,progress=0,minutes,firstName,dateText,weekLine,record,building=false,active=null,retry=false,rhythm=null,cardio=null,last=null}={}){
  const head='<header class="v2-home-head"><div>'+(dateText?'<p class="v2-date">'+esc(dateText)+'</p>':'')+'<h1 class="v2-hello">'+esc(firstName?'Salut '+firstName:'Salut')+'</h1></div></header>';
@@ -138,6 +141,11 @@ function chart(points,metric){
 }
 
 const MON=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+// Activités cardio récentes : un appui pour modifier ou supprimer.
+function cardioLogs(list){
+ if(!list?.length)return '';
+ return '<section class="v2-card"><h2 class="v2-card-title">Activités cardio</h2><ul class="v2-hist">'+list.slice(0,10).map(c=>'<li><button type="button" class="v2-opt" data-action="v2-cardio-edit" data-id="'+esc(c.id)+'"><span><b>'+esc(cardioName(c.type))+' · '+Number(c.minutes)+' min</b><small>'+esc(dayText(c.done_on+'T12:00:00'))+'</small></span>'+icon('right','v2-ic v2-ic--sm')+'</button></li>').join('')+'</ul></section>';
+}
 function cardioBlock(weeks){
  if(!weeks?.length)return '';
  const total=weeks.reduce((n,w)=>n+w.minutes,0),max=Math.max(1,...weeks.map(w=>w.minutes));
@@ -167,10 +175,10 @@ function sessionsHTML(list,open,userExercises,records){
  if(!list.length)return '<p class="v2-card v2-empty">Tes séances terminées apparaîtront ici.</p>';
  return '<ul class="v2-hist">'+list.slice(0,60).map(x=>'<li><button type="button" class="v2-opt" data-action="v2-history-open" data-id="'+esc(x.id)+'"><span><b>'+esc(x.title)+'</b><small>'+esc(dayText(x.date))+' · '+[x.minutes!=null?x.minutes+' min':null,plural(x.sets,'série','séries')].filter(Boolean).join(' · ')+(x.cardio.length?' · cardio':'')+'</small></span>'+icon('right','v2-ic v2-ic--sm')+'</button></li>').join('')+'</ul>';
 }
-function progress({progress,selected,metric='weight',userExercises=[],cardio=null,tab='exercises',history=null,advice=null,sessions=[],open=null,records=[],truncated=false}={}){
+function progress({progress,selected,metric='weight',userExercises=[],cardio=null,tab='exercises',history=null,advice=null,sessions=[],open=null,records=[],truncated=false,cardioList=[]}={}){
  const keys=Object.keys(progress?.byKey||{}).sort((a,b)=>nameOf(a,userExercises).localeCompare(nameOf(b,userExercises),'fr'));
  let html='<section class="v2-progress"><h1 class="v2-hello">Tes progrès</h1>'+tabs(tab);
- if(tab==='sessions')return html+sessionsHTML(sessions,open,userExercises,records)+'</section>';
+ if(tab==='sessions')return html+sessionsHTML(sessions,open,userExercises,records)+(open?'':cardioLogs(cardioList))+'</section>';
  html+='<dl class="v2-figures v2-figures--card"><div><b>'+(progress?.totals.sets||0)+'</b> <span>'+((progress?.totals.sets||0)>1?'séries validées':'série validée')+'</span></div><div><b>'+Math.round(progress?.totals.volume||0).toLocaleString('fr-FR')+'</b> <span>kg de volume</span></div></dl>';
  if(!keys.length)return html+'<p class="v2-card v2-empty">Ton graphique apparaîtra après tes premières séries validées.</p>'+cardioBlock(cardio)+'</section>';
  const key=keys.includes(selected)?selected:keys[0],points=progress.byKey[key],rec=history?.key===key&&!truncated?history.record:null;
@@ -268,5 +276,5 @@ function programme({cycle,userExercises=[],picking=null,query='',results=[],crea
  return html+'</section>';
 }
 
-return {remindersCard,reviewCard,review,nextForm,proposal,cardioSheet,programme,home,chooser,session,machineSheet,moreSheet,idlePrompt,summary,progress,picker,clock,esc};
+return {cardioLogs,remindersCard,reviewCard,review,nextForm,proposal,cardioSheet,programme,home,chooser,session,machineSheet,moreSheet,idlePrompt,summary,progress,picker,clock,esc};
 });

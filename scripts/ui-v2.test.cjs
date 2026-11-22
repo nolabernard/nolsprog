@@ -146,4 +146,10 @@ assert(noEmoji(rc)&&!/onclick=/i.test(rc));
 const hl=UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},last:{id:'w9',title:'Bas A',date:'2026-11-12T11:00:00Z',minutes:48,sets:16}});
 assert.match(hl,/data-action="v2-last-open" data-id="w9"/);assert.match(hl,/Dernière séance/);assert.match(hl,/jeu\. 12 nov\. · 48 min · 16 séries/);
 assert.doesNotMatch(UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]}}),/Dernière séance/);
+// Cardio : liste des activités, modification et suppression.
+const cl=UI.cardioLogs([{id:'c1',type:'velo',minutes:25,done_on:'2026-11-12'}]);
+assert.match(cl,/data-action="v2-cardio-edit" data-id="c1"/);assert.match(cl,/Vélo · 25 min/);assert.match(cl,/jeu\. 12 nov\./);assert.equal(UI.cardioLogs([]),'');
+const ce=UI.cardioSheet({edit:{id:'c1',type:'course',minutes:40,workout_id:'w1'}});
+assert.match(ce,/Modifier le cardio/);assert.match(ce,/name="id" value="c1"/);assert.match(ce,/value="course" checked/);assert.match(ce,/value="40"/);assert.match(ce,/data-action="v2-cardio-delete" data-id="c1"/);
+assert.doesNotMatch(UI.cardioSheet({}),/v2-cardio-delete/);
 console.log('ui-v2 : ok');

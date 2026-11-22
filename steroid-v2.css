@@ -253,6 +253,8 @@ button:active{transform:translateY(1px)}
 .v2-last>.v2-ic{grid-column:2;grid-row:1/span 3;align-self:center;color:var(--muted)}
 .v2-last-kicker{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 .v2-last b{font-size:17px}.v2-last small{color:var(--muted)}
+/* Cardio : modifier / supprimer */
+.v2-danger{color:#9B2C2C;margin-top:8px;width:100%}
 
 /* Rappels (lot 7) */
 .v2-daypick{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:10px 0}
