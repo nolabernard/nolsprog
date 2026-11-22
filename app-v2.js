@@ -23,6 +23,9 @@ function create(ctx){
  let flushTimer=null,flushing=null;
  const saveUi=()=>{ui={lastAction:ui.lastAction,rest:S.rest,view:S.view,index:S.index};write(K.ui,ui)};
  const touch=()=>{ui.lastAction=now();saveUi()};
+ const Rem=G().SteroidReminders?.create({storage,api,userId,uuid});let remBusy=false;
+ const remState=()=>{if(!Rem)return null;const r=Rem.state();return {...r,busy:remBusy,message:r.blocker?G().SteroidReminders.MESSAGES[r.blocker]:''}};
+ async function remRun(fn,ok){if(!Rem||remBusy)return;remBusy=true;render();try{const r=await fn();if(ok)notice(typeof ok==='function'?ok(r):ok)}catch(e){notice(e.message||'Rappels indisponibles pour le moment.',true)}finally{remBusy=false;render()}}
  const remote=api?{upsert:(table,rows)=>api.upsert(table,rows)}:{upsert:async()=>{}};
 
  function persistLocal(){
@@ -237,7 +240,7 @@ function create(ctx){
   const mine=S.userExercises.filter(u=>q&&Cat.normalize(u.name).includes(Cat.normalize(q))).map(u=>({key:u.key,name:u.name,muscle:u.muscle,role:'finition'}));
   return [...mine,...(q?Cat.search(q).slice(0,8):Cat.CATALOGUE.slice(0,8).map(entry=>({entry})))];
  }
- function programmeHTML(){return UI.programme({cycle:S.cycle,userExercises:S.userExercises,picking:S.picking,query:S.query,results:S.picking?searchResults():[],creating:S.creating})}
+ function programmeHTML(){return UI.programme({reminders:remState(),cycle:S.cycle,userExercises:S.userExercises,picking:S.picking,query:S.query,results:S.picking?searchResults():[],creating:S.creating})}
 
  // ----- Programme -----
  function saveCycleExercise(e){persistLocal();if(api&&userId)queueRows({cycle_exercises:[exRow(e)]})}
@@ -318,6 +321,10 @@ function create(ctx){
    case 'v2-review-next':if(!S.cycle)return;S.view='next';break;
    case 'v2-review-close':S.view='home';saveUi();break;
    case 'v2-proposal-accept':await acceptProposal();break;
+   case 'v2-rem-on':await remRun(()=>Rem.enable({}),'Rappels activés.');return;
+   case 'v2-rem-off':await remRun(()=>Rem.disable(),'Rappels désactivés sur ce téléphone.');return;
+   case 'v2-rem-test':await remRun(()=>Rem.test(),n=>n?'Essai envoyé : la notification arrive dans quelques secondes.':'Aucun appareil abonné pour l’instant.');return;
+   case 'v2-rem-day':{if(!Rem)return;const st=Rem.state(),day=Number(d.day);const days=st.days.includes(day)?st.days.filter(x=>x!==day):[...st.days,day];await remRun(()=>Rem.update({days}));return}
    case 'v2-progress-tab':S.tab=d.tab==='sessions'?'sessions':'exercises';S.open=null;break;
    case 'v2-history-open':S.open=d.id||null;break;
    case 'v2-history-close':S.open=null;break;
@@ -401,6 +408,7 @@ function create(ctx){
   try{S.store.logSet(ex,Number(set),{[field]:v});touch();scheduleFlush()}catch{}
  }
  function change({kind,value,ce}){
+  if(kind==='rem-time'){const [h,m]=String(value).split(':').map(Number);remRun(()=>Rem.update({hour:h,minute:m}));return}
   if(kind==='search'){S.query=String(value||'');return}
   if(kind==='progress'){S.selected=value;render();return}
   if(kind==='sets'){const {e}=sessionOf(ce);const n=Number(value);if(e&&Number.isInteger(n)&&n>=1&&n<=6){e.sets=n;saveCycleExercise(e)}render()}
@@ -410,7 +418,9 @@ function create(ctx){
   if(S.rest&&left===0){S.rest=null;saveUi();return {rest:0,done:true,elapsed:S.store?.elapsedSeconds()||0}}
   return {rest:left,elapsed:S.store?.elapsedSeconds()||0,idle:idleMinutes()};
  }
- return {proposeNext,saveCardio,addCardioPlan,init,rebuild,whenFresh:()=>fresh,ready:()=>Boolean(S.cycle),todayHTML,statsHTML,programmeHTML,handle,input,change,tick,createExercise,flushNow,pending,
+ // Déconnexion : le téléphone cesse de recevoir les rappels de ce compte (au mieux, sans bloquer).
+ async function remindersOff(){try{if(Rem?.state().enabled)await Rem.disable()}catch{}}
+ return {remindersOff,proposeNext,saveCardio,addCardioPlan,init,rebuild,whenFresh:()=>fresh,ready:()=>Boolean(S.cycle),todayHTML,statsHTML,programmeHTML,handle,input,change,tick,createExercise,flushNow,pending,
   inSession:()=>Boolean(current())&&S.view==='session',busy:()=>Boolean(current())||pending()>0,state:()=>S};
 }
 return {create};
