@@ -35,6 +35,16 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
  const p={...ctx.NolsEngine.defaults,method:'upperlower',daysCount:'4',days:[0,1,3,5],equipment:'gym',level:'advanced',currentSessions:'4',duration:'75'};
  ctx.auditProfile=p;state('A.answers=auditProfile');await state('finishOnboarding()');await tick();
  assert.equal(state('A.view'),'app','Onboarding should finish');assert(profile&&program,'Profile and plan must be saved to Supabase');assert.equal(program.plan.length,7);assert.equal(program.plan.filter(d=>d.ex.length).length,4);
+ // Compatibilité : séries V1 restées en attente sur l'appareil (saisies avant la V2).
+ const uid='audit-test-user',pending=[{user_id:uid,week_number:1,day_index:0,exercise_id:'ex-legacy',set_number:1,weight:60,reps:8,completed:true}];
+ store['steroid-pending-sets-v1:'+uid]=JSON.stringify(pending);
+ state('restorePending("audit-test-user")');assert.equal(state('pendingFor("audit-test-user").length'),1,'Les séries V1 en attente doivent être relues après rechargement');
+ state('setSession({...A.session,user:{id:"other-test-user",email:"other@example.invalid"}})');assert.equal(state('pendingSets.size'),0,'Un autre compte ne doit pas voir les séries en attente');
+ state('setSession({...A.session,user:{id:"audit-test-user",email:"audit@example.invalid"}})');assert.equal(state('pendingFor("audit-test-user").length'),1,'Le compte retrouve ses séries en attente');
+ networkDown=true;await state('flushSets()');assert(store['steroid-pending-sets-v1:'+uid],'Hors ligne : les séries en attente sont conservées');
+ await click('logout');assert(state('A.session!==null'),'Déconnexion bloquée tant que des séries ne sont pas envoyées');
+ networkDown=false;const before=sets.length;await state('flushSets()');
+ assert.equal(sets.length,before+1,'Au retour du réseau, la série V1 en attente est envoyée');assert(!store['steroid-pending-sets-v1:'+uid],'File vidée après confirmation du serveur');
  // V1 supprimée : plus d'éditeur ni de séance V1 ; le compte se déconnecte et se reconnecte proprement.
  await click('logout');assert.equal(state('A.session'),null);assert.equal(state('A.view'),'welcome');
  assert(!store['nolsprog-account-audit-test-user'],'Logout must clear account data cache');

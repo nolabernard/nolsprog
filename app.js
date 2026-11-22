@@ -363,10 +363,11 @@ function v2Api(){
 }
 function startV2(){
  const owner=A.session?.user?.id||'guest';if(V2owner===owner)return;
- V2owner=owner;V2state='loading';
+ // Changement de compte : l'ancien contrôleur n'est jamais réaffiché pour le nouveau compte.
+ V2owner=owner;V2state='loading';V2=null;
  const ctl=globalThis.SteroidAppV2?.create({storage:localStorage,api:v2Api(),userId:A.session?.user?.id||null,legacyPlan:()=>S.plan,answers:()=>A.answers,firstName:accountFirstName,render:()=>{if(V2===ctl)render()},notice:(m,err)=>setNotice(m,err),confirm:(m,o)=>globalThis.SteroidDialog.confirm(m,o)});
  if(!ctl){V2state='off';return}
- ctl.init().then(()=>{if(V2owner!==owner)return;V2=ctl;V2state='ready';render()}).catch(err=>{console.warn('V2 indisponible, ancien écran conservé',err);if(V2owner===owner)V2state='off';render()});
+ ctl.init().then(()=>{if(V2owner!==owner)return;V2=ctl;V2state='ready';render()}).catch(err=>{console.warn('V2 indisponible',err);if(V2owner===owner)V2state='off';render()});
 }
 // Écrans V2 indisponibles (erreur au démarrage) : on propose de réessayer, il n'y a plus d'ancien écran de secours.
 function v2Unavailable(){return '<div class="boot v2-loading" role="status"><p>Impossible d’afficher ton programme pour le moment.</p><button type="button" class="v2-btn" data-action="v2-retry">Réessayer</button></div>'}
@@ -392,7 +393,7 @@ root.addEventListener('click',async e=>{const b=e.target.closest('[data-action]'
  A.answers=globalThis.SteroidGuide.change(A.answers,choice.patch);
  const next=globalThis.SteroidGuide.diagnostic(A.answers);
  if(next.ok){A.guide=false;A.step=onboardingStages.length-1;render();scrollToSectionTop();setNotice('Ajustement appliqué. Vérifie tes réponses, puis crée ton programme.')}else{A.guide=true;render();scrollToSectionTop()}
- }else if(a==='prev-step'){A.step=Math.max(0,A.step-1);render();scrollToSectionTop()}else if(a==='next-step'){if(A.step<onboardingStages.length-1){A.step++;render();scrollToSectionTop()}else {await finishOnboarding();scrollToSectionTop()}}else if(a==='choice'){A.guide=false;const key=b.dataset.key,v=b.dataset.value;if(key==='planMode'&&v==='free')A.answers.days=[0,1,2,3,4,5,6];if(key==='days'||key==='priority'){const value=key==='days'?Number(v):v;A.answers[key]=A.answers[key].includes(value)?A.answers[key].filter(x=>x!==value):[...A.answers[key],value]}else A.answers[key]=v;render()}else if(a==='backup'){A.menuOpen=false;downloadBackup();render();setNotice('Sauvegarde téléchargée.')}else if(a==='tab'){A.menuOpen=false;if(b.dataset.tab==='edit'){S.draft=structuredClone(baseWeekPlan());S.editedDay=null;S.editOpenDay=null;}S.previousTab=S.tab;S.tab=b.dataset.tab;render();scrollToSectionTop()}});
+ }else if(a==='prev-step'){A.step=Math.max(0,A.step-1);render();scrollToSectionTop()}else if(a==='next-step'){if(A.step<onboardingStages.length-1){A.step++;render();scrollToSectionTop()}else {await finishOnboarding();scrollToSectionTop()}}else if(a==='choice'){A.guide=false;const key=b.dataset.key,v=b.dataset.value;if(key==='planMode'&&v==='free')A.answers.days=[0,1,2,3,4,5,6];if(key==='days'||key==='priority'){const value=key==='days'?Number(v):v;A.answers[key]=A.answers[key].includes(value)?A.answers[key].filter(x=>x!==value):[...A.answers[key],value]}else A.answers[key]=v;render()}else if(a==='backup'){A.menuOpen=false;downloadBackup();render();setNotice('Sauvegarde téléchargée.')}else if(a==='tab'){A.menuOpen=false;S.previousTab=S.tab;S.tab=b.dataset.tab;render();scrollToSectionTop()}});
 // Save typed set values locally as they change: closing the app must not lose a focused field.
 root.addEventListener('input',e=>{
  const el=e.target;
