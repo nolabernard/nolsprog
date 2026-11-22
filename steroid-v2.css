@@ -248,6 +248,9 @@ button:active{transform:translateY(1px)}
 .v2-results{display:flex;flex-direction:column;gap:8px}
 .v2-create{display:flex;flex-direction:column;gap:10px}
 
+/* Cardio : modifier / supprimer */
+.v2-danger{color:#9B2C2C;margin-top:8px;width:100%}
+
 /* Rappels (lot 7) */
 .v2-daypick{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:10px 0}
 .v2-daypick button{min-height:44px;border:2px solid var(--line);border-radius:12px;background:var(--surface);color:var(--muted);font-weight:800;cursor:pointer}

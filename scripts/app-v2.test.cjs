@@ -140,6 +140,17 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
   const b8=V2.create({...ctx,storage:st8b,api:lag,userId:U6});
   await b8.init();await b8.whenFresh();assert.equal(b8.state().cycle.id,nextId2);
  }
+ // Cardio : modifier puis supprimer une activité enregistrée (compte), avec envoi au serveur.
+ { const ops=[],api8={async select(){return []},async upsert(t,rows){for(const r of rows)ops.push(['up',t,r.id,r.minutes])},async remove(t,id){ops.push(['del',t,id])},async fn(){return {}}};
+   const c8=V2.create({...ctx,storage:memory(),api:api8,userId:'66666666-6666-4666-8666-666666666666'});await c8.init();
+   await c8.saveCardio({type:'velo',minutes:'20'});await c8.flushNow();const id=c8.state().cardioLogs[0].id;
+   await c8.handle('v2-progress-tab',{tab:'sessions'});assert.match(c8.statsHTML(),/data-action="v2-cardio-edit" data-id="/);
+   await c8.handle('v2-cardio-edit',{id});assert.match(c8.statsHTML(),/Modifier le cardio/);
+   await c8.saveCardio({id,type:'course',minutes:'35'});await c8.flushNow();
+   assert.equal(c8.state().cardioLogs.length,1);assert.equal(c8.state().cardioLogs[0].type,'course');assert.equal(c8.state().cardioLogs[0].id,id,'même ligne modifiée');
+   assert.deepEqual(ops.filter(o=>o[1]==='cardio_logs').map(o=>o[0]+o[3]),['up20','up35']);
+   await c8.handle('v2-cardio-delete',{id});await c8.flushNow();assert.equal(c8.state().cardioLogs.length,0);assert(ops.some(o=>o[0]==='del'&&o[2]===id));
+   assert.doesNotMatch(c8.statsHTML(),/v2-cardio-edit/); }
  // Lot 7 : choix d'un jour enregistré (sans exception), même rappels désactivés.
  { const st7=memory(),c7=V2.create({...ctx,storage:st7,api:{async select(){return []},async upsert(){},async remove(){},async fn(){return {}}},userId:'55555555-5555-4555-8555-555555555555'});
    await c7.handle('v2-rem-day',{day:'6'});assert.deepEqual(JSON.parse(st7.getItem('nolsprog-v2-reminders:55555555-5555-4555-8555-555555555555')).days,[0,1,2,3,4,5]);

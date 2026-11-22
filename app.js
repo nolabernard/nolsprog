@@ -262,7 +262,7 @@ window.addEventListener('pagehide',()=>{V2?.flushNow();if(A.session)flushSets().
 
 root.addEventListener('change',async e=>{const el=e.target;if('v2RemTime' in (el.dataset||{})){V2?.change({kind:'rem-time',value:el.value});return}if(el.dataset?.v2Sets){V2?.change({kind:'sets',ce:el.dataset.v2Sets,value:el.value});return}if('v2Progress' in (el.dataset||{})){V2?.change({kind:'progress',value:el.value});return}if(el.dataset.profile&&A.answers){A.answers[el.dataset.profile]=el.value;return}});
 root.addEventListener('submit',async e=>{
- if('v2Cardio' in (e.target?.dataset||{})){e.preventDefault();const f=new FormData(e.target);await V2?.saveCardio({type:f.get('type'),minutes:f.get('minutes'),workout:f.get('workout')});return}
+ if('v2Cardio' in (e.target?.dataset||{})){e.preventDefault();const f=new FormData(e.target);await V2?.saveCardio({type:f.get('type'),minutes:f.get('minutes'),workout:f.get('workout'),id:f.get('id')||undefined});return}
  if('v2CardioPlan' in (e.target?.dataset||{})){e.preventDefault();const f=new FormData(e.target);await V2?.addCardioPlan({type:f.get('type'),minutes:f.get('minutes'),per_week:f.get('per_week')});return}
  if('v2Next' in (e.target?.dataset||{})){e.preventDefault();V2?.proposeNext(Object.fromEntries(new FormData(e.target)));return}
  if('v2Create' in (e.target?.dataset||{})){e.preventDefault();const f=new FormData(e.target);await V2?.createExercise({name:f.get('name'),muscle:f.get('muscle'),pattern:f.get('pattern')});return}

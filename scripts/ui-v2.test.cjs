@@ -142,4 +142,10 @@ assert.match(rc,/18:30, lundi, mercredi, vendredi/);assert.match(rc,/<option val
 assert.match(UI.remindersCard({enabled:false,hour:18,minute:0,days:[0,1,2,3,4,5,6]}),/data-action="v2-rem-on"/);
 assert.match(UI.remindersCard({blocker:'install',message:'Ajoute <STÉROÏDE>'}),/Ajoute &lt;STÉROÏDE&gt;/);
 assert(noEmoji(rc)&&!/onclick=/i.test(rc));
+// Cardio : liste des activités, modification et suppression.
+const cl=UI.cardioLogs([{id:'c1',type:'velo',minutes:25,done_on:'2026-11-12'}]);
+assert.match(cl,/data-action="v2-cardio-edit" data-id="c1"/);assert.match(cl,/Vélo · 25 min/);assert.match(cl,/jeu\. 12 nov\./);assert.equal(UI.cardioLogs([]),'');
+const ce=UI.cardioSheet({edit:{id:'c1',type:'course',minutes:40,workout_id:'w1'}});
+assert.match(ce,/Modifier le cardio/);assert.match(ce,/name="id" value="c1"/);assert.match(ce,/value="course" checked/);assert.match(ce,/value="40"/);assert.match(ce,/data-action="v2-cardio-delete" data-id="c1"/);
+assert.doesNotMatch(UI.cardioSheet({}),/v2-cardio-delete/);
 console.log('ui-v2 : ok');
