@@ -236,6 +236,27 @@ function remindersCard(r){
  return html+'</section>';
 }
 
+// ----- Questionnaire : récapitulatif avant génération, puis présentation du programme (§4.2) -----
+function recapCard({answers={},preview=null,methods={}}={}){
+ const E=globalThis.NolsEngine,lab=(k,v)=>((E?.steps||[]).flatMap(s=>s.fields).find(f=>f.key===k)?.options||[]).find(o=>String(o[0])===String(v))?.[1]||v;
+ const days=['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];
+ const freq=answers.planMode==='free'?plural(Number(answers.daysCount)||preview?.sessionsPerWeek||3,'séance','séances')+' par semaine, les jours que tu veux':plural(Number(answers.daysCount)||3,'séance','séances')+' par semaine'+(Array.isArray(preview?.preferredDays)&&preview.preferredDays.length?' ('+preview.preferredDays.map(d=>days[d]).join(', ')+')':'');
+ const rows=[['Méthode',preview?methods[preview.method]?.name||preview.method:lab('method',answers.method)],['Fréquence',freq],['Durée du cycle',(preview?.weeks||6)+' semaines'],['Objectif',lab('goal',answers.goal)],['Durée par séance',lab('duration',answers.duration)],['Matériel',lab('equipment',answers.equipment)]];
+ return '<dl class="v2-recap">'+rows.filter(r=>r[1]).map(([k,v])=>'<div><dt>'+esc(k)+'</dt><dd>'+esc(v)+'</dd></div>').join('')+'</dl>'
+  +(preview?.sessions?.length?'<h2 class="v2-card-title">Répartition des séances</h2><ol class="v2-recap-sessions">'+preview.sessions.map(s=>'<li><b>'+esc(s.title)+'</b><small>'+esc((s.focus||[]).join(', '))+' · '+plural(s.exercises.length,'exercice','exercices')+'</small></li>').join('')+'</ol>'
+   +'<p class="v2-muted">Les séances s’enchaînent dans cet ordre, quel que soit le jour.'+repsLine(preview)+' Quand tu atteins le haut de la fourchette, je te conseille d’augmenter la charge.</p>':'');
+}
+// Fourchettes de répétitions réellement générées, par rôle (base / finition) ; le gainage, compté en secondes, est exclu.
+function repsLine(preview){
+ const ex=(preview?.sessions||[]).flatMap(s=>s.exercises),r=role=>{const l=ex.filter(e=>e.role===role&&e.repsMax<=20);return l.length?Math.min(...l.map(e=>e.repsMin))+' à '+Math.max(...l.map(e=>e.repsMax)):null};
+ const b=r('base'),f=r('finition');
+ return (b?' Exercices de base : '+b+' répétitions.':'')+(f?' Finitions : '+f+' répétitions.':'');
+}
+function programIntro({cycle,methods={}}={}){
+ if(!cycle)return '';
+ return '<section class="v2-card v2-intro"><p class="v2-next-kicker v2-kicker--light">Ton programme est prêt</p><h2 class="v2-card-title">'+esc(methods[cycle.method]?.name||'Ton cycle')+' · '+cycle.weeks+' semaines</h2><p>'+plural(cycle.sessions.length,'séance différente','séances différentes')+' en boucle, '+plural(cycle.sessions_per_week,'séance','séances')+' par semaine. Voici le détail : tu peux changer un exercice ou le nombre de séries à tout moment.</p><button type="button" class="v2-btn" data-action="intro-start">'+icon('play')+'C’est parti</button></section>';
+}
+
 function picker({query='',results=[],creating=false}={}){
  let html='<div class="v2-picker"><label class="v2-search">'+icon('search','v2-ic v2-ic--sm')+'<input type="search" data-v2-search placeholder="Chercher un exercice (ex. dvlp couché)" value="'+esc(query)+'" aria-label="Chercher un exercice" autocomplete="off"></label><div class="v2-results">'
   +results.map(r=>{const e=r.entry||r;return '<button type="button" class="v2-opt" data-action="v2-pick" data-key="'+esc(e.key)+'"><span><b>'+esc(e.name)+'</b><small>'+esc(e.muscle||'')+' · '+(e.role==='base'?'Base':'Finition')+'</small></span></button>'}).join('')
@@ -266,5 +287,5 @@ function programme({cycle,userExercises=[],picking=null,query='',results=[],crea
  return html+'</section>';
 }
 
-return {remindersCard,reviewCard,review,nextForm,proposal,cardioSheet,programme,home,chooser,session,machineSheet,moreSheet,idlePrompt,summary,progress,picker,clock,esc};
+return {recapCard,programIntro,remindersCard,reviewCard,review,nextForm,proposal,cardioSheet,programme,home,chooser,session,machineSheet,moreSheet,idlePrompt,summary,progress,picker,clock,esc};
 });
