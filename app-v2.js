@@ -95,6 +95,19 @@ function create(ctx){
 
  function cycleRow(){const {sessions,user_exercises,...c}=S.cycle;return {...c,user_id:userId}}
  function exRow(e){return {...e,user_id:userId}}
+ // ----- Brouillon du programme : rien n'est appliqué ni envoyé avant « Enregistrer » -----
+ const P=()=>S.edit?.draft||S.cycle;
+ function draft(){if(!S.edit)S.edit={draft:JSON.parse(JSON.stringify(S.cycle)),ops:[]};return S.edit.draft}
+ function later(fn){if(S.edit)S.edit.ops.push(fn);else fn()}
+ function sessionIn(cy,ceId){for(const s of cy?.sessions||[]){const e=s.exercises.find(x=>x.id===ceId);if(e)return {s,e}}return {}}
+ function saveDraft(){
+  if(!S.edit)return;
+  if(S.edit.draft.id!==S.cycle?.id){S.edit=null;notice('Ton programme a changé entre-temps : modifications annulées.',true);return}
+  const ops=S.edit.ops;S.cycle=S.edit.draft;S.edit=null;
+  for(const op of ops)op();
+  persistLocal();scheduleFlush();notice('Programme enregistré. Il s’applique dès ta prochaine séance.');
+ }
+ function cancelDraft(){if(!S.edit)return;S.edit=null;S.picking=null;notice('Modifications annulées.')}
  function sessionOf(ceId){for(const s of S.cycle.sessions){const e=s.exercises.find(x=>x.id===ceId);if(e)return {s,e}}return {}}
  function refreshSession(s){s.exercises.forEach((e,i)=>e.position=i);const m=new Map();for(const e of s.exercises){const mu=Cat.byKey(e.exercise_key)?.muscle||S.userExercises.find(u=>u.key===e.exercise_key)?.muscle;if(mu&&!m.has(mu+'|'+e.role))m.set(mu+'|'+e.role,{muscle:mu,role:e.role})}s.muscles=[...m.values()];s.focus=[...new Set(s.muscles.map(x=>x.muscle))]}
 
@@ -257,30 +270,30 @@ function create(ctx){
   const mine=S.userExercises.filter(u=>q&&Cat.normalize(u.name).includes(Cat.normalize(q))).map(u=>({key:u.key,name:u.name,muscle:u.muscle,role:'finition'}));
   return [...mine,...(q?Cat.search(q).slice(0,8):Cat.CATALOGUE.slice(0,8).map(entry=>({entry})))];
  }
- function programmeHTML(){return UI.programme({reminders:remState(),cycle:S.cycle,userExercises:S.userExercises,picking:S.picking,query:S.query,results:S.picking?searchResults():[],creating:S.creating})}
+ function programmeHTML(){return UI.programme({editing:S.edit?Math.max(1,S.edit.ops.length):0,reminders:remState(),cycle:P(),userExercises:S.userExercises,picking:S.picking,query:S.query,results:S.picking?searchResults():[],creating:S.creating})}
 
  // ----- Programme -----
- function saveCycleExercise(e){persistLocal();if(api&&userId)queueRows({cycle_exercises:[exRow(e)]})}
+ function saveCycleExercise(e){later(()=>{if(api&&userId)queueRows({cycle_exercises:[exRow(e)]})})}
  function pickExercise(key){
   const role=Cat.byKey(key)?.role||'finition';
-  if(S.picking?.ce){const {s,e}=sessionOf(S.picking.ce);if(!e)return;e.exercise_key=key;e.role=role;refreshSession(s);saveCycleExercise(e)}
+  const cy=draft();
+  if(S.picking?.ce){const {s,e}=sessionIn(cy,S.picking.ce);if(!e)return;e.exercise_key=key;e.role=role;refreshSession(s);saveCycleExercise(e)}
   else if(S.picking?.session){
-   const s=S.cycle.sessions.find(x=>x.id===S.picking.session);if(!s)return;
+   const s=cy.sessions.find(x=>x.id===S.picking.session);if(!s)return;
    const base=role==='base';
    const e={id:uuid(),cycle_session_id:s.id,position:s.exercises.length,exercise_key:key,role,sets:3,reps_min:base?6:10,reps_max:base?10:15,rest_seconds:base?150:75};
    // Les exercices de base restent avant les finitions.
    const at=base?s.exercises.findIndex(x=>x.role!=='base'):-1;if(at>=0)s.exercises.splice(at,0,e);else s.exercises.push(e);
-   refreshSession(s);persistLocal();if(api&&userId)queueRows({cycle_exercises:s.exercises.map(exRow)});
+   refreshSession(s);later(()=>{if(api&&userId)queueRows({cycle_exercises:s.exercises.map(exRow)})});
   }
   S.picking=null;S.query='';S.creating=false;
  }
  async function removeExercise(ceId){
-  const {s,e}=sessionOf(ceId);if(!e)return;
+  const {s,e}=sessionIn(P(),ceId);if(!e)return;
   if(s.exercises.length<=1){notice('Une séance garde au moins un exercice.',true);return}
   if(!await confirm(C.nameOf(e.exercise_key,S.userExercises)+' sera retiré de '+s.title+'. Son historique est conservé.',{title:'Retirer cet exercice ?',ok:'Retirer',cancel:'Garder'}))return;
-  s.exercises=s.exercises.filter(x=>x.id!==ceId);refreshSession(s);persistLocal();
-  S.store.forgetCycleExercise(ceId);
-  if(api&&userId){outbox=outbox.filter(x=>!(x.table==='cycle_exercises'&&x.row?.id===ceId));outbox.push({table:'cycle_exercises',op:'delete',id:ceId});queueRows({cycle_exercises:s.exercises.map(exRow)})}
+  const ds=sessionIn(draft(),ceId).s;ds.exercises=ds.exercises.filter(x=>x.id!==ceId);refreshSession(ds);
+  later(()=>{S.store.forgetCycleExercise(ceId);if(api&&userId){outbox=outbox.filter(x=>!(x.table==='cycle_exercises'&&x.row?.id===ceId));outbox.push({table:'cycle_exercises',op:'delete',id:ceId});queueRows({cycle_exercises:ds.exercises.map(exRow)})}})
  }
  async function createExercise({name,muscle,pattern}){
   name=String(name||'').trim().slice(0,100);if(!name){notice('Indique le nom de l’exercice.',true);return}
@@ -360,6 +373,8 @@ function create(ctx){
    case 'v2-add-ex':S.picking={session:d.session};S.query='';S.creating=false;break;
    case 'v2-pick':pickExercise(d.key);break;
    case 'v2-remove-ex':await removeExercise(d.ce);break;
+   case 'v2-edit-save':saveDraft();break;
+   case 'v2-edit-cancel':cancelDraft();break;
    case 'v2-create':S.creating=true;break;
    case 'v2-howto':{const e=current()?list()[S.index]:null;if(!e)return;S.sheet={type:'howto',key:e.exercise_key};break}
    case 'v2-cardio-open':S.sheet={type:'cardio',workout:d.workout||''};break;
@@ -372,9 +387,9 @@ function create(ctx){
     if(api&&userId){outbox=outbox.filter(x=>!(x.table==='cardio_logs'&&x.row?.id===d.id));outbox.push({table:'cardio_logs',op:'delete',id:d.id});write(K.outbox,outbox);scheduleFlush()}
     notice('Activité supprimée.');break}
    case 'v2-cardio-plan-remove':{
-    const cc=S.cycle.cardio||[];if(!cc.some(c=>c.id===d.id))return;
-    S.cycle.cardio=cc.filter(c=>c.id!==d.id);persistLocal();
-    if(api&&userId){outbox=outbox.filter(x=>!(x.table==='cycle_cardio'&&x.row?.id===d.id));outbox.push({table:'cycle_cardio',op:'delete',id:d.id});write(K.outbox,outbox);scheduleFlush()}
+    const cy=draft(),cc=cy.cardio||[];if(!cc.some(c=>c.id===d.id))return;
+    cy.cardio=cc.filter(c=>c.id!==d.id);
+    later(()=>{if(api&&userId){outbox=outbox.filter(x=>!(x.table==='cycle_cardio'&&x.row?.id===d.id));outbox.push({table:'cycle_cardio',op:'delete',id:d.id});write(K.outbox,outbox);scheduleFlush()}})
     break;
    }
    default:return;
@@ -441,9 +456,9 @@ function create(ctx){
  }
  async function addCardioPlan({type,minutes,per_week}){
   if(!S.cycle)return false;const ok=checkCardio(type,minutes,per_week);if(!ok)return false;
-  const row={id:uuid(),cycle_id:S.cycle.id,type,minutes:ok.m,per_week:ok.p};
-  S.cycle.cardio=[...(S.cycle.cardio||[]),row];persistLocal();
-  if(api&&userId)queueRows({cycle_cardio:[{...row,user_id:userId}]});
+  const cy=draft(),row={id:uuid(),cycle_id:cy.id,type,minutes:ok.m,per_week:ok.p};
+  cy.cardio=[...(cy.cardio||[]),row];
+  later(()=>{if(api&&userId)queueRows({cycle_cardio:[{...row,user_id:userId}]})});
   render();return true;
  }
  function input({ex,set,field,value}){
@@ -456,7 +471,7 @@ function create(ctx){
   if(kind==='rem-time'){const [h,m]=String(value).split(':').map(Number);remRun(()=>Rem.update({hour:h,minute:m}));return}
   if(kind==='search'){S.query=String(value||'');return}
   if(kind==='progress'){S.selected=value;render();return}
-  if(kind==='sets'){const {e}=sessionOf(ce);const n=Number(value);if(e&&Number.isInteger(n)&&n>=1&&n<=6){e.sets=n;saveCycleExercise(e)}render()}
+  if(kind==='sets'){const {e}=sessionIn(draft(),ce);const n=Number(value);if(e&&Number.isInteger(n)&&n>=1&&n<=6){e.sets=n;saveCycleExercise(e)}render()}
  }
  function tick(){
   const left=restLeft();
@@ -465,7 +480,7 @@ function create(ctx){
  }
  // Déconnexion : le téléphone cesse de recevoir les rappels de ce compte (au mieux, sans bloquer).
  async function remindersOff(){try{if(Rem?.state().enabled)await Rem.disable()}catch{}}
- return {remindersOff,proposeNext,saveCardio,addCardioPlan,init,rebuild,whenFresh:()=>fresh,ready:()=>Boolean(S.cycle),todayHTML,statsHTML,programmeHTML,handle,input,change,tick,createExercise,flushNow,pending,
+ return {hasDraft:()=>Boolean(S.edit),saveDraft:()=>{saveDraft();render()},cancelDraft:()=>{cancelDraft();render()},remindersOff,proposeNext,saveCardio,addCardioPlan,init,rebuild,whenFresh:()=>fresh,ready:()=>Boolean(S.cycle),todayHTML,statsHTML,programmeHTML,handle,input,change,tick,createExercise,flushNow,pending,
   inSession:()=>Boolean(current())&&S.view==='session',busy:()=>Boolean(current())||pending()>0,state:()=>S};
 }
 return {create};

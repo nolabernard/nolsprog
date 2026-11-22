@@ -28,5 +28,7 @@ assert(fs.readFileSync('splash.js','utf8').includes("sessionStorage.getItem('nol
 assert(!/<script>/.test(html),'Pas de script en ligne (CSP)');
 assert(app.includes("account-menu-trigger'+(A.session?' is-signed':'')")&&css.includes('.shell .topbar .header-actions .icon-btn.account-menu-trigger.is-signed{'),'Avatar du compte : rond, distinct connecté / invité');
 assert(app.includes('Deux muscles prioritaires au maximum')&&/optional:true\}\n\];/.test(app),'Questionnaire : 2 priorités max, étape facultative en dernier');
+assert(app.includes("root.addEventListener('pointerdown'")&&app.includes('translateY(110%)')&&css.includes('.v2-grab{align-self:stretch'),'Menus du bas : glisser vers le bas pour fermer');
+assert(app.includes('Enregistrer tes modifications ?'),'Quitter Programme sans enregistrer : on demande');
 assert(app.includes("'v2Next' in"),'Formulaire du cycle suivant branché');
 for(const c of ['.v2-bullets','.v2-kicker--light','.v2-compare','.v2-diff','.v2-records','.v2-hist','.v2-advice','.v2-seg--2'])assert(css.includes(c),'Style manquant : '+c);
