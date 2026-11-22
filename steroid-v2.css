@@ -285,6 +285,15 @@ button:active{transform:translateY(1px)}
 @keyframes splash-word{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.splash-handle,.splash-body{stroke-dashoffset:0;animation:none}.splash-bell,.splash-shadow{animation:none}.splash-word{opacity:1;animation:none}}
 
+/* Bouton du compte (en haut à droite) : avatar rond, initiale centrée ; remplace les anciennes règles de styles.css. */
+.shell .topbar .header-actions .icon-btn.account-menu-trigger{width:44px!important;height:44px!important;flex:0 0 44px!important;padding:0!important;border-radius:50%!important;display:grid!important;place-items:center!important;background:#FFFCF7!important;border:1.5px solid #DCE8DD!important;color:#0B4D3B!important;box-shadow:0 4px 14px rgba(7,53,40,.10)!important;transition:transform .15s ease,box-shadow .15s ease}
+.shell .topbar .header-actions .icon-btn.account-menu-trigger.is-signed{background:#0B4D3B!important;border:2px solid #FFFCF7!important;color:#F5F0E5!important;box-shadow:0 0 0 1.5px #0B4D3B,0 6px 16px rgba(7,53,40,.18)!important}
+.header-actions .account-menu-trigger .avatar-initials{width:100%;height:100%;border-radius:50%;background:none;color:inherit;font:900 18px/1 Archivo,Inter,sans-serif;letter-spacing:0;display:grid;place-items:center}
+.header-actions .account-menu-trigger .avatar-initials svg{width:22px;height:22px;stroke-width:1.9}
+.header-actions .account-menu-trigger[aria-expanded="true"]{transform:scale(.94)}
+.header-actions .account-menu-trigger:focus-visible{outline:3px solid #0B4D3B;outline-offset:3px}
+@media (prefers-reduced-motion:reduce){.header-actions .account-menu-trigger{transition:none}}
+
 /* Rappels (lot 7) */
 .v2-daypick{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:10px 0}
 .v2-daypick button{min-height:44px;border:2px solid var(--line);border-radius:12px;background:var(--surface);color:var(--muted);font-weight:800;cursor:pointer}

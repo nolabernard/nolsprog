@@ -26,5 +26,6 @@ assert(html.includes('id="splash"')&&html.indexOf('./splash.js')<html.indexOf('i
 assert(css.includes('@keyframes splash-draw')&&/prefers-reduced-motion:reduce\)\{\.splash-handle/.test(css),'Animation d’ouverture et repli sans mouvement');
 assert(fs.readFileSync('splash.js','utf8').includes("sessionStorage.getItem('nolsprog-splash')"),'Une seule fois par session');
 assert(!/<script>/.test(html),'Pas de script en ligne (CSP)');
+assert(app.includes("account-menu-trigger'+(A.session?' is-signed':'')")&&css.includes('.shell .topbar .header-actions .icon-btn.account-menu-trigger.is-signed{'),'Avatar du compte : rond, distinct connecté / invité');
 assert(app.includes("'v2Next' in"),'Formulaire du cycle suivant branché');
 for(const c of ['.v2-bullets','.v2-kicker--light','.v2-compare','.v2-diff','.v2-records','.v2-hist','.v2-advice','.v2-seg--2'])assert(css.includes(c),'Style manquant : '+c);
