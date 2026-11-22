@@ -319,6 +319,9 @@ button:active{transform:translateY(1px)}
 .v2-savebar .v2-btn{min-height:46px;padding:0 14px;border-radius:17px;font-size:14px}.v2-savebar .v2-btn--ghost{background:transparent;color:#F5F0E5;border-color:rgba(245,240,229,.45)}
 .v2-savebar .v2-btn:not(.v2-btn--ghost){background:#F5F0E5;color:#0B4D3B}
 
+/* Séance passée, une séance par jour */
+.v2-coach-links{display:flex;flex-wrap:wrap;gap:6px 20px}
+.v2-next-after{display:flex;align-items:center;gap:8px;margin:14px 0 0;font-size:16px}
 /* Rappels (lot 7) */
 .v2-daypick{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:10px 0}
 .v2-daypick button{min-height:44px;border:2px solid var(--line);border-radius:12px;background:var(--surface);color:var(--muted);font-weight:800;cursor:pointer}

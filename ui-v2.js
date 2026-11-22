@@ -53,6 +53,17 @@ function home({next,hasHistory=false,cycle,progress=0,minutes,firstName,dateText
  if(!cycle||!next)return '<section class="v2-home">'+head+'<div class="v2-card v2-empty">'+(retry?'<h2>Programme indisponible</h2><p>Impossible de joindre ton compte. Vérifie ta connexion.</p>':'<h2>Ton programme t’attend</h2><p>Je prépare ta suite de séances à partir de tes réponses.</p>')+'<button type="button" class="v2-btn" data-action="v2-build" '+(building?'disabled':'')+'>'+(building?'Préparation…':retry?'Réessayer':'Préparer mon programme')+'</button></div></section>';
  const s=next.session,count=(s.exercises||[]).length;
  if(active)return '<section class="v2-home">'+head+'<section class="v2-next" aria-label="Séance en cours"><p class="v2-next-kicker">Séance en cours</p><h2 class="v2-next-title">'+esc(active.title)+'</h2><p>'+active.done+' / '+plural(active.total,'série validée','séries validées')+'</p><button type="button" class="v2-btn v2-btn--light v2-btn--big" data-action="v2-back">'+icon('play')+'Reprendre la séance</button></section></section>';
+ if(next.reason==='tomorrow'){
+  // Séance du jour faite ou passée : repos, la suivante attend demain. Pas de bouton Démarrer.
+  const t=next.today,skipped=t.status==='skipped';
+  let rest='<section class="v2-home">'+head+'<section class="v2-next v2-next--rest" aria-label="Aujourd’hui"><div class="v2-next-top"><div><p class="v2-next-kicker">'+(skipped?'Séance passée aujourd’hui':'Séance faite aujourd’hui')+'</p><h2 class="v2-next-title">'+esc(t.title)+'</h2></div>'+ring(progress)+'</div>'
+   +'<p class="v2-next-after">'+icon('clock','v2-ic v2-ic--sm')+'Demain : <b>'+esc(s.title)+'</b></p></section>';
+  rest+='<div class="v2-coach">'+icon('coach','v2-ic v2-coach-ic')+'<div><p>'+esc(skipped?(SKIP_COACH[t.reason]||SKIP_COACH.autre):'C’est fait pour aujourd’hui. Tes muscles progressent pendant la récupération : prochaine séance demain.')+'</p>'
+   +(skipped?'<button type="button" class="v2-link" data-action="v2-skip-undo" data-id="'+esc(t.id)+'">Annuler, je me suis trompé</button>':'')+'</div></div>';
+  if(last)rest+=lastCard(last);
+  if(weekLine||record||rhythm||cardio)rest+=weekCard({weekLine,record,rhythm,cardio});
+  return rest+'</section>';
+ }
  let html='<section class="v2-home">'+head+'<section class="v2-next" aria-label="Prochaine séance"><div class="v2-next-top"><div><p class="v2-next-kicker">Prochaine séance</p><h2 class="v2-next-title">'+esc(s.title)+'</h2></div>'+ring(progress)+'</div>'
   +'<div class="v2-chips">'+(s.focus||[]).map(f=>'<span>'+esc(f)+'</span>').join('')+'</div>'
   +'<dl class="v2-figures"><div><b>'+count+'</b> <span>exercices</span></div><div><b>'+totalSets(s)+'</b> <span>séries</span></div>'+(minutes?'<div><b>≈ '+Number(minutes)+'</b> <span>minutes</span></div>':'')+'</dl>'
@@ -61,11 +72,23 @@ function home({next,hasHistory=false,cycle,progress=0,minutes,firstName,dateText
  if(deload&&!coach)next={...next,reason:'deload',message:'Dernière semaine du cycle : semaine allégée. Moins de séries, mêmes charges, pour récupérer avant ton bilan.'};
  html+='<div class="v2-coach">'+icon('coach','v2-ic v2-coach-ic')+'<div><p>'+(coach||next.reason==='deload'?esc(next.message):(hasHistory?'On reprend la suite là où tu t’es arrêté, sans séance « manquée ».':'Première séance de ton cycle. Ensuite, chaque séance suit la précédente, quel que soit le jour.'))+'</p>'
   +(next.reason==='recovery'?'<div class="v2-coach-actions"><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-start" data-session="'+esc(s.id)+'">D’accord</button><button type="button" class="v2-link" data-action="v2-start" data-session="'+esc(next.planned.id)+'">Faire '+esc(next.planned.title)+' quand même</button></div>':'')
-  +'<button type="button" class="v2-link" data-action="v2-choose">Changer de séance</button></div></div>';
- // Dernière séance effectuée : un appui ouvre son détail dans Progrès.
- if(last)html+='<button type="button" class="v2-card v2-last" data-action="v2-last-open" data-id="'+esc(last.id)+'"><span class="v2-last-kicker">Dernière séance</span><b>'+esc(last.title)+'</b><small>'+esc([dayText(last.date),last.minutes!=null?last.minutes+' min':null,plural(last.sets,'série','séries')].filter(Boolean).join(' · '))+'</small>'+icon('right','v2-ic v2-ic--sm')+'</button>';
- if(weekLine||record||rhythm||cardio)html+='<section class="v2-card v2-week">'+(weekLine?'<p class="v2-week-line">'+esc(weekLine)+'</p>':'')+rhythmHTML(rhythm)+cardioHTML(cardio)+(record?'<p class="v2-muted">'+icon('trophy','v2-ic v2-ic--sm')+esc(record)+'</p>':'')+'</section>';
+  +'<div class="v2-coach-links"><button type="button" class="v2-link" data-action="v2-choose">Changer de séance</button><button type="button" class="v2-link v2-link--muted" data-action="v2-skip" data-session="'+esc(s.id)+'">Je ne la fais pas</button></div></div></div>';
+ if(last)html+=lastCard(last);
+ if(weekLine||record||rhythm||cardio)html+=weekCard({weekLine,record,rhythm,cardio});
  return html+'</section>';
+}
+// Dernière séance effectuée : un appui ouvre son détail dans Progrès.
+function lastCard(last){return '<button type="button" class="v2-card v2-last" data-action="v2-last-open" data-id="'+esc(last.id)+'"><span class="v2-last-kicker">Dernière séance</span><b>'+esc(last.title)+'</b><small>'+esc([dayText(last.date),last.minutes!=null?last.minutes+' min':null,plural(last.sets,'série','séries')].filter(Boolean).join(' · '))+'</small>'+icon('right','v2-ic v2-ic--sm')+'</button>'}
+function weekCard({weekLine,record,rhythm,cardio}){return '<section class="v2-card v2-week">'+(weekLine?'<p class="v2-week-line">'+esc(weekLine)+'</p>':'')+rhythmHTML(rhythm)+cardioHTML(cardio)+(record?'<p class="v2-muted">'+icon('trophy','v2-ic v2-ic--sm')+esc(record)+'</p>':'')+'</section>'}
+const SKIP_COACH={malade:'Repose-toi et hydrate-toi. On reprend demain si tu te sens mieux, sinon passe encore : aucune séance à rattraper.',
+ douleur:'Ne force pas sur une douleur. Si elle dure ou s’aggrave, demande l’avis d’un professionnel de santé. Aucune séance à rattraper.',
+ temps:'Pas de souci : la suite reprend demain là où tu en es, sans rattrapage.',
+ autre:'Séance passée : la suite reprend demain, sans rattrapage.'};
+const SKIP_REASONS=[['malade','Je suis malade'],['douleur','J’ai une douleur ou une blessure'],['temps','Pas le temps aujourd’hui'],['autre','Autre raison']];
+function skipSheet({session}={}){
+ return '<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="Passer la séance"><button type="button" class="v2-grab" data-action="v2-close-sheet" aria-label="Fermer (ou fais glisser vers le bas)"><i></i></button><h2>Pas de séance aujourd’hui ?</h2><p class="v2-muted">'+esc(session.title)+' sera notée comme passée : ta suite avance à la séance suivante, sans rattrapage. Pas d’autre séance aujourd’hui.</p>'
+  +SKIP_REASONS.map(([v,t])=>'<button type="button" class="v2-opt" data-action="v2-skip-confirm" data-session="'+esc(session.id)+'" data-reason="'+v+'"><span><b>'+t+'</b></span></button>').join('')
+  +'<button type="button" class="v2-btn v2-btn--ghost" data-action="v2-close-sheet">Finalement, je la fais</button></section></div>';
 }
 
 function chooser({sessions=[],current}={}){
@@ -319,5 +342,5 @@ function programme({cycle,userExercises=[],picking=null,query='',results=[],crea
  return html+'</section>';
 }
 
-return {cardioLogs,remindersCard,reviewCard,review,nextForm,proposal,cardioSheet,programme,home,chooser,session,machineSheet,moreSheet,idlePrompt,summary,progress,picker,clock,esc,recapCard,programIntro,howtoSheet};
+return {skipSheet,cardioLogs,remindersCard,reviewCard,review,nextForm,proposal,cardioSheet,programme,home,chooser,session,machineSheet,moreSheet,idlePrompt,summary,progress,picker,clock,esc,recapCard,programIntro,howtoSheet};
 });

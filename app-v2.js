@@ -127,7 +127,8 @@ function create(ctx){
    const loaded=await C.loadCycle(api,userId);loadFailed=false;S.truncated=Boolean(loaded.truncated);
    // Les séances pas encore confirmées par le serveur restent affichées.
    const ids=new Set(loaded.workouts.map(w=>w.id));
-   S.workouts=mergeById(loaded.workouts,S.workouts.filter(w=>!ids.has(w.id)));
+   // Une séance passée annulée sur ce téléphone garde son annulation tant que le serveur ne l'a pas reçue.
+   S.workouts=mergeById(loaded.workouts,S.workouts.filter(w=>!ids.has(w.id)||w.status==='abandoned'));
    S.setLogs=[...loaded.setLogs,...S.setLogs.filter(r=>!ids.has(r.workout_id))];
    S.userExercises=mergeByKey(loaded.userExercises,S.userExercises);
    const cids=new Set((loaded.cardioLogs||[]).map(x=>x.id));S.cardioLogs=[...(loaded.cardioLogs||[]),...S.cardioLogs.filter(x=>!cids.has(x.id))];
@@ -192,11 +193,27 @@ function create(ctx){
  function startSession(id){
   const s=S.cycle.sessions.find(x=>x.id===id);if(!s)return;
   if(current()){S.view='session';return}
+  // Une séance par jour : la suivante attend demain (récupération).
+  if(Planner.today(S.workouts,now())){S.sheet=null;notice('Ta séance du jour est faite. La suivante t’attend demain.');return}
   // Semaine allégée : moins de séries, mêmes charges ; la séance est notée comme telle (conseils et bilan n'en tirent pas de conclusion).
   const light=C.deload(S.cycle,S.workouts);
   S.store.start({...s,cycle_id:S.cycle.id,exercises:light?s.exercises.map(e=>({...e,sets:C.deloadSets(e.sets)})):s.exercises},{last:last()});
   if(light){const ids=read(K.deload,[]);ids.push(S.store.current().id);write(K.deload,ids.slice(-200))}
   S.view='session';S.index=0;S.rest=null;S.sheet=null;touch();scheduleFlush();
+ }
+ // « Je ne fais pas cette séance » : notée comme passée, la suite avance, repos aujourd'hui.
+ function skipSession(id,reason){
+  const s=S.cycle?.sessions.find(x=>x.id===id);if(!s||current()||Planner.today(S.workouts,now()))return;
+  const row=S.store.skipSession({...s,cycle_id:S.cycle.id},{reason});
+  S.workouts=[{...row,title:s.title,local_only:!(api&&userId)},...S.workouts];
+  persistLocal();S.sheet=null;scheduleFlush();
+  notice(s.title+' passée. Repos aujourd’hui, la suite reprend demain.');
+ }
+ function cancelSkip(id){
+  const w=S.workouts.find(x=>x.id===id&&x.status==='skipped');if(!w)return;
+  const r=S.store.cancelSkip(w);if(!r)return;
+  S.workouts=S.workouts.map(x=>x.id===id?{...x,status:'abandoned',skip_reason:null,revision:r.revision}:x);
+  persistLocal();scheduleFlush();
  }
  function finishSession(){
   const done=S.store.finish();if(!done)return;
@@ -248,6 +265,7 @@ function create(ctx){
   let html=UI.home({next,rhythm:C.rhythm(S.cycle,S.workouts,now()),cardio,hasHistory:S.workouts.some(x=>x.cycle_id===S.cycle.id&&x.status==='completed'),cycle:S.cycle,progress:C.cycleProgress(S.cycle,S.workouts),minutes:next?minutes(next.session):null,firstName:ctx.firstName?.()||'',dateText:dateText(),weekLine:weekLine(),record:recentRecord(),deload:C.deload(S.cycle,S.workouts),last:lastSession(),active});
   if(!w&&(S.proposal||Rv.due(S.cycle,S.workouts,now())))html=html.replace('<section class="v2-next"',UI.reviewCard({proposal:Boolean(S.proposal)})+'<section class="v2-next"');
   if(S.sheet?.type==='choose')html+=UI.chooser({sessions:S.cycle.sessions,current:next?.session.id});
+  if(S.sheet?.type==='skip'){const sk=S.cycle.sessions.find(x=>x.id===S.sheet.session);if(sk)html+=UI.skipSheet({session:sk})}
   return html+cardioSheet;
  }
  // Dernière séance terminée (tous cycles), affichée sur l'accueil.
@@ -308,6 +326,9 @@ function create(ctx){
    case 'v2-build':S.building=true;render();if(api&&userId){fresh=refresh();await fresh}else{build();persistLocal()}S.building=false;break;
    case 'v2-start':case 'v2-pick-session':startSession(d.session);break;
    case 'v2-choose':S.sheet={type:'choose'};break;
+   case 'v2-skip':S.sheet={type:'skip',session:d.session};break;
+   case 'v2-skip-confirm':skipSession(d.session,d.reason);break;
+   case 'v2-skip-undo':cancelSkip(d.id);break;
    case 'v2-close-sheet':S.sheet=null;S.picking=null;S.creating=false;break;
    case 'v2-back':S.view='session';touch();break;
    case 'v2-exit':S.view='home';S.sheet=null;saveUi();break;
