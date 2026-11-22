@@ -1,4 +1,4 @@
-/* STÉROÏDE V2 — historique et progrès.
+/* STEROID V2 — historique et progrès.
  * Tout se calcule par clé d'exercice : un exercice remplacé garde son propre historique, jamais fusionné.
  * Seules les séries validées comptent ; charge non saisie = null (jamais 0 kg) ; aucun record à la première séance. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.SteroidHistory=api})(typeof globalThis!=='undefined'?globalThis:this,function(){

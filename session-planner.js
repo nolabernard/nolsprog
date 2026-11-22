@@ -1,4 +1,4 @@
-/* STÉROÏDE V2 — prochaine séance.
+/* STEROID V2 — prochaine séance.
  * Le programme est une suite (A → B → C…) : on propose la séance qui suit la dernière terminée.
  * Jamais de séance « manquée ». Garde-fou : si un groupe travaillé en exercice de base l'a été il y a
  * moins de 48 h, on conseille la prochaine séance compatible, en expliquant pourquoi. Jamais bloquant. */

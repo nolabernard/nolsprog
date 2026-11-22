@@ -1,4 +1,4 @@
-/* STÉROÏDE — animation d'ouverture (kettlebell). Une fois par session d'onglet ; un tapotement la passe ;
+/* STEROID — animation d'ouverture (kettlebell). Une fois par session d'onglet ; un tapotement la passe ;
  * « réduire les animations » : simple fondu. Script synchrone placé juste après #splash : retiré avant le premier
  * affichage quand elle a déjà été vue. */
 (function(){

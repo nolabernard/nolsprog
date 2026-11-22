@@ -1,4 +1,4 @@
-/* STÉROÏDE — illustrations et consignes d'exécution, par type de mouvement (pattern du catalogue).
+/* STEROID — illustrations et consignes d'exécution, par type de mouvement (pattern du catalogue).
  * Pictogrammes SVG au trait dessinés pour l'app (aucune image externe, aucun droit tiers) ; consignes courtes et
  * générales, sans diagnostic. Une douleur = on arrête et on demande l'avis d'un professionnel. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.SteroidMoves=api})(typeof globalThis!=='undefined'?globalThis:this,function(){

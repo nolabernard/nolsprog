@@ -1,4 +1,4 @@
-// STÉROÏDE — rappels : quand envoyer (pur, testé sous Node). Jours : 0 = lundi … 6 = dimanche.
+// STEROID — rappels : quand envoyer (pur, testé sous Node). Jours : 0 = lundi … 6 = dimanche.
 export const WINDOW_MIN = 15;
 export function localParts(ms, timeZone) {
   const f = new Intl.DateTimeFormat('en-GB', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', weekday: 'short', hourCycle: 'h23' });

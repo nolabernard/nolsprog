@@ -140,7 +140,7 @@ for(const html of [rh,nf,pr])assert(noEmoji(html)&&!/onclick=/i.test(html));
 const rc=UI.remindersCard({enabled:true,hour:18,minute:30,days:[0,2,4],blocker:null});
 assert.match(rc,/18:30, lundi, mercredi, vendredi/);assert.match(rc,/<option value="18:30" selected>/);assert.match(rc,/data-day="2" aria-pressed="true"/);assert.match(rc,/data-day="1" aria-pressed="false"/);assert.match(rc,/v2-rem-test/);assert.match(rc,/v2-rem-off/);
 assert.match(UI.remindersCard({enabled:false,hour:18,minute:0,days:[0,1,2,3,4,5,6]}),/data-action="v2-rem-on"/);
-assert.match(UI.remindersCard({blocker:'install',message:'Ajoute <STÉROÏDE>'}),/Ajoute &lt;STÉROÏDE&gt;/);
+assert.match(UI.remindersCard({blocker:'install',message:'Ajoute <STEROID>'}),/Ajoute &lt;STEROID&gt;/);
 assert(noEmoji(rc)&&!/onclick=/i.test(rc));
 // Accueil : dernière séance effectuée.
 const hl=UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},last:{id:'w9',title:'Bas A',date:'2026-11-12T11:00:00Z',minutes:48,sets:16}});

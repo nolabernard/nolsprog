@@ -1,4 +1,4 @@
-/* STÉROÏDE — panneaux de dialogue intégrés à l'app (remplacent prompt/confirm du navigateur).
+/* STEROID — panneaux de dialogue intégrés à l'app (remplacent prompt/confirm du navigateur).
  * open({title, message, fields, actions}) → Promise<{action, values}> ou null si annulé.
  * fields : [{name, label, value, type:'text'|'number'|'select', options:[valeur|{value,label}]}]
  * actions : [{value, label, primary, danger}] ; « Annuler » et Échap renvoient null. */

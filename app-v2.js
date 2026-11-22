@@ -1,4 +1,4 @@
-/* STÉROÏDE V2 — contrôleur des écrans Aujourd'hui, Progrès et Programme.
+/* STEROID V2 — contrôleur des écrans Aujourd'hui, Progrès et Programme.
  * Relie les modules purs (cycle, planificateur, séance, écrans) au stockage et à Supabase.
  * app.js lui délègue l'affichage et les actions data-action="v2-…". Testé sous Node (scripts/app-v2.test.cjs). */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.SteroidAppV2=api})(typeof globalThis!=='undefined'?globalThis:this,function(){

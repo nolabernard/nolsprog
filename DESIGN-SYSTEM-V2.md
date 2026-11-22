@@ -1,7 +1,7 @@
-# STÉROÏDE V2 — mini design system
+# STEROID V2 — mini design system
 
 ## Marque
-- Wordmark inchangé : STÉROÏDE, DejaVu Sans Bold, vert profond.
+- Wordmark inchangé : STEROID, DejaVu Sans Bold, vert profond.
 - Palette : vert profond `#0B4D3B`, crème `#F5F0E5`, vert pâle `#E6EFE5`, ivoire `#FFFCF7`, vert sombre `#073528`, encre `#1A2923`, texte secondaire `#4F6158`, bordure `#DCE8DD`.
 - Titres : Archivo 900, capitales, affichage condensé.
 - Texte : Inter 400–800.

@@ -8,7 +8,7 @@
 
 **Tech Stack:** JavaScript sans build (UMD global + `module.exports`), Node 22 (`node:test`), Supabase REST via la fonction `cloud()` existante.
 
-**Spec:** `docs/superpowers/specs/2026-11-21-steroid-v2-design.md` §6.1, §6.2, §6.3, §6.4, §6.4 bis, §6.5, §8. Maquettes : canevas « STÉROÏDE — refonte UX », écrans V1a (accueil), V1b (séance et pause), V1c (machine prise).
+**Spec:** `docs/superpowers/specs/2026-11-21-steroid-v2-design.md` §6.1, §6.2, §6.3, §6.4, §6.4 bis, §6.5, §8. Maquettes : canevas « STEROID — refonte UX », écrans V1a (accueil), V1b (séance et pause), V1c (machine prise).
 
 ## Global Constraints
 - Palette et composants de `DESIGN-SYSTEM-V2.md` ; maquette 390 × 844 ; cibles ≥ 44 px ; bouton principal ≥ 52 px ; icônes SVG au trait ; aucun emoji ; `prefers-reduced-motion` respecté.

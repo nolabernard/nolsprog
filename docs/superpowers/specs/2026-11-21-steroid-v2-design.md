@@ -1,11 +1,11 @@
-# STÉROÏDE V2 — document de conception
+# STEROID V2 — document de conception
 
 Statut : **à valider par le propriétaire** · 21/11/2026
-Référence : `docs/cahier-des-charges-v2.md` (cahier des charges V2) · maquettes : canevas « STÉROÏDE — refonte UX », direction A.
+Référence : `docs/cahier-des-charges-v2.md` (cahier des charges V2) · maquettes : canevas « STEROID — refonte UX », direction A.
 
 ## 1. Intention
 
-STÉROÏDE doit passer d'un carnet calé sur le calendrier à un assistant qui suit la **réalité** de l'entraînement :
+STEROID doit passer d'un carnet calé sur le calendrier à un assistant qui suit la **réalité** de l'entraînement :
 séances faites un autre jour, machine occupée, pause imprévue, exercices bien identifiés, cycles de 6 à 8 semaines avec un bilan.
 L'intelligence doit se voir dans les décisions, pas dans la complexité de l'interface.
 

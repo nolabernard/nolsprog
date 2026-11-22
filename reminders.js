@@ -1,4 +1,4 @@
-/* STÉROÏDE V2 — rappels (notifications web), côté app.
+/* STEROID V2 — rappels (notifications web), côté app.
  * Abonnement de cet appareil + réglages (heure, jours) dans public.push_subscriptions ; l'envoi est fait par la fonction
  * Supabase « send-reminders ». Dépendances injectées (navigateur, API) : testé sous Node. Jours : 0 = lundi. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.SteroidReminders=api})(typeof globalThis!=='undefined'?globalThis:this,function(){
@@ -58,7 +58,7 @@ function create({nav=globalThis.navigator,win=globalThis,api,storage,userId}){
  return {state,enable,update,disable,test};
 }
 const MESSAGES={account:'Connecte-toi à ton compte pour recevoir des rappels.',
- install:'Sur iPhone, ajoute d’abord STÉROÏDE à l’écran d’accueil (Partager → Sur l’écran d’accueil), puis ouvre-la depuis l’icône.',
+ install:'Sur iPhone, ajoute d’abord STEROID à l’écran d’accueil (Partager → Sur l’écran d’accueil), puis ouvre-la depuis l’icône.',
  unsupported:'Ce navigateur ne permet pas les notifications.',
  denied:'Notifications bloquées pour ce site. Autorise-les dans les réglages du navigateur.'};
 return {create,MESSAGES,DEFAULT};
