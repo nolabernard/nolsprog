@@ -12,7 +12,7 @@ const restText=sec=>{sec=Number(sec)||0;if(sec<60)return sec+' s';const m=Math.f
 const reps=(a,b)=>a===b?String(a):a+' à '+b;
 const plural=(n,one,many)=>n+' '+(n>1?many:one);
 const P={play:'<path d="M8 5v14l11-7z"/>',pause:'<path d="M8 5v14M16 5v14"/>',check:'<path d="m5 12 5 5L20 7"/>',swap:'<path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
- close:'<path d="M6 6l12 12M18 6 6 18"/>',more:'<circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/>',left:'<path d="m15 18-6-6 6-6"/>',right:'<path d="m9 18 6-6-6-6"/>',
+ close:'<path d="M6 6l12 12M18 6 6 18"/>',more:'<circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/>',left:'<path d="m15 18-6-6 6-6"/>',right:'<path d="m9 18 6-6-6-6"/>',up:'<path d="m6 15 6-6 6 6"/>',down:'<path d="m6 9 6 6 6-6"/>',
  later:'<path d="M12 8v4l3 2"/><path d="M3.05 11a9 9 0 1 1 .5 4"/><path d="M3 4v7h7"/>',skip:'<path d="m5 4 10 8-10 8z"/><path d="M19 5v14"/>',coach:'<path d="M12 3a7 7 0 0 0-4 12.7V19h8v-3.3A7 7 0 0 0 12 3z"/><path d="M10 22h4"/>',
  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',plus:'<path d="M12 5v14M5 12h14"/>',trophy:'<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>'};
 const icon=(n,cls='v2-ic')=>'<svg class="'+cls+'" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+P[n]+'</svg>';
@@ -287,24 +287,32 @@ function howtoSheet({key,userExercises=[]}={}){
   +'<p class="v2-muted">Une douleur pendant l’exercice : arrête et demande conseil à un professionnel.</p><button type="button" class="v2-btn" data-action="v2-close-sheet">Compris</button></section></div>';
 }
 
+// Résultats seuls : la recherche les remplace à chaque frappe sans réafficher l'écran (pas de saccade ni de clavier qui saute).
+function pickerResults({query='',results=[]}={}){
+ return results.map(r=>{const e=r.entry||r;return '<button type="button" class="v2-opt" data-action="v2-pick" data-key="'+esc(e.key)+'"><span><b>'+esc(e.name)+'</b><small>'+esc(e.muscle||'')+' · '+(e.role==='base'?'Base':'Finition')+'</small></span></button>'}).join('')
+  +(query&&!results.length?'<p class="v2-note">Aucun exercice trouvé.</p>':'');
+}
 function picker({query='',results=[],creating=false}={}){
- let html='<div class="v2-picker"><label class="v2-search">'+icon('search','v2-ic v2-ic--sm')+'<input type="search" data-v2-search placeholder="Chercher un exercice (ex. dvlp couché)" value="'+esc(query)+'" aria-label="Chercher un exercice" autocomplete="off"></label><div class="v2-results">'
-  +results.map(r=>{const e=r.entry||r;return '<button type="button" class="v2-opt" data-action="v2-pick" data-key="'+esc(e.key)+'"><span><b>'+esc(e.name)+'</b><small>'+esc(e.muscle||'')+' · '+(e.role==='base'?'Base':'Finition')+'</small></span></button>'}).join('')
-  +(query&&!results.length?'<p class="v2-note">Aucun exercice trouvé.</p>':'')+'</div>';
+ let html='<div class="v2-picker"><label class="v2-search">'+icon('search','v2-ic v2-ic--sm')+'<input type="search" data-v2-search placeholder="Chercher un exercice (ex. dvlp couché)" value="'+esc(query)+'" aria-label="Chercher un exercice" autocomplete="off"></label><div class="v2-results" aria-live="polite">'
+  +pickerResults({query,results})+'</div>';
  html+=creating?'<form class="v2-create" data-v2-create><label class="v2-field-label">Nom<input name="name" required maxlength="100" value="'+esc(query)+'"></label><label class="v2-field-label">Muscle principal<select name="muscle">'+['Pectoraux','Dos','Jambes','Épaules','Bras','Abdominaux'].map(m=>'<option>'+m+'</option>').join('')+'</select></label><label class="v2-field-label">Mouvement<select name="pattern"><option value="push">Pousser</option><option value="pull">Tirer</option><option value="legs">Jambes</option><option value="iso">Isolation</option></select></label><button type="submit" class="v2-btn">Créer mon exercice</button></form>'
   :'<button type="button" class="v2-link" data-action="v2-create">'+icon('plus','v2-ic v2-ic--sm')+'Créer mon exercice</button>';
  return html+'</div>';
 }
 
-function programme({cycle,userExercises=[],picking=null,query='',results=[],creating=false,reminders=null,editing=0}={}){
+function programme({cycle,userExercises=[],picking=null,query='',results=[],creating=false,reminders=null,editing=0,open=[]}={}){
  let html='<section class="v2-progress"><h1 class="v2-hello">Mon programme</h1><p class="v2-muted">Ta suite de séances tourne en boucle'+(cycle?.weeks?' pendant '+cycle.weeks+' semaines':'')+'. Modifie ce que tu veux puis touche « Enregistrer » : rien ne change avant.</p>';
  for(const s of cycle?.sessions||[]){
-  html+='<section class="v2-card v2-prog-session"><h2>'+esc(s.title)+'</h2><p class="v2-muted">'+esc((s.focus||[]).join(', '))+'</p><ol class="v2-prog-list">';
-  for(const e of s.exercises){
-   html+='<li><div class="v2-prog-name"><b>'+esc(nameOf(e.exercise_key,userExercises))+'</b><small>'+reps(e.reps_min,e.reps_max)+' reps · repos '+restText(e.rest_seconds)+'</small></div>'
+  // Séance repliable : en-tête toujours visible (titre, muscles, nombre d'exercices), détail au toucher.
+  const isOpen=open.includes(s.id);
+  html+='<section class="v2-card v2-prog-session'+(isOpen?' is-open':'')+'"><button type="button" class="v2-prog-head" data-action="v2-prog-toggle" data-session="'+esc(s.id)+'" aria-expanded="'+isOpen+'" aria-controls="v2-prog-'+esc(s.id)+'"><span><b>'+esc(s.title)+'</b><small>'+esc((s.focus||[]).join(', '))+' · '+plural(s.exercises.length,'exercice','exercices')+'</small></span>'+icon(isOpen?'up':'down','v2-ic v2-ic--sm')+'</button>';
+  if(!isOpen){html+='</section>';continue}
+  html+='<ol class="v2-prog-list" id="v2-prog-'+esc(s.id)+'">';
+  s.exercises.forEach((e,k)=>{
+   html+='<li><div class="v2-prog-move"><button type="button" class="v2-move" data-action="v2-move-ex" data-ce="'+esc(e.id)+'" data-dir="-1" aria-label="Monter '+esc(nameOf(e.exercise_key,userExercises))+'"'+(k===0?' disabled':'')+'>'+icon('up','v2-ic v2-ic--sm')+'</button><button type="button" class="v2-move" data-action="v2-move-ex" data-ce="'+esc(e.id)+'" data-dir="1" aria-label="Descendre '+esc(nameOf(e.exercise_key,userExercises))+'"'+(k===s.exercises.length-1?' disabled':'')+'>'+icon('down','v2-ic v2-ic--sm')+'</button></div><div class="v2-prog-name"><b>'+esc(nameOf(e.exercise_key,userExercises))+'</b><small>'+reps(e.reps_min,e.reps_max)+' reps · repos '+restText(e.rest_seconds)+'</small></div>'
     +'<label class="v2-prog-sets">Séries<select class="v2-select" data-v2-sets="'+esc(e.id)+'">'+[1,2,3,4,5,6].map(n=>'<option '+(n===Number(e.sets)?'selected':'')+'>'+n+'</option>').join('')+'</select></label>'
     +'<div class="v2-prog-actions"><button type="button" class="v2-link" data-action="v2-edit-ex" data-ce="'+esc(e.id)+'">Changer</button><button type="button" class="v2-link v2-link--muted" data-action="v2-remove-ex" data-ce="'+esc(e.id)+'">Retirer</button></div></li>';
-  }
+  });
   html+='</ol><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-add-ex" data-session="'+esc(s.id)+'">'+icon('plus')+'Ajouter un exercice</button></section>';
  }
  const cc=cycle?.cardio||[];
@@ -319,5 +327,5 @@ function programme({cycle,userExercises=[],picking=null,query='',results=[],crea
  return html+'</section>';
 }
 
-return {cardioLogs,remindersCard,reviewCard,review,nextForm,proposal,cardioSheet,programme,home,chooser,session,machineSheet,moreSheet,idlePrompt,summary,progress,picker,clock,esc,recapCard,programIntro,howtoSheet};
+return {pickerResults,cardioLogs,remindersCard,reviewCard,review,nextForm,proposal,cardioSheet,programme,home,chooser,session,machineSheet,moreSheet,idlePrompt,summary,progress,picker,clock,esc,recapCard,programIntro,howtoSheet};
 });

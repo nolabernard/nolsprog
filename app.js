@@ -272,7 +272,7 @@ S.previousTab=S.tab;S.tab=b.dataset.tab;render();scrollToSectionTop()}});
 root.addEventListener('input',e=>{
  const el=e.target;
  if(el?.dataset?.v2Field){V2?.input({ex:el.dataset.ex,set:el.dataset.set,field:el.dataset.v2Field,value:el.value});return}
- if('v2Search' in (el?.dataset||{})){V2?.change({kind:'search',value:el.value});const pos=el.selectionStart;render();const again=root.querySelector('[data-v2-search]');if(again){again.focus();try{again.setSelectionRange(pos,pos)}catch{}}return}
+ if('v2Search' in (el?.dataset||{})){V2?.change({kind:'search',value:el.value});const box=root.querySelector('.v2-results');if(box&&V2?.pickerResultsHTML)box.innerHTML=V2.pickerResultsHTML();else render();return}
 });
 window.addEventListener('online',()=>{V2?.flushNow()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&root.querySelector('.v2-sheet [data-action="v2-close-sheet"],.v2-sheet-wrap [data-action="v2-close-sheet"]')){V2?.handle('v2-close-sheet')}});
