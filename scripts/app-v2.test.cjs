@@ -14,7 +14,7 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  const ctx={storage,api:null,userId:null,legacyPlan:()=>legacy,answers:()=>null,firstName:()=>'',now,uuid,render:()=>renders++,notice:()=>{},confirm:async()=>true};
  let c=V2.create(ctx);await c.init();
  assert(c.ready());
- let h=c.todayHTML();assert.match(h,/Push A/);assert.match(h,/data-action="v2-start"/);
+ let h=c.todayHTML();assert.match(h,/Push A/);assert.match(h,/data-action="v2-recap"/);
  const s1=c.state().cycle.sessions[0];
  await c.handle('v2-start',{session:s1.id});
  h=c.todayHTML();assert.match(h,/Développé couché barre/);assert.match(h,/Machine prise/);
@@ -183,7 +183,7 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
    await c.handle('v2-start',{session:first.id});await c.handle('v2-finish');await c.flushNow();
    assert.equal(c.state().store.current(),null);assert(sent.some(r=>r.t==='workouts'&&r.status==='abandoned'),'notée abandonnée');
    assert(!c.state().workouts.some(w=>w.status==='completed'),'pas comptée');
-   assert.match(c.todayHTML(),new RegExp('data-action="v2-start" data-session="'+first.id+'"'),'même séance proposée, pas de blocage du jour');
+   assert.match(c.todayHTML(),new RegExp('data-action="v2-recap" data-session="'+first.id+'"'),'même séance proposée, pas de blocage du jour');
    // Séances « terminées » vides venues du serveur (anciennes versions) : ignorées partout.
    const now0=Date.now();c.state().workouts.push({id:'vide1',cycle_id:c.state().cycle.id,cycle_session_id:first.id,status:'completed',started_at:new Date(now0-60e3).toISOString(),ended_at:new Date(now0-30e3).toISOString()});
    const h=c.todayHTML();assert.match(h,/0<small>\/\d+<\/small>/,'pas comptée dans la semaine');assert.doesNotMatch(h,/Séance faite aujourd’hui/);assert.match(h,new RegExp('data-session="'+first.id+'"')); }
@@ -269,20 +269,24 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  const back={async select(p){if(p.startsWith('cycles'))return [{...cycleRows,sessions:undefined,user_exercises:undefined}];if(p.startsWith('cycle_sessions'))return cycleRows.sessions.map(({exercises,muscles,...x})=>x);if(p.startsWith('cycle_exercises'))return cycleRows.sessions.flatMap(x=>x.exercises);return []},async upsert(){throw Error('Failed to fetch')}};
  const c9=V2.create({...ctx,storage:st8,api:back,userId:U});await c9.init();await c9.whenFresh();
  assert(c9.state().workouts.some(w=>w.cycle_session_id===first.id),'séance non envoyée conservée');
- assert.match(c9.statsHTML(),/série validée/);assert(!c9.todayHTML().includes('data-action="v2-start" data-session="'+first.id+'"'),'la suite avance');assert.match(c9.todayHTML(),/Séance faite aujourd’hui[^]*Demain : <b>/,'une séance par jour');
+ assert.match(c9.statsHTML(),/série validée/);assert(!c9.todayHTML().includes('data-action="v2-recap" data-session="'+first.id+'"'),'la suite avance');assert.match(c9.todayHTML(),/Séance faite aujourd’hui[^]*Demain : <b>/,'une séance par jour');
  // Séance passée : raison notée, envoyée avec la séance, la suite avance ; pas d'autre séance aujourd'hui ; annulation possible.
  {const sent=[],api10={async select(){return []},async upsert(t,rows){sent.push(...rows.map(r=>({t,...r})))},async remove(){}};
   const c10=V2.create({...ctx,storage:memory(),api:api10,userId:U});await c10.init();
   const s0=c10.state().cycle.sessions[0];
-  assert.match(c10.todayHTML(),/data-action="v2-skip" data-session="/);
+  // Commencer → récapitulatif → choisir une autre séance / passer.
+  await c10.handle('v2-recap',{session:s0.id});assert.match(c10.todayHTML(),/C’est bien cette séance \?[^]*data-action="v2-skip" data-session="/);
+  await c10.handle('v2-recap-choose',{session:s0.id});assert.match(c10.todayHTML(),/Quelle séance aujourd’hui \?/);
+  await c10.handle('v2-recap',{session:c10.state().cycle.sessions[1].id});assert.match(c10.todayHTML(),new RegExp('data-action="v2-start" data-session="'+c10.state().cycle.sessions[1].id+'"'));
+  await c10.handle('v2-close-sheet');
   await c10.handle('v2-skip',{session:s0.id});assert.match(c10.todayHTML(),/Pas de séance aujourd’hui \?[^]*data-reason="malade"/);
   await c10.handle('v2-skip-confirm',{session:s0.id,reason:'malade'});await c10.flushNow();
-  const row=sent.find(r=>r.t==='workouts'&&r.status==='skipped');assert(row,'séance passée envoyée');assert.equal(row.skip_reason,'malade');assert.equal(row.cycle_session_id,s0.id);
+  await c10.flushNow();const row=sent.find(r=>r.t==='workouts'&&r.status==='skipped');assert(row,'séance passée envoyée');assert.equal(row.skip_reason,'malade');assert.equal(row.cycle_session_id,s0.id);
   assert.match(c10.todayHTML(),/Séance passée aujourd’hui[^]*Repose-toi/);
   await c10.handle('v2-start',{session:c10.state().cycle.sessions[1].id});assert.equal(c10.state().store.current(),null,'pas d’autre séance aujourd’hui');
   await c10.handle('v2-skip-undo',{id:row.id});await c10.flushNow();
   assert(sent.some(r=>r.t==='workouts'&&r.id===row.id&&r.status==='abandoned'&&r.revision===2),'annulation envoyée');
-  assert.match(c10.todayHTML(),new RegExp('data-action="v2-start" data-session="'+s0.id+'"'),'la séance revient');}
+  assert.match(c10.todayHTML(),new RegExp('data-action="v2-recap" data-session="'+s0.id+'"'),'la séance revient');}
  // I5 : réseau qui ne répond jamais → le cache s'affiche tout de suite.
  const hang=V2.create({...ctx,storage:st8,api:{select:()=>new Promise(()=>{}),upsert:()=>new Promise(()=>{})},userId:U});
  await Promise.race([hang.init(),new Promise((_,no)=>setTimeout(()=>no(Error('init bloqué')),500))]);assert(hang.ready());
@@ -313,7 +317,7 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  const U4='44444444-4444-4444-8444-444444444444';
  // Mode « quand je veux » : pas de jours conseillés ; mode jours : jours repris du questionnaire.
  const free=V2.create({...ctx,storage:memory(),api:null,userId:null,answers:()=>({goal:'muscle',level:'intermediate',daysCount:'3',days:[0,1,2,3,4,5,6],planMode:'free',equipment:'gym',duration:'60'})});await free.init();
- assert.equal(free.state().cycle.preferred_days,null);assert.match(free.todayHTML(),/3 séances par semaine, quand tu veux/);
+ assert.equal(free.state().cycle.preferred_days,null);assert.match(free.todayHTML(),/0 séance faite sur 3 · encore 3/);
  const fixed=V2.create({...ctx,storage:memory(),api:null,userId:null,answers:()=>({goal:'muscle',level:'intermediate',daysCount:'3',days:[0,2,4],planMode:'days',equipment:'gym',duration:'60'})});await fixed.init();
  assert.deepEqual(fixed.state().cycle.preferred_days,[0,2,4]);assert.match(fixed.todayHTML(),/Tes jours : lundi, mercredi, vendredi/);
  // Cardio noté seul (invité) : bornes vérifiées, compté dans la semaine et dans Progrès.
