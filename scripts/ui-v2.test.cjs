@@ -12,7 +12,11 @@ const noEmoji=s=>!/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(s);
 let h=UI.home({next:{session:haut,planned:haut,reason:'sequence',message:''},cycle:{sessions:[haut,bas],weeks:6,sessions_per_week:3},progress:2/18,minutes:48,firstName:'Nolan',dateText:'Lundi 23 novembre'});
 assert.match(h,/Haut A/);assert.match(h,/Pectoraux/);assert.match(h,/Dos/);
 assert.match(h,/>2<\/b>\s*<span>exercices/);assert.match(h,/>5<\/b>\s*<span>séries/);assert.match(h,/48/);
-assert.match(h,/data-action="v2-start" data-session="s1"/);assert.match(h,/role="progressbar"/);assert.match(h,/Salut Nolan/);
+assert.match(h,/data-action="v2-start" data-session="s1"/);assert.match(h,/aria-label="Avancée du cycle : 11 %"/);
+// Anneau de l'accueil : séances de la semaine sur l'objectif, écrit en clair.
+{const w=UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},progress:0.36,week:{done:5,goal:6}});
+ assert.match(w,/5<small>\/6<\/small>/);assert.match(w,/aria-label="5 séances faites sur 6 cette semaine"/);assert.match(w,/cette semaine<\/span>/);assert.doesNotMatch(w,/36/);
+ assert.match(UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},week:{done:6,goal:6}}),/v2-ring is-full/);}assert.match(h,/Salut Nolan/);
 assert(!/quand même/.test(h));
 assert.match(h,/Première séance de ton cycle/);
 assert(!/class="v2-ring-value"/.test(UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},progress:0})),'anneau vide sans point parasite');

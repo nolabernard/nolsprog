@@ -319,11 +319,27 @@ button:active{transform:translateY(1px)}
 .v2-savebar .v2-btn{min-height:46px;padding:0 14px;border-radius:17px;font-size:14px}.v2-savebar .v2-btn--ghost{background:transparent;color:#F5F0E5;border-color:rgba(245,240,229,.45)}
 .v2-savebar .v2-btn:not(.v2-btn--ghost){background:#F5F0E5;color:#0B4D3B}
 
-<<<<<<< HEAD
+/* Accueil : anneau « séances de la semaine » */
+.v2-ring-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;flex:none}
+.v2-ring b.v2-ring-frac{font-size:18px;letter-spacing:-.02em}.v2-ring b.v2-ring-frac small{font-size:12px;opacity:.75;font-weight:700}
+.v2-ring-cap{font-size:11px;font-weight:700;letter-spacing:.02em;color:rgba(255,252,247,.72);white-space:nowrap}
+.v2-ring.is-full .v2-ring-track{stroke:var(--surface)}
+/* Programme : en-tête de séance net sur tous les navigateurs (iPhone compris) */
+.v2-prog-session .v2-prog-head{-webkit-appearance:none;appearance:none;background:transparent;border:0;box-shadow:none;border-radius:14px;padding:4px 0;margin:0;color:var(--text);font:inherit;text-align:left;cursor:pointer}
+.v2-prog-session .v2-prog-head span{flex:1;min-width:0;align-items:flex-start;text-align:left}
+.v2-prog-session .v2-prog-head small{line-height:1.35}
+.v2-prog-chev{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:50%;background:var(--raised,#F1E6D6);color:var(--accent,#0B4D3B)}
+.v2-prog-session.is-open .v2-prog-chev{background:var(--accent,#0B4D3B);color:#fff}
+.v2-prog-session:not(.is-open){padding-top:14px;padding-bottom:14px}
+/* Programme : formulaire cardio en deux lignes, avec libellés */
+.v2-cardio-plan label{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:13px;font-weight:700;color:var(--muted)}
+.v2-cardio-plan .v2-cp-type{grid-column:1/-1}
+.v2-cardio-plan .v2-select{width:100%;min-width:0;box-sizing:border-box}
+/* Le dernier élément de Programme ne passe plus sous la barre du bas */
+.v2-progress{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 /* Séance passée, une séance par jour */
 .v2-coach-links{display:flex;flex-wrap:wrap;gap:6px 20px}
 .v2-next-after{display:flex;align-items:center;gap:8px;margin:14px 0 0;font-size:16px}
-=======
 /* Programme : séances repliables et ordre des exercices */
 .v2-prog-head{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:44px;padding:0;border:0;background:none;color:inherit;text-align:left;cursor:pointer}
 .v2-prog-head span{display:flex;flex-direction:column;gap:2px}.v2-prog-head b{font-family:Archivo,Inter,sans-serif;font-weight:900;font-size:22px}.v2-prog-head small{color:var(--muted);font-size:13px}
@@ -333,7 +349,6 @@ button:active{transform:translateY(1px)}
 .v2-move{display:grid;place-items:center;width:44px;height:36px;border:1px solid var(--line);border-radius:10px;background:none;color:inherit;cursor:pointer}
 .v2-move:disabled{opacity:.3;cursor:default}
 .v2-prog-list li:has(.v2-prog-move) .v2-prog-actions{grid-column:2/-1}
->>>>>>> origin/main
 /* Rappels (lot 7) */
 .v2-daypick{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:10px 0}
 .v2-daypick button{min-height:44px;border:2px solid var(--line);border-radius:12px;background:var(--surface);color:var(--muted);font-weight:800;cursor:pointer}
@@ -384,7 +399,7 @@ button:active{transform:translateY(1px)}
 .v2-types span{min-height:46px;display:flex;align-items:center;justify-content:center;border:2px solid var(--line);border-radius:12px;font-weight:700;font-size:13px;text-align:center}
 .v2-types input:checked+span{background:var(--accent);border-color:var(--accent);color:var(--accent-text)}
 .v2-types input:focus-visible+span{outline:3px solid #2F8F6B;outline-offset:2px}
-.v2-cardio-plan{display:grid;grid-template-columns:1fr 84px 1fr;gap:8px}.v2-cardio-plan .v2-btn{grid-column:1/-1}
+.v2-cardio-plan{display:grid;grid-template-columns:1fr 1fr;gap:10px}.v2-cardio-plan .v2-btn{grid-column:1/-1}
 .v2-card-title{margin:0 0 4px;font-family:Archivo,Inter,sans-serif;font-weight:900;font-size:20px}
 .v2-bars{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
 .v2-bars li{display:grid;grid-template-columns:64px 1fr 64px;align-items:center;gap:8px;font-size:13px}

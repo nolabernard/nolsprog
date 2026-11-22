@@ -229,6 +229,8 @@ function create(ctx){
  // ----- Rendu -----
  function dateText(){const d=new Date(now());return DAYS[d.getDay()]+' '+d.getDate()+' '+MONTHS[d.getMonth()]}
  function minutes(s){try{return G().NolsEngine.estimatedMinutes(s.exercises.map(e=>({name:C.nameOf(e.exercise_key,S.userExercises),sets:e.sets,rest:e.rest_seconds})))}catch{return null}}
+ // Séances faites cette semaine (lundi → dimanche) et objectif : l'anneau de l'accueil.
+ function weekCount(){const d=new Date(now()),monday=new Date(d.getFullYear(),d.getMonth(),d.getDate()-((d.getDay()+6)%7)).getTime();return {done:S.workouts.filter(w=>w.cycle_id===S.cycle.id&&w.status==='completed'&&Date.parse(w.ended_at)>=monday).length,goal:S.cycle.sessions_per_week||S.cycle.sessions.length}}
  function weekLine(){
   const d=new Date(now()),monday=new Date(d.getFullYear(),d.getMonth(),d.getDate()-((d.getDay()+6)%7)).getTime();
   const done=S.workouts.filter(w=>w.cycle_id===S.cycle.id&&w.status==='completed'&&Date.parse(w.ended_at)>=monday).length,goal=S.cycle.sessions_per_week||S.cycle.sessions.length;
@@ -265,7 +267,7 @@ function create(ctx){
   const next=Planner.nextSession(S.cycle,S.workouts,now());
   const active=w?{title:sessionTitle(w),done:w.exercises.reduce((n,e)=>n+e.sets.filter(s=>s.completed).length,0),total:w.exercises.reduce((n,e)=>n+e.sets.length,0)}:null;
   const cardio={target:(S.cycle.cardio||[]).reduce((n,c)=>n+c.minutes*c.per_week,0),minutes:C.cardioWeek(S.cardioLogs,now())};
-  let html=UI.home({next,rhythm:C.rhythm(S.cycle,S.workouts,now()),cardio,hasHistory:S.workouts.some(x=>x.cycle_id===S.cycle.id&&x.status==='completed'),cycle:S.cycle,progress:C.cycleProgress(S.cycle,S.workouts),minutes:next?minutes(next.session):null,firstName:ctx.firstName?.()||'',dateText:dateText(),weekLine:weekLine(),record:recentRecord(),deload:C.deload(S.cycle,S.workouts),last:lastSession(),active});
+  let html=UI.home({next,rhythm:C.rhythm(S.cycle,S.workouts,now()),cardio,hasHistory:S.workouts.some(x=>x.cycle_id===S.cycle.id&&x.status==='completed'),cycle:S.cycle,progress:C.cycleProgress(S.cycle,S.workouts),minutes:next?minutes(next.session):null,firstName:ctx.firstName?.()||'',dateText:dateText(),weekLine:weekLine(),record:recentRecord(),deload:C.deload(S.cycle,S.workouts),last:lastSession(),week:weekCount(),active});
   if(!w&&(S.proposal||Rv.due(S.cycle,S.workouts,now())))html=html.replace('<section class="v2-next"',UI.reviewCard({proposal:Boolean(S.proposal)})+'<section class="v2-next"');
   if(S.sheet?.type==='choose')html+=UI.chooser({sessions:S.cycle.sessions,current:next?.session.id});
   if(S.sheet?.type==='skip'){const sk=S.cycle.sessions.find(x=>x.id===S.sheet.session);if(sk)html+=UI.skipSheet({session:sk})}
