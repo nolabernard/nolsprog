@@ -1,4 +1,4 @@
-/* STÉROÏDE V2 — séance en cours et file d'envoi vers Supabase.
+/* STEROID V2 — séance en cours et file d'envoi vers Supabase.
  * Tout est enregistré sur l'appareil d'abord (reprise après fermeture, hors ligne),
  * puis envoyé dans l'ordre workouts → workout_exercises → workout_set_logs.
  * Une ligne ne quitte la file qu'après confirmation du serveur. Charge non saisie = null. */

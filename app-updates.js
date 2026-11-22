@@ -1,4 +1,4 @@
-/* STÉROÏDE: lightweight update manager for GitHub Pages and iOS home-screen installs. */
+/* STEROID: lightweight update manager for GitHub Pages and iOS home-screen installs. */
 (function(global){
   'use strict';
   const current=document.querySelector('meta[name="steroid-version"]')?.content||'dev';
@@ -10,7 +10,7 @@
   function status(text){let box=document.getElementById('steroid-update-banner');if(!box){
     box=document.createElement('aside');box.id='steroid-update-banner';box.className='steroid-update-banner';box.setAttribute('role','status');box.setAttribute('aria-live','polite');
     const label=document.createElement('div');label.className='steroid-update-copy';
-    const title=document.createElement('strong');title.textContent='STÉROÏDE évolue';
+    const title=document.createElement('strong');title.textContent='STEROID évolue';
     const description=document.createElement('p');description.className='steroid-update-description';
     label.append(title,description);
     const button=document.createElement('button');button.type='button';button.className='steroid-update-button';button.textContent='Mettre à jour';

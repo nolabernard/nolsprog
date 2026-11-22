@@ -1,4 +1,4 @@
-/* STÉROÏDE V1 — Phase 1 : règles sportives et validation pure.
+/* STEROID V1 — Phase 1 : règles sportives et validation pure.
  * Module autonome : ne modifie ni le générateur actuel ni l'interface.
  * Aucun diagnostic médical, aucune charge prescrite.
  */

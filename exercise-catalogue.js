@@ -1,4 +1,4 @@
-/* STÉROÏDE — catalogue d'exercices à clés permanentes.
+/* STEROID — catalogue d'exercices à clés permanentes.
  * La clé (key) ne change jamais et ne s'affiche pas ; le nom peut évoluer.
  * Rôle : base (polyarticulaire) ou finition (isolation) ; « secondaire » est réservé pour plus tard.
  * Une clé publiée ne doit jamais être réutilisée pour un autre exercice. */

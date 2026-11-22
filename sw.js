@@ -1,4 +1,4 @@
-/* STÉROÏDE — mode hors ligne.
+/* STEROID — mode hors ligne.
  * Réseau d'abord : en ligne, l'app se comporte exactement comme sans service worker.
  * Hors ligne (ou réseau trop lent), on sert la dernière version enregistrée.
  * Une seule copie par fichier (paramètres d'URL ignorés), pas d'accumulation.
@@ -48,7 +48,7 @@ async function networkFirst(request){
 // Rappels (lot 7) : notification reçue de la fonction send-reminders.
 self.addEventListener('push',event=>{
   let d={};try{d=event.data?event.data.json():{}}catch{d={body:event.data?.text()}}
-  event.waitUntil(self.registration.showNotification(d.title||'STÉROÏDE',{body:d.body||'Ta prochaine séance t’attend.',icon:'./icon-192.png',badge:'./icon-192.png',tag:'steroid-reminder',data:{url:d.url||'./'}}));
+  event.waitUntil(self.registration.showNotification(d.title||'STEROID',{body:d.body||'Ta prochaine séance t’attend.',icon:'./icon-192.png',badge:'./icon-192.png',tag:'steroid-reminder',data:{url:d.url||'./'}}));
 });
 self.addEventListener('notificationclick',event=>{
   event.notification.close();

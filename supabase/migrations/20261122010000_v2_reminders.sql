@@ -1,4 +1,4 @@
--- STÉROÏDE V2 — lot 7 : rappels (notifications web).
+-- STEROID V2 — lot 7 : rappels (notifications web).
 -- Migration additive. Aucun secret dans ce fichier : le secret d'appel programmé est tiré au hasard dans la base,
 -- les clés d'envoi (VAPID) sont créées par la fonction au premier appel et restent dans la base.
 

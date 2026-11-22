@@ -149,7 +149,7 @@ body{background:#f7f9f6;color:var(--text)}
 @media(max-height:710px){.is-auth main{align-items:flex-end;padding-top:20px}.auth-headline{padding-bottom:10px}.auth-glass{padding:16px}.auth-glass .auth-form input{margin-bottom:10px}.auth-switch{margin-top:12px}.auth-or{margin-top:8px}}
 @media(prefers-reduced-motion:reduce){.auth-panel{animation:none}}
 
-/* STÉROÏDE — unified visual system,2026 */
+/* STEROID — unified visual system,2026 */
 :root{color-scheme:dark;--bg:#101722;--surface:#1b2634;--raised:#273747;--line:#405164;--text:#f6f8fa;--muted:#bac7d3;--accent:#d6f36b;--accent-text:#15210d;--danger:#ffb5b5;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg)}
 body{background:radial-gradient(ellipse at 50% -10%,#25384a 0%,#101722 55%) fixed}
 .shell{width:min(100%,560px);padding:0 18px calc(120px + env(safe-area-inset-bottom))}
@@ -201,7 +201,7 @@ button{touch-action:manipulation}
 @media(min-width:650px){.shell{box-shadow:0 0 55px #0002}.immersive-shell{max-width:620px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 
-/* STÉROÏDE — accessibility and clean entry correction */
+/* STEROID — accessibility and clean entry correction */
 :root{--bg:#0d1420;--surface:#1b2838;--raised:#25364a;--line:#5a6b7d;--text:#ffffff;--muted:#d1dce8;--accent:#d8f477;--accent-text:#152009;color:#fff}
 body{background:#0d1420;color:#fff}
 .immersive-shell{--text:#fff;--muted:#d7e2ef;--line:#6c7c8e;--surface:#1b2838;--raised:#25364a;--accent:#d8f477;--accent-text:#152009;background:#0d1420}
@@ -235,7 +235,7 @@ body{background:#0d1420;color:#fff}
 
 @media(max-width:390px){.is-auth .auth-glass{padding:18px}.immersive-shell.is-welcome main,.immersive-shell.is-auth main{padding-left:15px;padding-right:15px}}
 
-/* STÉROÏDE — FitLoop reference: focused entry and questionnaire */
+/* STEROID — FitLoop reference: focused entry and questionnaire */
 .immersive-shell.is-welcome,.immersive-shell.is-onboard{background:#0c0e0f;color:#fff;max-width:620px;--accent:#b9f62b;--accent-text:#101409;--text:#fff;--muted:#c5c9c2}
 .immersive-shell.is-welcome main,.immersive-shell.is-onboard main{padding:0;min-height:100dvh;display:block}
 .immersive-shell.is-onboard:before{display:none}
@@ -358,7 +358,7 @@ body{background:#0d1420;color:#fff}
 @media(max-width:370px){.shell:not(.immersive-shell) .topbar .brand{font-size:19px}}
 @media(max-width:430px){.shell:not(.immersive-shell) .exercise .ex-head{gap:8px;padding:12px 10px}.shell:not(.immersive-shell) .sets{padding:13px 9px 17px}}
 
-/* STÉROÏDE — crème & vert profond,système de contraste unifié */
+/* STEROID — crème & vert profond,système de contraste unifié */
 :root{color-scheme:light;--bg:#f7f4ea;--surface:#fffdf6;--raised:#ece9dc;--line:#c9c9b8;--text:#173b2b;--muted:#43584c;--accent:#006039;--accent-text:#fff;background:#f7f4ea;color:#173b2b}
 html,body{background:#f7f4ea!important;color:#173b2b}
 body{background-image:none!important}
@@ -443,7 +443,7 @@ body{background-image:none!important}
 .shell:not(.immersive-shell) .delete{color:#8d2323}
 
 
-/* STÉROÏDE | Identité visuelle 2026 — source : planche de marque fournie.
+/* STEROID | Identité visuelle 2026 — source : planche de marque fournie.
    Palette: Rolex #0B4D3B,crème #F5E8D5,sauge #78A893,anthracite #1A1A1A.
    Un seul système de design pour accueil,compte,onboarding,séances et statistiques. */
 :root{
@@ -530,7 +530,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .fit-logo img.fit-wordmark{display:block;width:min(74vw,310px);height:auto;max-height:105px;object-fit:contain;filter:none}
 @media(max-width:370px){.brand:after{width:135px;height:42px}}
 
-/* Coach de cohérence — panneau natif à la charte STÉROÏDE,sans popup système. */
+/* Coach de cohérence — panneau natif à la charte STEROID,sans popup système. */
 .coherence-screen{background:#FAF5EC;min-height:100dvh}
 .coherence-body{width:100%;max-width:520px;margin:0 auto;padding:27px 0 40px}
 .coherence-body h1{font-size:clamp(28px,7.4vw,39px);line-height:1.12;letter-spacing:-1.1px;color:#1A1A1A;margin:14px 0 13px;font-weight:800}
@@ -553,7 +553,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .coherence-footer .fit-outline{margin:0;background:#FFFCF7;color:#0B4D3B;border-color:#A9C1B0}
 @media(min-width:700px){.coherence-body{padding-top:38px}.coherence-choice{grid-template-columns:1fr 135px;align-items:center}.coherence-choice button{justify-content:center}}
 
-/* STÉROÏDE — logo net : typographie native + O kettlebell vectoriel{font-family:"Montserrat","Avenir Next",Arial,sans-serif;font-style:italic;font-weight:900;letter-spacing:-.055em;color:#0B4D3B;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap}
+/* STEROID — logo net : typographie native + O kettlebell vectoriel{font-family:"Montserrat","Avenir Next",Arial,sans-serif;font-style:italic;font-weight:900;letter-spacing:-.055em;color:#0B4D3B;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap}
 .fit-logo .steroid-mark{image-rendering:auto;filter:none}
 .answer-brand-icon{display:block;width:21px;height:21px;object-fit:contain;flex:none}
 .fit-onboard .answer-card.selected .answer-brand-icon{filter:brightness(0) saturate(100%) invert(100%)}
@@ -613,7 +613,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 
 
-/* STÉROÏDE — CHARTE OFFICIELLE 2026.
+/* STEROID — CHARTE OFFICIELLE 2026.
    Source de vérité : vert Rolex / crème / sauge / anthracite / Montserrat.
    Neutralise les anciennes variantes bleu nuit et vert fluorescent. */
 :root{color-scheme:light;--bg:#F5E8D5;--surface:#FFFCF7;--raised:#F1E5D3;--line:#D9CBB7;--text:#1A1A1A;--muted:#53645A;--accent:#0B4D3B;--accent-text:#F5E8D5;--brand:#0B4D3B;--cream:#F5E8D5;--sage:#78A893;--danger:#A33737;font-family:Montserrat,system-ui,sans-serif;background:var(--bg);color:var(--text)}
@@ -662,7 +662,7 @@ button,input,select,textarea{font-family:Montserrat,system-ui,sans-serif}
 .fit-logo .steroid-mark{display:block;object-fit:contain}
 @media(max-width:380px){.fit-logo .official-wordmark{width:min(100%,310px)}}
 
-/* Import de séances — cohérent avec la charte STÉROÏDE. */
+/* Import de séances — cohérent avec la charte STEROID. */
 
 
 
@@ -687,7 +687,7 @@ button,input,select,textarea{font-family:Montserrat,system-ui,sans-serif}
 
 
 
-/* Menu compte et paramètres — charte STÉROÏDE */
+/* Menu compte et paramètres — charte STEROID */
 .header-actions{position:relative;display:flex;align-items:center;gap:8px}
 .account-menu-trigger{font-size:26px!important;line-height:1!important;letter-spacing:1px}
 .account-popover{position:absolute;right:0;top:calc(100% + 10px);width:min(260px,78vw);padding:8px;z-index:80;border:1px solid #D9CBB7;border-radius:15px;background:#FFFCF7;box-shadow:0 14px 35px #1A1A1A20;display:grid;gap:3px}
@@ -757,7 +757,7 @@ button,input,select,textarea{font-family:Montserrat,system-ui,sans-serif}
 .shell:not(.immersive-shell) .tabbar::before{animation:steroid-tab-slide 320ms cubic-bezier(.22,1,.36,1) both}
 @media(prefers-reduced-motion:reduce){.shell:not(.immersive-shell) .tabbar::before{animation:none!important}}
 
-/* STÉROÏDE — interface mobile prioritaire,sans chevauchements. */
+/* STEROID — interface mobile prioritaire,sans chevauchements. */
 .shell .mobile-wordmark::before{content:none!important;display:none!important}
 .shell .mobile-wordmark{display:block!important;min-width:0!important;max-width:100%!important;width:auto!important;height:auto!important;flex:none!important;overflow:hidden;text-overflow:clip;white-space:nowrap;font-family:Montserrat,"Avenir Next",Arial,sans-serif;font-size:clamp(22px,6.6vw,30px);font-weight:950;font-style:italic;letter-spacing:-1.45px;line-height:1.1;color:#0B4D3B}
 .shell:not(.immersive-shell) .app-topbar{display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:center!important;height:auto!important;min-height:88px!important;padding:14px 0 12px;gap:8px;border-bottom:1px solid #D9CBB7;background:#F5E8D5}
@@ -780,7 +780,7 @@ button,input,select,textarea{font-family:Montserrat,system-ui,sans-serif}
 @media(max-width:360px){.shell .mobile-wordmark{font-size:21px;letter-spacing:-1.3px}.app-topbar .header-main-row{gap:8px}.shell:not(.immersive-shell) .tabbar{width:calc(100% - 18px)!important}}
 @media(prefers-reduced-motion:reduce){.shell:not(.immersive-shell) .tabbar::before{animation:none!important}}
 
-/* STÉROÏDE version update: discreet and thumb-friendly on iPhone. */
+/* STEROID version update: discreet and thumb-friendly on iPhone. */
 .steroid-update-banner{position:fixed;z-index:9999;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(440px,calc(100% - 28px));display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;background:#F5E8D5;color:#0B4D3B;border:1px solid #D6C9B6;border-radius:18px;box-shadow:0 12px 35px #092d2330;font-family:Montserrat,system-ui,sans-serif}
 .steroid-update-copy{min-width:0;flex:1}
 .steroid-update-copy strong{display:block;font-size:13px;line-height:1.4}
@@ -944,7 +944,7 @@ button,input,select,textarea{font-family:Montserrat,system-ui,sans-serif}
 
 
 
-/* STÉROÏDE: lightweight contextual help,achievements and thumbs-first workout controls. */
+/* STEROID: lightweight contextual help,achievements and thumbs-first workout controls. */
 
 
 

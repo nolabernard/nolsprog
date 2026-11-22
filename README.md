@@ -1,4 +1,4 @@
-# STÉROÏDE
+# STEROID
 
 Application mobile-first de suivi d'entraînement (musculation et cardio), avec mode invité et comptes Supabase. Interface statique publiée sur GitHub Pages.
 

@@ -1,4 +1,4 @@
-/* STÉROÏDE V2 — écrans P1 « Guidé » (accueil, séance, machine prise, fin, progrès, choix d'exercice).
+/* STEROID V2 — écrans P1 « Guidé » (accueil, séance, machine prise, fin, progrès, choix d'exercice).
  * Fonctions pures : données en entrée, HTML échappé en sortie. Aucun état, aucun DOM.
  * Les actions passent par data-action="v2-…" ; app.js les branche. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.SteroidUI=api})(typeof globalThis!=='undefined'?globalThis:this,function(){
