@@ -103,14 +103,19 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  const ce=c.state().cycle.sessions[1].exercises[0];
  await c.handle('v2-edit-ex',{ce:ce.id});c.change({kind:'search',value:'presse'});
  const pick=c.programmeHTML().match(/data-action="v2-pick" data-key="([^"]+)"/)[1];
- await c.handle('v2-pick',{key:pick});assert.equal(c.state().cycle.sessions[1].exercises[0].exercise_key,pick);
- await c.handle('v2-add-ex',{session:c.state().cycle.sessions[1].id});await c.handle('v2-pick',{key:'leg-extension'});
+ // Brouillon : rien n'est appliqué avant « Enregistrer » ; « Annuler » rend le programme d'origine.
+ await c.handle('v2-pick',{key:pick});assert.notEqual(c.state().cycle.sessions[1].exercises[0].exercise_key,pick,'pas appliqué avant enregistrement');
+ assert.match(c.programmeHTML(),/Modifications non enregistrées[^]*data-action="v2-edit-save"/);assert.equal(c.hasDraft(),true);
+ await c.handle('v2-edit-cancel');assert.equal(c.hasDraft(),false);assert.doesNotMatch(c.programmeHTML(),/v2-savebar/);
+ await c.handle('v2-edit-ex',{ce:ce.id});c.change({kind:'search',value:'presse'});
+ await c.handle('v2-pick',{key:pick});await c.handle('v2-edit-save');assert.equal(c.hasDraft(),false);assert.equal(c.state().cycle.sessions[1].exercises[0].exercise_key,pick);
+ await c.handle('v2-add-ex',{session:c.state().cycle.sessions[1].id});await c.handle('v2-pick',{key:'leg-extension'});await c.handle('v2-edit-save');
  assert.equal(c.state().cycle.sessions[1].exercises.length,2);assert.equal(c.state().cycle.sessions[1].exercises[1].role,'finition');
- c.change({kind:'sets',ce:ce.id,value:'4'});assert.equal(c.state().cycle.sessions[1].exercises[0].sets,4);
- await c.handle('v2-remove-ex',{ce:ce.id});assert.equal(c.state().cycle.sessions[1].exercises.length,1);
+ c.change({kind:'sets',ce:ce.id,value:'4'});await c.handle('v2-edit-save');assert.equal(c.state().cycle.sessions[1].exercises[0].sets,4);
+ await c.handle('v2-remove-ex',{ce:ce.id});await c.handle('v2-edit-save');assert.equal(c.state().cycle.sessions[1].exercises.length,1);
  // Exercice perso : créé puis choisi.
  await c.handle('v2-add-ex',{session:c.state().cycle.sessions[1].id});await c.handle('v2-create');
- await c.createExercise({name:'Mon mollet maison',muscle:'Jambes',pattern:'iso'});
+ await c.createExercise({name:'Mon mollet maison',muscle:'Jambes',pattern:'iso'});await c.handle('v2-edit-save');
  const mine=c.state().cycle.sessions[1].exercises.at(-1);assert.match(mine.exercise_key,/^u-[0-9a-f-]{36}$/);
  assert.match(c.programmeHTML(),/Mon mollet maison/);
 
@@ -204,14 +209,14 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  const st3=memory(),db3=V2.create({...ctx,storage:st3,api:strict,userId:'22222222-2222-4222-8222-222222222222'});await db3.init();assert(await db3.flushNow());
  const sess=db3.state().cycle.sessions[0];
  // Un exercice de base ajouté s'insère avant les finitions : les places se décalent.
- await db3.handle('v2-add-ex',{session:sess.id});await db3.handle('v2-pick',{key:'hack-squat'});
+ await db3.handle('v2-add-ex',{session:sess.id});await db3.handle('v2-pick',{key:'hack-squat'});await db3.handle('v2-edit-save');
  assert(await db3.flushNow(),'envoi accepté malgré le décalage des places');assert.equal(db3.pending(),0);
  const rows=[...db.values()].filter(x=>x.cycle_session_id===sess.id).sort((a,b)=>a.position-b.position).map(x=>x.exercise_key);
- assert.deepEqual(rows,sess.exercises.map(x=>x.exercise_key));
+ assert.deepEqual(rows,db3.state().cycle.sessions[0].exercises.map(x=>x.exercise_key));
  // Retrait hors ligne : rejoué au retour du réseau, avant les décalages.
  const off={...strict,async remove(){throw Error('Hors ligne')}};
  const db4=V2.create({...ctx,storage:st3,api:off,userId:'22222222-2222-4222-8222-222222222222'});await db4.init();
- await db4.handle('v2-remove-ex',{ce:db4.state().cycle.sessions[0].exercises[0].id});
+ await db4.handle('v2-remove-ex',{ce:db4.state().cycle.sessions[0].exercises[0].id});await db4.handle('v2-edit-save');
  const db5=V2.create({...ctx,storage:st3,api:strict,userId:'22222222-2222-4222-8222-222222222222'});await db5.init();
  assert(await db5.flushNow());assert.equal(db5.pending(),0);assert(log.includes('del'));
  assert.deepEqual([...db.values()].filter(x=>x.cycle_session_id===sess.id).sort((a,b)=>a.position-b.position).map(x=>x.exercise_key),db5.state().cycle.sessions[0].exercises.map(x=>x.exercise_key));
@@ -236,7 +241,7 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  // C2 : retirer un exercice prévu pendant une séance → la séance ne le référence plus.
  const st7=memory(),c7=V2.create({...ctx,storage:st7,api:{async select(){return []},async upsert(){},async remove(){}},userId:U});await c7.init();
  const s7=c7.state().cycle.sessions[0];await c7.handle('v2-start',{session:s7.id});await c7.handle('v2-exit');
- const gone=s7.exercises[0].id;await c7.handle('v2-remove-ex',{ce:gone});
+ const gone=s7.exercises[0].id;await c7.handle('v2-remove-ex',{ce:gone});await c7.handle('v2-edit-save');
  assert(!c7.state().store.current().exercises.some(e=>e.cycle_exercise_id===gone));
  // I4 : séance terminée hors ligne, réouverture en ligne avant l'envoi → elle reste visible et la suite avance.
  const st8=memory(),down={async select(){return []},async upsert(){throw Error('Failed to fetch')},async remove(){throw Error('Failed to fetch')}};
@@ -287,9 +292,9 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  assert.equal(await fixed.saveCardio({type:'velo',minutes:'25'}),true);assert(!/Noter du cardio<\/h2>/.test(fixed.todayHTML()),'panneau fermé');
  assert.match(fixed.statsHTML(),/25 min/);
  // Cardio prévu : ajouté puis retiré dans Programme ; objectif affiché sur l'accueil.
- assert.equal(await fixed.addCardioPlan({type:'marche',minutes:'30',per_week:'2'}),true);
+ assert.equal(await fixed.addCardioPlan({type:'marche',minutes:'30',per_week:'2'}),true);assert.doesNotMatch(fixed.todayHTML(),/\/ 60 min/,'brouillon invisible sur l’accueil');await fixed.handle('v2-edit-save');
  assert.match(fixed.todayHTML(),/Cardio : 25 \/ 60 min cette semaine/);assert.match(fixed.programmeHTML(),/Marche · 30 min · 2 fois par semaine/);
- await fixed.handle('v2-cardio-plan-remove',{id:fixed.state().cycle.cardio[0].id});assert.equal(fixed.state().cycle.cardio.length,0);
+ await fixed.handle('v2-cardio-plan-remove',{id:fixed.state().cycle.cardio[0].id});await fixed.handle('v2-edit-save');assert.equal(fixed.state().cycle.cardio.length,0);
  // Compte, hors ligne : cardio lié à une séance non envoyée → envoyé APRÈS la séance, jamais refusé.
  const seen=[],online={v:false};
  const fk={async select(){return []},async remove(){},async upsert(t,rows){if(!online.v)throw Error('Failed to fetch');
@@ -301,7 +306,7 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  await c11.handle('v2-start',{session:c11.state().cycle.sessions[0].id});const ex11=c11.state().store.current().exercises[0];
  c11.input({ex:ex11.id,set:1,field:'reps',value:'8'});await c11.handle('v2-set',{ex:ex11.id,set:'1'});await c11.handle('v2-finish');
  const wid=c11.state().summary.id;await c11.handle('v2-cardio-open',{workout:wid});assert.equal(await c11.saveCardio({type:'course',minutes:'15',workout:wid}),true);
- await c11.addCardioPlan({type:'velo',minutes:'30',per_week:'1'});
+ await c11.addCardioPlan({type:'velo',minutes:'30',per_week:'1'});await c11.handle('v2-edit-save');
  assert(c11.pending()>0);online.v=true;assert(await c11.flushNow());assert.equal(c11.pending(),0);
  assert(seen.indexOf('cardio')>seen.indexOf('w:'+wid),'cardio après la séance');assert(seen.includes('plan'));
  // Rechargement : cardio et cardio prévu relus.
@@ -312,7 +317,7 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  const c13=V2.create({...ctx,storage:st13,api:off13,userId:U4});await c13.init();
  srv13.cycle=JSON.parse(JSON.stringify(c13.state().cycle));srv13.cardio=[{id:'old',cycle_id:srv13.cycle.id,type:'rameur',minutes:20,per_week:1}];
  const c13b=V2.create({...ctx,storage:st13,api:off13,userId:U4});await c13b.init();await c13b.whenFresh();assert.match(c13b.programmeHTML(),/Rameur · 20 min/);
- await c13b.addCardioPlan({type:'natation',minutes:'40',per_week:'1'});await c13b.handle('v2-cardio-plan-remove',{id:'old'});
+ await c13b.addCardioPlan({type:'natation',minutes:'40',per_week:'1'});await c13b.handle('v2-cardio-plan-remove',{id:'old'});await c13b.handle('v2-edit-save');
  const c14=V2.create({...ctx,storage:st13,api:off13,userId:U4});await c14.init();await c14.whenFresh();
  const prog14=c14.programmeHTML();assert.match(prog14,/Natation · 40 min/);assert(!/Rameur · 20 min/.test(prog14),'retrait conservé');
  // Questionnaire : deux modes ; formulaires cardio branchés.

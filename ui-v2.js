@@ -41,7 +41,7 @@ function cardioHTML(c){
 // Noter du cardio, ou modifier / supprimer une activité déjà enregistrée (edit = la ligne existante).
 function cardioSheet({workoutId='',edit=null}={}){
  const title=edit?'Modifier le cardio':'Noter du cardio',type=edit?.type||CARDIO[0][0];
- return '<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="'+title+'"><i class="v2-grab"></i><h2>'+title+'</h2>'
+ return '<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="'+title+'"><button type="button" class="v2-grab" data-action="v2-close-sheet" aria-label="Fermer (ou fais glisser vers le bas)"><i></i></button><h2>'+title+'</h2>'
   +'<form class="v2-create" data-v2-cardio><input type="hidden" name="workout" value="'+esc(edit?edit.workout_id||'':workoutId)+'">'+(edit?'<input type="hidden" name="id" value="'+esc(edit.id)+'">':'')+'<fieldset class="v2-types"><legend class="v2-sheet-label">Activité</legend>'
   +CARDIO.map(([v,t])=>'<label><input type="radio" name="type" value="'+v+'" '+(v===type?'checked':'')+'><span>'+t+'</span></label>').join('')+'</fieldset>'
   +'<label class="v2-field-label">Durée (minutes)<input name="minutes" type="number" inputmode="numeric" min="1" max="600" required value="'+(edit?Number(edit.minutes):30)+'"></label>'
@@ -69,7 +69,7 @@ function home({next,hasHistory=false,cycle,progress=0,minutes,firstName,dateText
 }
 
 function chooser({sessions=[],current}={}){
- return '<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="Choisir une séance"><i class="v2-grab"></i><h2>Quelle séance aujourd’hui ?</h2>'
+ return '<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="Choisir une séance"><button type="button" class="v2-grab" data-action="v2-close-sheet" aria-label="Fermer (ou fais glisser vers le bas)"><i></i></button><h2>Quelle séance aujourd’hui ?</h2>'
   +sessions.map(s=>'<button type="button" class="v2-opt'+(s.id===current?' is-current':'')+'" data-action="v2-pick-session" data-session="'+esc(s.id)+'"><span><b>'+esc(s.title)+'</b><small>'+esc((s.focus||[]).join(', '))+' · '+plural((s.exercises||[]).length,'exercice','exercices')+'</small></span></button>').join('')+'</section></div>';
 }
 
@@ -110,7 +110,7 @@ function session({workout,index=0,elapsed=0,paused=false,pausedFor=0,rest=null,l
 function machineSheet({exercise,alternatives=[],canLater=true,practiced={}}={}){
  const p=exercise.plan||{};
  const work=(p.sets||exercise.sets.length)+' × '+(p.reps_min===p.reps_max?p.reps_min:p.reps_min+'–'+p.reps_max)+', repos '+restText(p.rest_seconds);
- let html='<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="Machine prise"><i class="v2-grab"></i><h2>Machine prise ? Pas de souci.</h2><p class="v2-muted">On garde le même travail : '+work+'.</p>';
+ let html='<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="Machine prise"><button type="button" class="v2-grab" data-action="v2-close-sheet" aria-label="Fermer (ou fais glisser vers le bas)"><i></i></button><h2>Machine prise ? Pas de souci.</h2><p class="v2-muted">On garde le même travail : '+work+'.</p>';
  if(canLater)html+='<button type="button" class="v2-opt v2-opt--main" data-action="v2-later" data-ex="'+esc(exercise.id)+'">'+icon('later')+'<span><b>Faire plus tard</b><small>Passe en fin de séance. La machine se libère souvent vite.</small></span></button>';
  if(alternatives.length){
   html+='<p class="v2-sheet-label">Ou le remplacer par</p>'+alternatives.map(a=>'<button type="button" class="v2-opt" data-action="v2-sub" data-ex="'+esc(exercise.id)+'" data-key="'+esc(a.key)+'"><span><b>'+esc(a.name)+'</b><small>Même mouvement'+(practiced[a.key]?' · déjà fait '+plural(practiced[a.key],'fois','fois'):'')+'</small></span><span class="v2-tag">'+(a.role==='base'?'Base':'Finition')+'</span></button>').join('')
@@ -121,7 +121,7 @@ function machineSheet({exercise,alternatives=[],canLater=true,practiced={}}={}){
 
 function moreSheet({exercise}={}){
  const rpe=exercise?.rpe;
- return '<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="Options de la séance"><i class="v2-grab"></i><h2>Options</h2>'
+ return '<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="Options de la séance"><button type="button" class="v2-grab" data-action="v2-close-sheet" aria-label="Fermer (ou fais glisser vers le bas)"><i></i></button><h2>Options</h2>'
   +(exercise?'<p class="v2-sheet-label">Ressenti sur cet exercice (1 facile, 10 maximal)</p><div class="v2-rpe">'+Array.from({length:10},(_,k)=>'<button type="button" class="'+(rpe===k+1?'is-on':'')+'" data-action="v2-rpe" data-ex="'+esc(exercise.id)+'" data-rpe="'+(k+1)+'" aria-pressed="'+(rpe===k+1)+'">'+(k+1)+'</button>').join('')+'</div>':'')
   +'<button type="button" class="v2-btn" data-action="v2-finish">Terminer la séance</button><p class="v2-muted v2-center">Tu peux terminer sans tout valider : seules les séries validées comptent.</p></section></div>';
 }
@@ -281,7 +281,7 @@ function howtoButton(key,userExercises=[]){
 }
 function howtoSheet({key,userExercises=[]}={}){
  const M=globalThis.SteroidMoves;if(!M||!key)return '';const {pattern,muscle}=moveInfo(key,userExercises),m=M.move(pattern);
- return '<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet v2-howto" role="dialog" aria-modal="true" aria-label="Comment faire"><i class="v2-grab"></i>'
+ return '<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet v2-howto" role="dialog" aria-modal="true" aria-label="Comment faire"><button type="button" class="v2-grab" data-action="v2-close-sheet" aria-label="Fermer (ou fais glisser vers le bas)"><i></i></button>'
   +'<div class="v2-howto-pic">'+M.svg(pattern,{size:180})+'</div><h2>'+esc(nameOf(key,userExercises))+'</h2><p class="v2-muted">'+esc(m.label)+(muscle?' · '+esc(muscle):'')+'</p>'
   +'<ol class="v2-howto-cues">'+m.cues.map(c=>'<li>'+esc(c)+'</li>').join('')+'</ol>'
   +'<p class="v2-muted">Une douleur pendant l’exercice : arrête et demande conseil à un professionnel.</p><button type="button" class="v2-btn" data-action="v2-close-sheet">Compris</button></section></div>';
@@ -296,8 +296,8 @@ function picker({query='',results=[],creating=false}={}){
  return html+'</div>';
 }
 
-function programme({cycle,userExercises=[],picking=null,query='',results=[],creating=false,reminders=null}={}){
- let html='<section class="v2-progress"><h1 class="v2-hello">Mon programme</h1><p class="v2-muted">Ta suite de séances tourne en boucle'+(cycle?.weeks?' pendant '+cycle.weeks+' semaines':'')+'. Les changements s’appliquent dès la prochaine séance.</p>';
+function programme({cycle,userExercises=[],picking=null,query='',results=[],creating=false,reminders=null,editing=0}={}){
+ let html='<section class="v2-progress"><h1 class="v2-hello">Mon programme</h1><p class="v2-muted">Ta suite de séances tourne en boucle'+(cycle?.weeks?' pendant '+cycle.weeks+' semaines':'')+'. Modifie ce que tu veux puis touche « Enregistrer » : rien ne change avant.</p>';
  for(const s of cycle?.sessions||[]){
   html+='<section class="v2-card v2-prog-session"><h2>'+esc(s.title)+'</h2><p class="v2-muted">'+esc((s.focus||[]).join(', '))+'</p><ol class="v2-prog-list">';
   for(const e of s.exercises){
@@ -313,7 +313,9 @@ function programme({cycle,userExercises=[],picking=null,query='',results=[],crea
   +'<form class="v2-cardio-plan" data-v2-cardio-plan><select class="v2-select" name="type" aria-label="Activité">'+CARDIO.map(([v,t])=>'<option value="'+v+'">'+t+'</option>').join('')+'</select><input class="v2-select" name="minutes" type="number" inputmode="numeric" min="1" max="600" value="30" aria-label="Minutes"><select class="v2-select" name="per_week" aria-label="Fois par semaine">'+[1,2,3,4,5,6,7].map(n=>'<option value="'+n+'"'+(n===2?' selected':'')+'>'+n+' × / sem.</option>').join('')+'</select><button type="submit" class="v2-btn v2-btn--ghost">'+icon('plus')+'Ajouter du cardio</button></form></section>';
  html+=remindersCard(reminders);
  if(cycle)html+='<button type="button" class="v2-btn v2-btn--ghost" data-action="v2-review">'+icon('trophy')+'Faire le bilan de ce cycle</button>';
- if(picking)html+='<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="Choisir un exercice"><i class="v2-grab"></i><h2>'+(picking.ce?'Changer d’exercice':'Ajouter un exercice')+'</h2>'+picker({query,results,creating})+'</section></div>';
+ if(picking)html+='<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="Choisir un exercice"><button type="button" class="v2-grab" data-action="v2-close-sheet" aria-label="Fermer (ou fais glisser vers le bas)"><i></i></button><h2>'+(picking.ce?'Changer d’exercice':'Ajouter un exercice')+'</h2>'+picker({query,results,creating})+'</section></div>';
+ // Barre d'enregistrement : visible dès la première modification, au-dessus de la navigation.
+ if(editing)html+='<div class="v2-savebar" role="region" aria-label="Modifications du programme"><span><b>Modifications non enregistrées</b><small>Rien ne s’applique avant d’enregistrer.</small></span><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-edit-cancel">Annuler</button><button type="button" class="v2-btn" data-action="v2-edit-save">Enregistrer</button></div>';
  return html+'</section>';
 }
 

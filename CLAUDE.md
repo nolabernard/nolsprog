@@ -72,6 +72,10 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
 
 ## UI
 - Textes de l'interface en français, ton direct.
+- Menus du bas (`.v2-sheet`) : poignée `.v2-grab` (bouton) en haut ; glisser vers le bas, toucher la poignée ou le voile ferme.
+  Une question qui attend une réponse (« Tu étais en pause ? ») n'a pas de poignée.
+- Programme : modifications en brouillon (`S.edit`), appliquées et envoyées seulement sur « Enregistrer » ; quitter l'onglet
+  avec un brouillon demande « Enregistrer / Ne pas enregistrer / Rester ».
 - Maquette de base 390 × 844 px, cibles tactiles ≥ 44 px, focus visible,
   respect de `prefers-reduced-motion`, icônes SVG au trait (pas d'emoji).
 
