@@ -51,12 +51,22 @@ async function runSchedule() {
   const { data: subs, error } = await db.from("push_subscriptions").select("*").eq("enabled", true);
   if (error) throw error;
   const list = (subs || []) as Sub[];
-  // Séances terminées ou passées dans les dernières 36 h : pas de rappel un jour où la séance est faite ou passée.
+  // Séances faites (avec au moins une série) ou passées dans les dernières 36 h : pas de rappel ce jour-là.
   const users = [...new Set(list.map(s => s.user_id))];
   const trained = new Map<string, string[]>();
   if (users.length) {
-    const { data: ws } = await db.from("workouts").select("user_id, ended_at").in("status", ["completed", "skipped"]).gte("ended_at", new Date(now - 36 * 3600e3).toISOString()).in("user_id", users);
-    for (const w of ws || []) {
+    const since = new Date(now - 36 * 3600e3).toISOString();
+    const { data: ws } = await db.from("workouts").select("id, user_id, ended_at, status").in("status", ["completed", "skipped"]).gte("ended_at", since).in("user_id", users);
+    // Même règle que l'app : une séance terminée ne compte que si elle a au moins une série validée ou du cardio noté.
+    const ids = (ws || []).filter(w => w.status === "completed").map(w => w.id);
+    const real = new Set<string>();
+    if (ids.length) {
+      const { data: ex } = await db.from("workout_exercises").select("workout_id, workout_set_logs!inner(completed)").in("workout_id", ids).eq("workout_set_logs.completed", true);
+      for (const e of ex || []) real.add(e.workout_id);
+      const { data: cl } = await db.from("cardio_logs").select("workout_id").in("workout_id", ids);
+      for (const c of cl || []) if (c.workout_id) real.add(c.workout_id);
+    }
+    for (const w of (ws || []).filter(w => w.status === "skipped" || real.has(w.id))) {
       const tz = list.find(s => s.user_id === w.user_id)?.timezone || "Europe/Paris";
       trained.set(w.user_id, [...(trained.get(w.user_id) || []), localDate(Date.parse(w.ended_at), tz)]);
     }

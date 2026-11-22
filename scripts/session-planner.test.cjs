@@ -1,4 +1,5 @@
-// Prochaine séance : suite du cycle, jamais de séance « manquée », garde-fou de récupération expliqué.
+// Prochaine séance : tour par tour dans l'ordre du programme, jamais de séance sautée ni « manquée »,
+// garde-fou de récupération expliqué, une séance par jour.
 const assert=require('assert');
 const P=require('../session-planner.js');
 const H=3600e3,now=Date.parse('2026-11-23T10:00:00Z');
@@ -8,51 +9,66 @@ const cycle={sessions:[
  {id:'s1',position:1,code:'B',title:'Bas A',muscles:[ex('Jambes')]},
  {id:'s2',position:2,code:'C',title:'Haut B',muscles:[ex('Pectoraux'),ex('Épaules')]},
  {id:'s3',position:3,code:'D',title:'Bas B',muscles:[ex('Jambes'),ex('Abdominaux','finition')]}]};
-const done=(sid,hoursAgo)=>({cycle_session_id:sid,status:'completed',ended_at:new Date(now-hoursAgo*H).toISOString()});
+const at=(sid,hoursAgo,status='completed')=>({cycle_session_id:sid,status,ended_at:new Date(now-hoursAgo*H).toISOString()});
 
 // Rien de fait → première séance.
 let r=P.nextSession(cycle,[],now);
 assert.equal(r.session.id,'s0');assert.equal(r.reason,'sequence');
 
-// Suite : la séance qui suit la dernière terminée, même des jours plus tard (jamais « manquée »).
-r=P.nextSession(cycle,[done('s0',200),done('s1',100)],now);
+// Suite : la première séance du tour pas encore faite, même des jours plus tard (jamais « manquée »).
+r=P.nextSession(cycle,[at('s0',200),at('s1',100)],now);
 assert.equal(r.session.id,'s2');assert.equal(r.reason,'sequence');
 
-// Bouclage.
-r=P.nextSession(cycle,[done('s3',100)],now);assert.equal(r.session.id,'s0');
+// Tour complet → on recommence au début.
+r=P.nextSession(cycle,[at('s0',400),at('s1',300),at('s2',200),at('s3',100)],now);assert.equal(r.session.id,'s0');
 
-// Garde-fou : Bas A il y a 20 h, la suite propose Bas B → conflit jambes, on conseille Haut B... (ici la suivante compatible).
-const c2={sessions:[cycle.sessions[1],cycle.sessions[3],cycle.sessions[0]]}; // Bas A, Bas B, Haut A
-r=P.nextSession(c2,[done('s1',20)],now);
-assert.equal(r.session.id,'s0','séance compatible proposée');
-assert.equal(r.reason,'recovery');
-assert.equal(r.planned.id,'s3','la séance prévue reste proposée en option');
+// Séance déplacée : Bas A faite à la place de Haut A → Haut A reste à faire, elle n'est pas sautée.
+r=P.nextSession(cycle,[at('s1',100)],now);assert.equal(r.session.id,'s0');
+r=P.nextSession(cycle,[at('s1',100),at('s0',60)],now);assert.equal(r.session.id,'s2');
+assert.deepStrictEqual(P.round(cycle,[at('s1',100),at('s0',60)]).remaining.map(s=>s.id),['s2','s3']);
+
+// Séance refaite avant la fin du tour : nouveau tour (pas de rattrapage).
+r=P.nextSession(cycle,[at('s0',300),at('s1',200),at('s0',100)],now);assert.equal(r.session.id,'s1');
+
+// Séance passée : elle compte comme traitée dans le tour, mais ne fatigue pas.
+r=P.nextSession(cycle,[at('s0',30,'skipped')],now);assert.equal(r.session.id,'s1');assert.equal(r.reason,'sequence');
+
+// Séances abandonnées ou vides (status « empty ») ignorées.
+r=P.nextSession(cycle,[at('s0',1,'abandoned'),at('s0',2,'empty')],now);assert.equal(r.session.id,'s0');
+
+// Garde-fou : jambes travaillées il y a 20 h, la prévue est Bas B → on propose une séance compatible du tour.
+const legs={sessions:[
+ {id:'l1',position:0,title:'Jambes A',muscles:[ex('Jambes')]},
+ {id:'l2',position:1,title:'Jambes B',muscles:[ex('Jambes'),ex('Abdominaux','finition')]},
+ {id:'u1',position:2,title:'Haut A',muscles:[ex('Pectoraux')]}]};
+r=P.nextSession(legs,[at('l1',20)],now);
+assert.equal(r.session.id,'u1','séance compatible proposée');assert.equal(r.reason,'recovery');
+assert.equal(r.planned.id,'l2','la séance prévue reste proposée en option');
 assert.match(r.message,/tu as travaillé les jambes/i);assert.match(r.message,/48 h/);assert.match(r.message,/Haut A/);
+// Haut A faite à la place : Jambes B reste la suivante.
+r=P.nextSession(legs,[at('l1',60),at('u1',30)],now);assert.equal(r.session.id,'l2');
 
 // Au-delà de 48 h : pas de garde-fou.
-r=P.nextSession(c2,[done('s1',50)],now);assert.equal(r.session.id,'s3');assert.equal(r.reason,'sequence');
+r=P.nextSession(legs,[at('l1',50)],now);assert.equal(r.session.id,'l2');assert.equal(r.reason,'sequence');
 
-// Les finitions ne déclenchent pas le garde-fou (Abdominaux en finition).
-// Tout est en conflit → on propose quand même la prévue, avec l'explication.
-const c3={sessions:[cycle.sessions[1],cycle.sessions[3]]};
-r=P.nextSession(c3,[done('s1',20)],now);
-assert.equal(r.session.id,'s3');assert.equal(r.reason,"recovery-all");assert.match(r.message,/les jambes/);
+// Tout ce qui reste est en conflit → la prévue quand même, avec l'explication.
+r=P.nextSession({sessions:legs.sessions.slice(0,2)},[at('l1',20)],now);
+assert.equal(r.session.id,'l2');assert.equal(r.reason,'recovery-all');assert.match(r.message,/les jambes/);
 
-// Séances non terminées ignorées.
-r=P.nextSession(cycle,[{cycle_session_id:'s0',status:'abandoned',ended_at:new Date(now-H).toISOString()}],now);
-assert.equal(r.session.id,'s0');
 // Une séance par jour : séance faite aujourd'hui → la suivante attend demain, sans bouton de démarrage.
 {const t=new Date(now);const sameDay=new Date(t.getFullYear(),t.getMonth(),t.getDate(),Math.min(t.getHours(),23),0).getTime();
  const todayDone={cycle_session_id:'s0',status:'completed',ended_at:new Date(sameDay).toISOString(),id:'w1'};
  r=P.nextSession(cycle,[todayDone],sameDay+60e3);
  assert.equal(r.reason,'tomorrow');assert.equal(r.today.status,'completed');assert.equal(r.today.title,'Haut A');assert.equal(r.session.id,'s1');
  assert.equal(P.today([todayDone],sameDay+60e3).id,'w1');
+ // Séance vide (aucune série) : ne bloque pas la journée.
+ assert.equal(P.today([{...todayDone,status:'empty'}],sameDay+60e3),null);
  // Lendemain : plus de blocage.
  r=P.nextSession(cycle,[todayDone],sameDay+30*H);assert.notEqual(r.reason,'tomorrow');assert.equal(r.session.id,'s1');
- // Séance passée : la suite avance, repos aujourd'hui, et elle ne compte pas comme travaillée (pas de garde-fou).
+ // Séance passée aujourd'hui : repos, la suite avance.
  const skipped={cycle_session_id:'s1',status:'skipped',skip_reason:'malade',ended_at:new Date(sameDay).toISOString(),id:'w2'};
- r=P.nextSession(c2,[skipped],sameDay+60e3);assert.equal(r.reason,'tomorrow');assert.equal(r.today.status,'skipped');assert.equal(r.today.reason,'malade');
- r=P.nextSession(c2,[skipped],sameDay+30*H);assert.equal(r.session.id,'s3');assert.equal(r.reason,'sequence','une séance passée ne fatigue pas');
- // Séance passée puis annulée (abandoned) : ignorée.
- r=P.nextSession(c2,[{...skipped,status:'abandoned'}],sameDay+60e3);assert.equal(r.session.id,'s0');assert.equal(r.reason,'sequence');}
+ r=P.nextSession(cycle,[skipped],sameDay+60e3);assert.equal(r.reason,'tomorrow');assert.equal(r.today.status,'skipped');assert.equal(r.today.reason,'malade');
+ r=P.nextSession(cycle,[skipped],sameDay+30*H);assert.equal(r.session.id,'s0','Haut A reste à faire');assert.equal(r.reason,'sequence');
+ // Séance passée puis annulée : ignorée.
+ r=P.nextSession(cycle,[{...skipped,status:'abandoned'}],sameDay+60e3);assert.equal(r.session.id,'s0');assert.equal(r.reason,'sequence');}
 console.log('Session planner checks passed');

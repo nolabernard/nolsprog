@@ -176,11 +176,22 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
    assert.deepEqual(ops.filter(o=>o[1]==='cardio_logs').map(o=>o[0]+o[3]),['up20','up35']);
    await c8.handle('v2-cardio-delete',{id});await c8.flushNow();assert.equal(c8.state().cardioLogs.length,0);assert(ops.some(o=>o[0]==='del'&&o[2]===id));
    assert.doesNotMatch(c8.statsHTML(),/v2-cardio-edit/); }
+ // Séance terminée sans aucune série validée : proposée à l'abandon, jamais comptée, la suite ne bouge pas.
+ { const st=memory(),sent=[],apiX={async select(){return []},async upsert(t,rows){sent.push(...rows.map(r=>({t,...r})))},async remove(){}};
+   const c=V2.create({...ctx,storage:st,api:apiX,userId:'44444444-4444-4444-8444-444444444444'});await c.init();
+   const first=c.state().cycle.sessions[0];
+   await c.handle('v2-start',{session:first.id});await c.handle('v2-finish');await c.flushNow();
+   assert.equal(c.state().store.current(),null);assert(sent.some(r=>r.t==='workouts'&&r.status==='abandoned'),'notée abandonnée');
+   assert(!c.state().workouts.some(w=>w.status==='completed'),'pas comptée');
+   assert.match(c.todayHTML(),new RegExp('data-action="v2-start" data-session="'+first.id+'"'),'même séance proposée, pas de blocage du jour');
+   // Séances « terminées » vides venues du serveur (anciennes versions) : ignorées partout.
+   const now0=Date.now();c.state().workouts.push({id:'vide1',cycle_id:c.state().cycle.id,cycle_session_id:first.id,status:'completed',started_at:new Date(now0-60e3).toISOString(),ended_at:new Date(now0-30e3).toISOString()});
+   const h=c.todayHTML();assert.match(h,/0<small>\/\d+<\/small>/,'pas comptée dans la semaine');assert.doesNotMatch(h,/Séance faite aujourd’hui/);assert.match(h,new RegExp('data-session="'+first.id+'"')); }
  // Semaine allégée : dernière semaine du cycle, séries réduites, séance exclue des conseils.
  { const st=memory(),one=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',sets:3,reps:'6–8',rest:120}]}];
    const c=V2.create({...ctx,storage:st,legacyPlan:()=>one});await c.init();
    const cy=c.state().cycle,total=(cy.weeks||6)*(cy.sessions_per_week||1);
-   for(let i=0;i<total-(cy.sessions_per_week||1);i++)c.state().workouts.push({id:'old'+i,cycle_id:cy.id,status:'completed',ended_at:new Date(t-86400e3*(i+1)).toISOString()});
+   for(let i=0;i<total-(cy.sessions_per_week||1);i++)c.state().workouts.push({id:'old'+i,cycle_id:cy.id,status:'completed',legacy_week:1,ended_at:new Date(t-86400e3*(i+1)).toISOString()});
    assert.match(c.todayHTML(),/semaine allégée/);
    await c.handle('v2-start',{session:cy.sessions[0].id});
    const w=c.state().store.current();assert.equal(w.exercises[0].sets.length,2,'3 séries → 2');assert.match(c.todayHTML(),/Semaine allégée/);assert.match(c.todayHTML(),/Échauffement/);

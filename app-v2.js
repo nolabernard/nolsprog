@@ -96,6 +96,9 @@ function create(ctx){
  function cycleRow(){const {sessions,user_exercises,...c}=S.cycle;return {...c,user_id:userId}}
  function exRow(e){return {...e,user_id:userId}}
  // ----- Brouillon du programme : rien n'est appliqué ni envoyé avant « Enregistrer » -----
+ // Séances telles qu'elles comptent (règle unique : C.countable). Recalculé seulement quand les données changent.
+ let wMemo=null;
+ function W(){const k=[S.workouts,S.setLogs,S.cardioLogs,S.truncated,S.workouts.length,S.setLogs.length,S.cardioLogs.length];if(wMemo&&wMemo.k.every((x,i)=>x===k[i]))return wMemo.v;const v=C.countable(S.workouts,S.setLogs,S.cardioLogs,{truncated:S.truncated});wMemo={k,v};return v}
  const P=()=>S.edit?.draft||S.cycle;
  const openSessions=new Set();
  // Monter / descendre un exercice dans sa séance (brouillon, comme toute modification du programme).
@@ -191,22 +194,22 @@ function create(ctx){
  function restLeft(){if(!S.rest)return null;if(S.rest.frozen!=null)return S.rest.frozen;const left=Math.ceil((S.rest.end-now())/1000);return left>0?left:0}
  function idleMinutes(){const w=current();if(!w||w.paused_at||S.view!=='session'||!ui.lastAction)return 0;const d=now()-ui.lastAction;return d>=IDLE_MS?Math.floor(d/60e3):0}
  // Séances de semaine allégée : exclues des conseils de progression (moins de séries volontairement).
- function normalWorkouts(){const ids=new Set(read(K.deload,[]));return ids.size?S.workouts.filter(w=>!ids.has(w.id)):S.workouts}
+ function normalWorkouts(){const ids=new Set(read(K.deload,[]));return ids.size?W().filter(w=>!ids.has(w.id)):W()}
  function sessionTitle(w){return S.cycle?.sessions.find(s=>s.id===w.cycle_session_id)?.title||'Séance'}
  function startSession(id){
   const s=S.cycle.sessions.find(x=>x.id===id);if(!s)return;
   if(current()){S.view='session';return}
   // Une séance par jour : la suivante attend demain (récupération).
-  if(Planner.today(S.workouts,now())){S.sheet=null;notice('Ta séance du jour est faite. La suivante t’attend demain.');return}
+  if(Planner.today(W(),now())){S.sheet=null;notice('Ta séance du jour est faite. La suivante t’attend demain.');return}
   // Semaine allégée : moins de séries, mêmes charges ; la séance est notée comme telle (conseils et bilan n'en tirent pas de conclusion).
-  const light=C.deload(S.cycle,S.workouts);
+  const light=C.deload(S.cycle,W());
   S.store.start({...s,cycle_id:S.cycle.id,exercises:light?s.exercises.map(e=>({...e,sets:C.deloadSets(e.sets)})):s.exercises},{last:last()});
   if(light){const ids=read(K.deload,[]);ids.push(S.store.current().id);write(K.deload,ids.slice(-200))}
   S.view='session';S.index=0;S.rest=null;S.sheet=null;touch();scheduleFlush();
  }
  // « Je ne fais pas cette séance » : notée comme passée, la suite avance, repos aujourd'hui.
  function skipSession(id,reason){
-  const s=S.cycle?.sessions.find(x=>x.id===id);if(!s||current()||Planner.today(S.workouts,now()))return;
+  const s=S.cycle?.sessions.find(x=>x.id===id);if(!s||current()||Planner.today(W(),now()))return;
   const row=S.store.skipSession({...s,cycle_id:S.cycle.id},{reason});
   S.workouts=[{...row,title:s.title,local_only:!(api&&userId)},...S.workouts];
   persistLocal();S.sheet=null;scheduleFlush();
@@ -230,17 +233,17 @@ function create(ctx){
  function dateText(){const d=new Date(now());return DAYS[d.getDay()]+' '+d.getDate()+' '+MONTHS[d.getMonth()]}
  function minutes(s){try{return G().NolsEngine.estimatedMinutes(s.exercises.map(e=>({name:C.nameOf(e.exercise_key,S.userExercises),sets:e.sets,rest:e.rest_seconds})))}catch{return null}}
  // Séances faites cette semaine (lundi → dimanche) et objectif : l'anneau de l'accueil.
- function weekCount(){const d=new Date(now()),monday=new Date(d.getFullYear(),d.getMonth(),d.getDate()-((d.getDay()+6)%7)).getTime();return {done:S.workouts.filter(w=>w.cycle_id===S.cycle.id&&w.status==='completed'&&Date.parse(w.ended_at)>=monday).length,goal:S.cycle.sessions_per_week||S.cycle.sessions.length}}
+ function weekCount(){const d=new Date(now()),monday=new Date(d.getFullYear(),d.getMonth(),d.getDate()-((d.getDay()+6)%7)).getTime();return {done:W().filter(w=>w.cycle_id===S.cycle.id&&w.status==='completed'&&Date.parse(w.ended_at)>=monday).length,goal:S.cycle.sessions_per_week||S.cycle.sessions.length}}
  function weekLine(){
   const d=new Date(now()),monday=new Date(d.getFullYear(),d.getMonth(),d.getDate()-((d.getDay()+6)%7)).getTime();
-  const done=S.workouts.filter(w=>w.cycle_id===S.cycle.id&&w.status==='completed'&&Date.parse(w.ended_at)>=monday).length,goal=S.cycle.sessions_per_week||S.cycle.sessions.length;
+  const done=W().filter(w=>w.cycle_id===S.cycle.id&&w.status==='completed'&&Date.parse(w.ended_at)>=monday).length,goal=S.cycle.sessions_per_week||S.cycle.sessions.length;
   return done>=goal?'Objectif de la semaine atteint : '+done+' séance'+(done>1?'s':'')+'.':done?done+' séance'+(done>1?'s':'')+' cette semaine, encore '+(goal-done)+'.':'Objectif : '+goal+' séance'+(goal>1?'s':'')+' cette semaine.';
  }
  function todayHTML(){
   if(!S.cycle)return UI.home({next:null,cycle:null,building:S.building,retry:loadFailed});
   const cardioSheet=cardioSheetHTML();
-  if(S.view==='summary'&&S.summary)return UI.summary({records:H.newRecords(S.summary.id,S.setLogs,S.workouts,{truncated:S.truncated}),workout:S.summary,pending:pending(),local:!(api&&userId),userExercises:S.userExercises})+cardioSheet;
-  if(S.view==='review')return UI.review({review:Rv.review(S.cycle,S.workouts,S.setLogs,S.userExercises,now()),userExercises:S.userExercises});
+  if(S.view==='summary'&&S.summary)return UI.summary({records:H.newRecords(S.summary.id,S.setLogs,W(),{truncated:S.truncated}),workout:S.summary,pending:pending(),local:!(api&&userId),userExercises:S.userExercises})+cardioSheet;
+  if(S.view==='review')return UI.review({review:Rv.review(S.cycle,W(),S.setLogs,S.userExercises,now()),userExercises:S.userExercises});
   if(S.view==='next')return UI.nextForm({answers:S.nextAnswers||nextDefaults(),weeks:S.nextWeeks||S.cycle.weeks||6,methods:G().NolsEngine.methods,recommendation:reviewNow().recommendation});
   if(S.view==='proposal'&&S.proposal)return UI.proposal({cycle:S.proposal,userExercises:S.userExercises,methods:G().NolsEngine.methods});
   const w=current();
@@ -264,36 +267,36 @@ function create(ctx){
    else if(S.sheet?.type==='howto')html+=UI.howtoSheet({key:S.sheet.key,userExercises:S.userExercises});
    return html;
   }
-  const next=Planner.nextSession(S.cycle,S.workouts,now());
+  const next=Planner.nextSession(S.cycle,W(),now());
   const active=w?{title:sessionTitle(w),done:w.exercises.reduce((n,e)=>n+e.sets.filter(s=>s.completed).length,0),total:w.exercises.reduce((n,e)=>n+e.sets.length,0)}:null;
   const cardio={target:(S.cycle.cardio||[]).reduce((n,c)=>n+c.minutes*c.per_week,0),minutes:C.cardioWeek(S.cardioLogs,now())};
-  let html=UI.home({next,rhythm:C.rhythm(S.cycle,S.workouts,now()),cardio,hasHistory:S.workouts.some(x=>x.cycle_id===S.cycle.id&&x.status==='completed'),cycle:S.cycle,progress:C.cycleProgress(S.cycle,S.workouts),minutes:next?minutes(next.session):null,firstName:ctx.firstName?.()||'',dateText:dateText(),weekLine:weekLine(),record:recentRecord(),deload:C.deload(S.cycle,S.workouts),last:lastSession(),week:weekCount(),cycleStatus:C.cycleStatus(S.cycle,S.workouts,now()),active});
-  if(!w&&(S.proposal||Rv.due(S.cycle,S.workouts,now())))html=html.replace('<section class="v2-next"',UI.reviewCard({proposal:Boolean(S.proposal)})+'<section class="v2-next"');
+  let html=UI.home({next,rhythm:C.rhythm(S.cycle,W(),now()),cardio,hasHistory:W().some(x=>x.cycle_id===S.cycle.id&&x.status==='completed'),cycle:S.cycle,progress:C.cycleProgress(S.cycle,W()),minutes:next?minutes(next.session):null,firstName:ctx.firstName?.()||'',dateText:dateText(),weekLine:weekLine(),record:recentRecord(),deload:C.deload(S.cycle,W()),last:lastSession(),week:weekCount(),cycleStatus:C.cycleStatus(S.cycle,W(),now()),active});
+  if(!w&&(S.proposal||Rv.due(S.cycle,W(),now())))html=html.replace('<section class="v2-next"',UI.reviewCard({proposal:Boolean(S.proposal)})+'<section class="v2-next"');
   if(S.sheet?.type==='choose')html+=UI.chooser({sessions:S.cycle.sessions,current:next?.session.id});
   if(S.sheet?.type==='skip'){const sk=S.cycle.sessions.find(x=>x.id===S.sheet.session);if(sk)html+=UI.skipSheet({session:sk})}
   return html+cardioSheet;
  }
  // Dernière séance terminée (tous cycles), affichée sur l'accueil.
- function lastSession(){const titles={};for(const x of S.cycle?.sessions||[])titles[x.id]=x.title;return H.sessions(S.workouts,S.setLogs,{titles})[0]||null}
+ function lastSession(){const titles={};for(const x of S.cycle?.sessions||[])titles[x.id]=x.title;return H.sessions(W(),S.setLogs,{titles})[0]||null}
  function cardioSheetHTML(){if(S.sheet?.type!=='cardio')return '';const edit=S.sheet.edit?S.cardioLogs.find(c=>c.id===S.sheet.edit)||null:null;return UI.cardioSheet({workoutId:S.sheet.workout||'',edit})}
  // Dernier record des 14 derniers jours, affiché sur l'accueil.
- function recentRecord(){const r=H.latestRecord(S.setLogs,S.workouts,{truncated:S.truncated});if(!r||now()-Date.parse(r.date)>14*24*3600e3)return null;return 'Record récent : '+C.nameOf(r.key,S.userExercises)+', '+Number(r.weight).toLocaleString('fr-FR')+' kg × '+r.reps}
+ function recentRecord(){const r=H.latestRecord(S.setLogs,W(),{truncated:S.truncated});if(!r||now()-Date.parse(r.date)>14*24*3600e3)return null;return 'Record récent : '+C.nameOf(r.key,S.userExercises)+', '+Number(r.weight).toLocaleString('fr-FR')+' kg × '+r.reps}
  function statsHTML(){return statsBody()+cardioSheetHTML()}
  function statsBody(){
-  const prog=C.progress(S.setLogs,S.workouts),keys=Object.keys(prog.byKey);
+  const prog=C.progress(S.setLogs,W()),keys=Object.keys(prog.byKey);
   const key=keys.includes(S.selected)?S.selected:keys.sort((a,b)=>C.nameOf(a,S.userExercises).localeCompare(C.nameOf(b,S.userExercises),'fr'))[0];
   const titles={};for(const x of S.cycle?.sessions||[])titles[x.id]=x.title;
   const plan=(S.cycle?.sessions||[]).flatMap(x=>x.exercises).find(e=>e.exercise_key===key);
   return UI.progress({progress:prog,selected:S.selected,metric:S.metric,userExercises:S.userExercises,cardio:C.cardioProgress(S.cardioLogs,now()),
-   cardioList:S.tab==='sessions'?[...S.cardioLogs].sort((a,b)=>String(b.done_on).localeCompare(String(a.done_on))):[],tab:S.tab,history:key?H.exercise(key,S.setLogs,S.workouts):null,advice:key&&plan?H.advice(plan,S.setLogs,normalWorkouts(),key):null,
-   sessions:S.tab==='sessions'?H.sessions(S.workouts,S.setLogs,{titles,cardioLogs:S.cardioLogs}):[],open:S.open,records:S.open?H.newRecords(S.open,S.setLogs,S.workouts,{truncated:S.truncated}):[],truncated:S.truncated});
+   cardioList:S.tab==='sessions'?[...S.cardioLogs].sort((a,b)=>String(b.done_on).localeCompare(String(a.done_on))):[],tab:S.tab,history:key?H.exercise(key,S.setLogs,W()):null,advice:key&&plan?H.advice(plan,S.setLogs,normalWorkouts(),key):null,
+   sessions:S.tab==='sessions'?H.sessions(W(),S.setLogs,{titles,cardioLogs:S.cardioLogs}):[],open:S.open,records:S.open?H.newRecords(S.open,S.setLogs,W(),{truncated:S.truncated}):[],truncated:S.truncated});
  }
  function searchResults(){
   const q=S.query.trim();
   const mine=S.userExercises.filter(u=>q&&Cat.normalize(u.name).includes(Cat.normalize(q))).map(u=>({key:u.key,name:u.name,muscle:u.muscle,role:'finition'}));
   return [...mine,...(q?Cat.search(q).slice(0,8):Cat.CATALOGUE.slice(0,8).map(entry=>({entry})))];
  }
- function programmeHTML(){return UI.programme({cardioOpen:S.cardioOpen,cycleStatus:S.cycle?C.cycleStatus(S.cycle,S.workouts,now()):null,open:[...openSessions],editing:S.edit?Math.max(1,S.edit.ops.length):0,reminders:remState(),cycle:P(),userExercises:S.userExercises,picking:S.picking,query:S.query,results:S.picking?searchResults():[],creating:S.creating})}
+ function programmeHTML(){return UI.programme({cardioOpen:S.cardioOpen,cycleStatus:S.cycle?C.cycleStatus(S.cycle,W(),now()):null,open:[...openSessions],editing:S.edit?Math.max(1,S.edit.ops.length):0,reminders:remState(),cycle:P(),userExercises:S.userExercises,picking:S.picking,query:S.query,results:S.picking?searchResults():[],creating:S.creating})}
 
  // ----- Programme -----
  function saveCycleExercise(e){later(()=>{if(api&&userId)queueRows({cycle_exercises:[exRow(e)]})})}
@@ -376,6 +379,11 @@ function create(ctx){
    case 'v2-rpe':S.store.setRpe(d.ex,d.rpe);S.sheet=null;scheduleFlush();break;
    case 'v2-finish':{
     if(!w)return;
+    // Aucune série validée : la séance ne peut pas compter. On propose de l'abandonner (elle reste la prochaine à faire).
+    if(!w.exercises.some(e=>e.sets.some(s=>s.completed))){
+     if(!await confirm('Tu n’as validé aucune série : cette séance ne comptera pas et restera ta prochaine séance.',{title:'Abandonner la séance ?',ok:'Abandonner',cancel:'Continuer la séance'}))return;
+     S.store.abandon();S.view='home';S.rest=null;S.sheet=null;S.index=0;saveUi();scheduleFlush();notice('Séance abandonnée : elle n’est pas comptée.');break;
+    }
     const open=w.exercises.some(e=>e.status!=='skipped'&&e.sets.some(s=>!s.completed));
     if(open&&!await confirm('Les séries non validées ne seront pas comptées.',{title:'Terminer la séance ?',ok:'Terminer',cancel:'Continuer'}))return;
     finishSession();break;
@@ -426,7 +434,7 @@ function create(ctx){
   render();
  }
 // ----- Bilan et cycle suivant (proposé localement, activé seulement après validation) -----
- const reviewNow=()=>Rv.review(S.cycle,S.workouts,S.setLogs,S.userExercises,now());
+ const reviewNow=()=>Rv.review(S.cycle,W(),S.setLogs,S.userExercises,now());
  const fallbackAnswers=()=>({...(G().NolsEngine.defaults||{}),...(ctx.answers?.()||{})});
  function nextDefaults(){return Rv.nextAnswers(S.cycle,reviewNow().recommendation.changes,fallbackAnswers())}
  const NEXT_FIELDS=['daysCount','duration','method','goal','level','equipment','avoid'];
