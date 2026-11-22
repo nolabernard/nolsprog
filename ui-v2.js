@@ -48,7 +48,7 @@ function cardioSheet({workoutId='',edit=null}={}){
   +'<button type="submit" class="v2-btn">'+(edit?'Enregistrer la modification':'Enregistrer le cardio')+'</button></form>'
   +(edit?'<button type="button" class="v2-btn v2-btn--ghost v2-danger" data-action="v2-cardio-delete" data-id="'+esc(edit.id)+'">Supprimer cette activité</button>':'')+'</section></div>';
 }
-function home({next,hasHistory=false,cycle,progress=0,minutes,firstName,dateText,weekLine,record,building=false,active=null,retry=false,rhythm=null,cardio=null,last=null}={}){
+function home({next,hasHistory=false,cycle,progress=0,minutes,firstName,dateText,weekLine,record,building=false,active=null,retry=false,rhythm=null,cardio=null,last=null,deload=false}={}){
  const head='<header class="v2-home-head"><div>'+(dateText?'<p class="v2-date">'+esc(dateText)+'</p>':'')+'<h1 class="v2-hello">'+esc(firstName?'Salut '+firstName:'Salut')+'</h1></div></header>';
  if(!cycle||!next)return '<section class="v2-home">'+head+'<div class="v2-card v2-empty">'+(retry?'<h2>Programme indisponible</h2><p>Impossible de joindre ton compte. Vérifie ta connexion.</p>':'<h2>Ton programme t’attend</h2><p>Je prépare ta suite de séances à partir de tes réponses.</p>')+'<button type="button" class="v2-btn" data-action="v2-build" '+(building?'disabled':'')+'>'+(building?'Préparation…':retry?'Réessayer':'Préparer mon programme')+'</button></div></section>';
  const s=next.session,count=(s.exercises||[]).length;
@@ -58,7 +58,8 @@ function home({next,hasHistory=false,cycle,progress=0,minutes,firstName,dateText
   +'<dl class="v2-figures"><div><b>'+count+'</b> <span>exercices</span></div><div><b>'+totalSets(s)+'</b> <span>séries</span></div>'+(minutes?'<div><b>≈ '+Number(minutes)+'</b> <span>minutes</span></div>':'')+'</dl>'
   +'<button type="button" class="v2-btn v2-btn--light v2-btn--big" data-action="v2-start" data-session="'+esc(s.id)+'">'+icon('play')+'Démarrer</button></section>';
  const coach=next.reason==='recovery'||next.reason==='recovery-all';
- html+='<div class="v2-coach">'+icon('coach','v2-ic v2-coach-ic')+'<div><p>'+(coach?esc(next.message):(hasHistory?'On reprend la suite là où tu t’es arrêté, sans séance « manquée ».':'Première séance de ton cycle. Ensuite, chaque séance suit la précédente, quel que soit le jour.'))+'</p>'
+ if(deload&&!coach)next={...next,reason:'deload',message:'Dernière semaine du cycle : semaine allégée. Moins de séries, mêmes charges, pour récupérer avant ton bilan.'};
+ html+='<div class="v2-coach">'+icon('coach','v2-ic v2-coach-ic')+'<div><p>'+(coach||next.reason==='deload'?esc(next.message):(hasHistory?'On reprend la suite là où tu t’es arrêté, sans séance « manquée ».':'Première séance de ton cycle. Ensuite, chaque séance suit la précédente, quel que soit le jour.'))+'</p>'
   +(next.reason==='recovery'?'<div class="v2-coach-actions"><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-start" data-session="'+esc(s.id)+'">D’accord</button><button type="button" class="v2-link" data-action="v2-start" data-session="'+esc(next.planned.id)+'">Faire '+esc(next.planned.title)+' quand même</button></div>':'')
   +'<button type="button" class="v2-link" data-action="v2-choose">Changer de séance</button></div></div>';
  // Dernière séance effectuée : un appui ouvre son détail dans Progrès.
@@ -73,7 +74,7 @@ function chooser({sessions=[],current}={}){
 }
 
 const RATES=[[3,'Facile','3 reps ou + en réserve'],[2,'Correct','1 ou 2 en réserve'],[0,'Dur','plus rien en réserve']];
-function session({workout,index=0,elapsed=0,paused=false,pausedFor=0,rest=null,last={},advice={},userExercises=[],pending=0,rate=null}={}){
+function session({workout,index=0,elapsed=0,paused=false,pausedFor=0,rest=null,last={},advice={},userExercises=[],pending=0,rate=null,light=false,warmup=null}={}){
  const list=ordered(workout).filter(e=>e.status!=='skipped');
  const i=Math.max(0,Math.min(index,list.length-1)),e=list[i];
  if(!e)return '<section class="v2-session"><p>Aucun exercice dans cette séance.</p><button type="button" class="v2-btn" data-action="v2-finish">Terminer la séance</button></section>';
@@ -85,6 +86,8 @@ function session({workout,index=0,elapsed=0,paused=false,pausedFor=0,rest=null,l
  if(paused)html+='<div class="v2-paused" role="status">'+icon('pause','v2-ic v2-ic--sm')+'<span><b>En pause'+(pausedFor>=60?' depuis '+Math.floor(pausedFor/60)+' min':'')+'.</b> Ce temps ne compte pas.</span><button type="button" class="v2-link" data-action="v2-resume">Reprendre</button></div>';
  html+='<div class="v2-ex-head"><p class="v2-ex-count">Exercice '+(i+1)+' sur '+list.length+'</p><div class="v2-ex-name"><h1 class="v2-ex-title">'+esc(nameOf(e.exercise_key,userExercises))+'</h1>'+howtoButton(e.exercise_key,userExercises)+'</div><p class="v2-muted">'+plural(p.sets||e.sets.length,'série','séries')+' · '+reps(p.reps_min,p.reps_max)+' reps · repos '+restText(p.rest_seconds)+'</p>'
   +(prev?'<span class="v2-chip">Dernière fois : '+(prev.weight==null?'—':kg(prev.weight)+' kg')+' × '+(prev.reps??'—')+'</span>':'')+(advice[e.exercise_key]?'<p class="v2-advice">'+icon('coach','v2-ic v2-ic--sm')+'<span>'+esc(advice[e.exercise_key].text)+'</span></p>':'')+'</div>';
+ if(light&&i===0)html+='<p class="v2-light">'+icon('coach','v2-ic v2-ic--sm')+'<span><b>Semaine allégée.</b> Moins de séries, mêmes charges : tu récupères avant le bilan.</span></p>';
+ if(warmup&&warmup.ex===e.id)html+='<div class="v2-warmup"><b>Échauffement</b>'+(warmup.sets?'<ol>'+warmup.sets.map(x=>'<li>'+kg(x.weight)+' kg × '+x.reps+'</li>').join('')+'</ol><small>Puis tes séries de travail. Non comptées dans tes séries.</small>':'<small>2 séries légères pour monter en charge : 8 répétitions, puis 4. Non comptées dans tes séries.</small>')+'</div>';
  html+='<div class="v2-sets"><div class="v2-set-labels" aria-hidden="true"><span>Série</span><span>kg</span><span>Reps</span><span></span></div>';
  for(const s of e.sets){
   const n=s.set_number;

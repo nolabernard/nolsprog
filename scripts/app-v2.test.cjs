@@ -165,6 +165,15 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
    assert.deepEqual(ops.filter(o=>o[1]==='cardio_logs').map(o=>o[0]+o[3]),['up20','up35']);
    await c8.handle('v2-cardio-delete',{id});await c8.flushNow();assert.equal(c8.state().cardioLogs.length,0);assert(ops.some(o=>o[0]==='del'&&o[2]===id));
    assert.doesNotMatch(c8.statsHTML(),/v2-cardio-edit/); }
+ // Semaine allégée : dernière semaine du cycle, séries réduites, séance exclue des conseils.
+ { const st=memory(),one=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',sets:3,reps:'6–8',rest:120}]}];
+   const c=V2.create({...ctx,storage:st,legacyPlan:()=>one});await c.init();
+   const cy=c.state().cycle,total=(cy.weeks||6)*(cy.sessions_per_week||1);
+   for(let i=0;i<total-(cy.sessions_per_week||1);i++)c.state().workouts.push({id:'old'+i,cycle_id:cy.id,status:'completed',ended_at:new Date(t-86400e3*(i+1)).toISOString()});
+   assert.match(c.todayHTML(),/semaine allégée/);
+   await c.handle('v2-start',{session:cy.sessions[0].id});
+   const w=c.state().store.current();assert.equal(w.exercises[0].sets.length,2,'3 séries → 2');assert.match(c.todayHTML(),/Semaine allégée/);assert.match(c.todayHTML(),/Échauffement/);
+   assert(JSON.parse(st.getItem([...st.m.keys()].find(k=>k.startsWith('nolsprog-v2-deload:')))).includes(w.id)); }
  // Lot 7 : choix d'un jour enregistré (sans exception), même rappels désactivés.
  { const st7=memory(),c7=V2.create({...ctx,storage:st7,api:{async select(){return []},async upsert(){},async remove(){},async fn(){return {}}},userId:'55555555-5555-4555-8555-555555555555'});
    await c7.handle('v2-rem-day',{day:'6'});assert.deepEqual(JSON.parse(st7.getItem('nolsprog-v2-reminders:55555555-5555-4555-8555-555555555555')).days,[0,1,2,3,4,5]);
