@@ -82,7 +82,7 @@ function session({workout,index=0,elapsed=0,paused=false,pausedFor=0,rest=null,l
   +'<button type="button" class="v2-iconbtn" data-action="v2-more" aria-label="Plus d’options">'+icon('more')+'</button></header>'
   +'<div class="v2-steps" aria-label="Exercice '+(i+1)+' sur '+list.length+'">'+list.map((x,k)=>'<i class="'+(x.sets.every(s=>s.completed)?'is-done':k===i?'is-current':'')+'"></i>').join('')+'</div>';
  if(paused)html+='<div class="v2-paused" role="status">'+icon('pause','v2-ic v2-ic--sm')+'<span><b>En pause'+(pausedFor>=60?' depuis '+Math.floor(pausedFor/60)+' min':'')+'.</b> Ce temps ne compte pas.</span><button type="button" class="v2-link" data-action="v2-resume">Reprendre</button></div>';
- html+='<div class="v2-ex-head"><p class="v2-ex-count">Exercice '+(i+1)+' sur '+list.length+'</p><h1 class="v2-ex-title">'+esc(nameOf(e.exercise_key,userExercises))+'</h1><p class="v2-muted">'+plural(p.sets||e.sets.length,'série','séries')+' · '+reps(p.reps_min,p.reps_max)+' reps · repos '+restText(p.rest_seconds)+'</p>'
+ html+='<div class="v2-ex-head"><p class="v2-ex-count">Exercice '+(i+1)+' sur '+list.length+'</p><div class="v2-ex-name"><h1 class="v2-ex-title">'+esc(nameOf(e.exercise_key,userExercises))+'</h1>'+howtoButton(e.exercise_key,userExercises)+'</div><p class="v2-muted">'+plural(p.sets||e.sets.length,'série','séries')+' · '+reps(p.reps_min,p.reps_max)+' reps · repos '+restText(p.rest_seconds)+'</p>'
   +(prev?'<span class="v2-chip">Dernière fois : '+(prev.weight==null?'—':kg(prev.weight)+' kg')+' × '+(prev.reps??'—')+'</span>':'')+(advice[e.exercise_key]?'<p class="v2-advice">'+icon('coach','v2-ic v2-ic--sm')+'<span>'+esc(advice[e.exercise_key].text)+'</span></p>':'')+'</div>';
  html+='<div class="v2-sets"><div class="v2-set-labels" aria-hidden="true"><span>Série</span><span>kg</span><span>Reps</span><span></span></div>';
  for(const s of e.sets){
@@ -265,6 +265,18 @@ function repsLine(preview){
 function programIntro({cycle,methods={}}={}){
  if(!cycle)return '';
  return '<section class="v2-card v2-intro"><p class="v2-next-kicker v2-kicker--light">Ton programme est prêt</p><h2 class="v2-card-title">'+esc(methods[cycle.method]?.name||'Ton cycle')+' · '+cycle.weeks+' semaines</h2><p>'+plural(cycle.sessions.length,'séance différente','séances différentes')+' en boucle, '+plural(cycle.sessions_per_week,'séance','séances')+' par semaine. Voici le détail : tu peux changer un exercice ou le nombre de séries à tout moment.</p><button type="button" class="v2-btn" data-action="intro-start">'+icon('play')+'C’est parti</button></section>';
+// ----- Comment faire : pictogramme et consignes par type de mouvement -----
+function moveInfo(key,userExercises=[]){const c=globalThis.SteroidCatalogue?.byKey(key)||userExercises.find(u=>u.key===key)||{};return {pattern:c.pattern,muscle:c.muscle}}
+function howtoButton(key,userExercises=[]){
+ const M=globalThis.SteroidMoves;if(!M)return '';const {pattern}=moveInfo(key,userExercises);
+ return '<button type="button" class="v2-howto-btn" data-action="v2-howto" aria-label="Comment faire : '+esc(nameOf(key,userExercises))+'">'+M.svg(pattern,{size:56})+'<span>Comment faire</span></button>';
+}
+function howtoSheet({key,userExercises=[]}={}){
+ const M=globalThis.SteroidMoves;if(!M||!key)return '';const {pattern,muscle}=moveInfo(key,userExercises),m=M.move(pattern);
+ return '<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet v2-howto" role="dialog" aria-modal="true" aria-label="Comment faire"><i class="v2-grab"></i>'
+  +'<div class="v2-howto-pic">'+M.svg(pattern,{size:180})+'</div><h2>'+esc(nameOf(key,userExercises))+'</h2><p class="v2-muted">'+esc(m.label)+(muscle?' · '+esc(muscle):'')+'</p>'
+  +'<ol class="v2-howto-cues">'+m.cues.map(c=>'<li>'+esc(c)+'</li>').join('')+'</ol>'
+  +'<p class="v2-muted">Une douleur pendant l’exercice : arrête et demande conseil à un professionnel.</p><button type="button" class="v2-btn" data-action="v2-close-sheet">Compris</button></section></div>';
 }
 
 function picker({query='',results=[],creating=false}={}){
@@ -299,4 +311,5 @@ function programme({cycle,userExercises=[],picking=null,query='',results=[],crea
 
 return {cardioLogs,remindersCard,reviewCard,review,nextForm,proposal,cardioSheet,programme,home,chooser,session,machineSheet,moreSheet,idlePrompt,summary,progress,picker,clock,esc};
 return {recapCard,programIntro,remindersCard,reviewCard,review,nextForm,proposal,cardioSheet,programme,home,chooser,session,machineSheet,moreSheet,idlePrompt,summary,progress,picker,clock,esc};
+return {howtoSheet,remindersCard,reviewCard,review,nextForm,proposal,cardioSheet,programme,home,chooser,session,machineSheet,moreSheet,idlePrompt,summary,progress,picker,clock,esc};
 });

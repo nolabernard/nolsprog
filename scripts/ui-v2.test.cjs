@@ -160,4 +160,13 @@ assert.doesNotMatch(UI.cardioSheet({}),/v2-cardio-delete/);
   const pi=UI.programIntro({cycle:{method:'fullbody',weeks:6,sessions_per_week:3,sessions:[{},{},{}]},methods:E.methods});
   assert.match(pi,/Ton programme est prêt/);assert.match(pi,/Full body · 6 semaines/);assert.match(pi,/3 séances différentes/);assert.match(pi,/data-action="intro-start"/);assert.equal(UI.programIntro({}),'');
   for(const h of [rc,pi])assert(noEmoji(h)&&!/onclick=/i.test(h)); }
+// Comment faire : pictogramme dessiné pour l'app + consignes, par type de mouvement.
+{ globalThis.SteroidMoves=require('../exercise-guide.js');const M=globalThis.SteroidMoves;
+  for(const p of ['pushH','chestIso','pullV','pullH','squat','hinge','hamIso','quadIso','calves','pushV','side','rear','biceps','triceps','core'])
+   {assert(M.MOVES[p],'pictogramme manquant : '+p);assert.equal(M.cues(p).length,3);assert.match(M.svg(p),/^<svg[^>]*aria-hidden="true"/);}
+  const cat=require('../exercise-catalogue.js');for(const e of cat.CATALOGUE)assert(M.MOVES[e.pattern],'mouvement sans illustration : '+e.key);
+  assert.equal(M.label('inconnu'),'Exercice');
+  const s=UI.session({workout});assert.match(s,/data-action="v2-howto"/);assert.match(s,/<svg class="mv-pic"/);
+  const h=UI.howtoSheet({key:'hack-squat'});assert.match(h,/Hack squat/);assert.match(h,/Squat \/ presse · Jambes/);assert.match(h,/genoux dans l’axe/);assert.match(h,/data-action="v2-close-sheet"/);
+  assert(noEmoji(h)&&!/onclick=|<img|https?:/i.test(h),'aucune image externe'); }
 console.log('ui-v2 : ok');

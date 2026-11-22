@@ -26,6 +26,8 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
   `buildProgram(p, semaine)` = V1 figée pour les programmes en cours, `{version: 2}` et `buildCycle(p)` = V2).
 - `exercise-catalogue.js` : catalogue à clés permanentes (`SteroidCatalogue`), rôles base/finition, recherche
   tolérante (`search`, `resolveName`). Une clé publiée ne change jamais et n'est jamais réutilisée.
+- `exercise-guide.js` (`SteroidMoves`) : pictogrammes SVG au trait dessinés pour l'app et consignes d'exécution, par type de
+  mouvement (`pattern` du catalogue) ; bouton « Comment faire » pendant la séance. Aucune image externe.
 - `session-planner.js` (`SteroidPlanner.nextSession`) : prochaine séance de la suite + garde-fou 48 h expliqué.
 - `workout-store.js` (`SteroidWorkout.createWorkoutStore`) : séance V2 en cours (séries, pause, plus tard,
   remplacement, fin) et file d'envoi ordonnée vers les tables V2 (upsert sur `id`).

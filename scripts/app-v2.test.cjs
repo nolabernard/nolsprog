@@ -1,6 +1,6 @@
 // Contrôleur V2 : parcours complet invité et compte, sans navigateur.
 const assert=require('assert');
-for(const [g,f] of [['SteroidCatalogue','exercise-catalogue'],['SteroidCycle','v2-cycle'],['SteroidHistory','v2-history'],['SteroidReview','v2-review'],['SteroidReminders','reminders'],['SteroidUI','ui-v2'],['SteroidPlanner','session-planner'],['SteroidWorkout','workout-store']])globalThis[g]=require('../'+f+'.js');
+for(const [g,f] of [['SteroidCatalogue','exercise-catalogue'],['SteroidMoves','exercise-guide'],['SteroidCycle','v2-cycle'],['SteroidHistory','v2-history'],['SteroidReview','v2-review'],['SteroidReminders','reminders'],['SteroidUI','ui-v2'],['SteroidPlanner','session-planner'],['SteroidWorkout','workout-store']])globalThis[g]=require('../'+f+'.js');
 require('../program-engine.js');
 const V2=require('../app-v2.js');
 
@@ -71,6 +71,7 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
   await h5.handle('v2-start',{session:h5.state().cycle.sessions[0].id});
   assert.match(h5.todayHTML(),/class="v2-advice"[^]*tente 62,5 kg/,'conseil fondé sur la séance précédente');
   assert.match(h5.todayHTML(),/value="60"/,'les cases restent préremplies avec la dernière performance');
+  await h5.handle('v2-howto');assert.match(h5.todayHTML(),/Poussée horizontale · Pectoraux/);assert.match(h5.todayHTML(),/Omoplates serrées/);await h5.handle('v2-close-sheet');assert.doesNotMatch(h5.todayHTML(),/Omoplates serrées/);
   await h5.handle('v2-exit');
   const e=h5.state().store.current().exercises[0];
   for(const n of [1,2]){h5.input({ex:e.id,set:n,field:'weight',value:'62.5'});await h5.handle('v2-set',{ex:e.id,set:String(n)})}
