@@ -97,6 +97,9 @@ function create(ctx){
  function exRow(e){return {...e,user_id:userId}}
  // ----- Brouillon du programme : rien n'est appliqué ni envoyé avant « Enregistrer » -----
  const P=()=>S.edit?.draft||S.cycle;
+ const openSessions=new Set();
+ // Monter / descendre un exercice dans sa séance (brouillon, comme toute modification du programme).
+ function moveExercise(ceId,dir){const cy=draft(),{s}=sessionIn(cy,ceId);if(!s)return;const i=s.exercises.findIndex(x=>x.id===ceId),j=i+dir;if(j<0||j>=s.exercises.length)return;[s.exercises[i],s.exercises[j]]=[s.exercises[j],s.exercises[i]];refreshSession(s);later(()=>{if(api&&userId)queueRows({cycle_exercises:s.exercises.map(exRow)})})}
  function draft(){if(!S.edit)S.edit={draft:JSON.parse(JSON.stringify(S.cycle)),ops:[]};return S.edit.draft}
  function later(fn){if(S.edit)S.edit.ops.push(fn);else fn()}
  function sessionIn(cy,ceId){for(const s of cy?.sessions||[]){const e=s.exercises.find(x=>x.id===ceId);if(e)return {s,e}}return {}}
@@ -270,7 +273,7 @@ function create(ctx){
   const mine=S.userExercises.filter(u=>q&&Cat.normalize(u.name).includes(Cat.normalize(q))).map(u=>({key:u.key,name:u.name,muscle:u.muscle,role:'finition'}));
   return [...mine,...(q?Cat.search(q).slice(0,8):Cat.CATALOGUE.slice(0,8).map(entry=>({entry})))];
  }
- function programmeHTML(){return UI.programme({editing:S.edit?Math.max(1,S.edit.ops.length):0,reminders:remState(),cycle:P(),userExercises:S.userExercises,picking:S.picking,query:S.query,results:S.picking?searchResults():[],creating:S.creating})}
+ function programmeHTML(){return UI.programme({open:[...openSessions],editing:S.edit?Math.max(1,S.edit.ops.length):0,reminders:remState(),cycle:P(),userExercises:S.userExercises,picking:S.picking,query:S.query,results:S.picking?searchResults():[],creating:S.creating})}
 
  // ----- Programme -----
  function saveCycleExercise(e){later(()=>{if(api&&userId)queueRows({cycle_exercises:[exRow(e)]})})}
@@ -369,11 +372,13 @@ function create(ctx){
    case 'v2-history-open':S.open=d.id||null;break;
    case 'v2-last-open':S.tab='sessions';S.open=d.id||null;break;
    case 'v2-history-close':S.open=null;break;
-   case 'v2-edit-ex':S.picking={ce:d.ce};S.query='';S.creating=false;break;
-   case 'v2-add-ex':S.picking={session:d.session};S.query='';S.creating=false;break;
+   case 'v2-edit-ex':{const o=sessionIn(P(),d.ce).s;if(o)openSessions.add(o.id)}S.picking={ce:d.ce};S.query='';S.creating=false;break;
+   case 'v2-add-ex':openSessions.add(d.session);S.picking={session:d.session};S.query='';S.creating=false;break;
    case 'v2-pick':pickExercise(d.key);break;
    case 'v2-remove-ex':await removeExercise(d.ce);break;
    case 'v2-edit-save':saveDraft();break;
+   case 'v2-prog-toggle':if(openSessions.has(d.session))openSessions.delete(d.session);else openSessions.add(d.session);break;
+   case 'v2-move-ex':moveExercise(d.ce,Number(d.dir)===-1?-1:1);break;
    case 'v2-edit-cancel':cancelDraft();break;
    case 'v2-create':S.creating=true;break;
    case 'v2-howto':{const e=current()?list()[S.index]:null;if(!e)return;S.sheet={type:'howto',key:e.exercise_key};break}
@@ -480,7 +485,7 @@ function create(ctx){
  }
  // Déconnexion : le téléphone cesse de recevoir les rappels de ce compte (au mieux, sans bloquer).
  async function remindersOff(){try{if(Rem?.state().enabled)await Rem.disable()}catch{}}
- return {hasDraft:()=>Boolean(S.edit),saveDraft:()=>{saveDraft();render()},cancelDraft:()=>{cancelDraft();render()},remindersOff,proposeNext,saveCardio,addCardioPlan,init,rebuild,whenFresh:()=>fresh,ready:()=>Boolean(S.cycle),todayHTML,statsHTML,programmeHTML,handle,input,change,tick,createExercise,flushNow,pending,
+ return {pickerResultsHTML:()=>UI.pickerResults({query:S.query,results:S.picking?searchResults():[]}),hasDraft:()=>Boolean(S.edit),saveDraft:()=>{saveDraft();render()},cancelDraft:()=>{cancelDraft();render()},remindersOff,proposeNext,saveCardio,addCardioPlan,init,rebuild,whenFresh:()=>fresh,ready:()=>Boolean(S.cycle),todayHTML,statsHTML,programmeHTML,handle,input,change,tick,createExercise,flushNow,pending,
   inSession:()=>Boolean(current())&&S.view==='session',busy:()=>Boolean(current())||pending()>0,state:()=>S};
 }
 return {create};
