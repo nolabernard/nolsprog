@@ -18,12 +18,12 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
   Contient la CSP : tout nouveau domaine externe (API, images, polices) doit y être ajouté.
 - `app.js` : coquille de l'application (connexion, questionnaire, réglages du compte, navigation) ; délègue Aujourd'hui,
   Progrès et Programme à la V2. Lignes très longues : chercher avec `grep -n` et ne lire que les passages utiles.
-  Il garde seulement deux restes de la V1, pour la compatibilité : le plan du questionnaire (`user_programs`) et l'envoi
-  des séries V1 restées en attente sur un appareil (`workout_sets`).
+  Le questionnaire enregistre seulement les réponses (`user_profiles`) ; le programme est le cycle V2. Restes V1 pour la
+  compatibilité : lecture de l'ancien plan (`user_programs`, secours si aucune réponse) et envoi des séries ou du plan V1
+  restés en attente sur un appareil.
 - Modules purs, exposés en global navigateur et en `module.exports` pour les tests :
   `sport-rules.js` (validation), `sport-guide.js` (onboarding), `program-engine.js` (génération de programme, déterministe ;
   `buildProgram(p, semaine)` = V1 figée pour les programmes en cours, `{version: 2}` et `buildCycle(p)` = V2),
-  `sport-session.js` (estimation des calories).
 - `exercise-catalogue.js` : catalogue à clés permanentes (`SteroidCatalogue`), rôles base/finition, recherche
   tolérante (`search`, `resolveName`). Une clé publiée ne change jamais et n'est jamais réutilisée.
 - `session-planner.js` (`SteroidPlanner.nextSession`) : prochaine séance de la suite + garde-fou 48 h expliqué.

@@ -1,16 +1,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
-const S=require('../sport-session.js');
-const plan={ex:[{id:'a',sets:2},{id:'b',sets:2}]};
-assert.deepEqual(S.progress(plan,[{week_number:1,day_index:0,exercise_id:'a',completed:true}],1,0),{total:4,done:1,percent:25,exercises:1});
-assert.equal(S.calories(75,52*60,12,12),Math.round((3.5*75*52/60)/5)*5);
-assert.equal(S.calories(75,52*60,2,12),S.calories(75,52*60,12,12),'Completion ratio is not a MET intensity estimate');
-assert.equal(S.calories(97,1992*60,12,12),null,'Unattended 33-hour timer must not produce invented calories');
-assert.equal(S.duration(75*60),'1 h 15 min');
-assert.equal(S.duration(1992*60),'33 h 12 min');
-assert.equal(S.calories(0,3600,10,10),null);
-assert.match(S.motivation({done:2,total:5}),/avancé/);
+// sport-session.js supprimé avec la V1 : restent les contrôles du générateur et de l'identité.
 const app=fs.readFileSync('app.js','utf8'),engine=fs.readFileSync('program-engine.js','utf8');
-const html=fs.readFileSync('index.html','utf8');assert(html.includes('<script src="./sport-session.js"></script>'),'Missing workout module: guided mode crashes');assert(html.indexOf('sport-session.js')<html.indexOf('src="./app.js"'),'Workout module must load before app');
+const html=fs.readFileSync('index.html','utf8');assert(!html.includes('sport-session.js'),'Module V1 retiré');
 
 assert(engine.includes('method===\'fullbody\'?Number(p.duration)<=30?5'),'30 min full body at least 5 exercises');
 const ctx={crypto:{randomUUID:()=>Math.random().toString(36).slice(2)}};ctx.globalThis=ctx;vm.runInNewContext(engine,ctx);
