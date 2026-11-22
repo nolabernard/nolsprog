@@ -243,7 +243,12 @@ function buildProgram(p,weekIndex=0,{version=1}={}){
   }
   // Promote requested muscle groups within the relevant session, without removing primary movement coverage.
   const musclesFor={Pectoraux:['pushH','chestIso'],Dos:['pullH','pullV'],Épaules:['side','pushV'],Bras:['biceps','triceps'],Jambes:['squat','hinge'],Abdominaux:['core']};
-  const extra=priorities.flatMap(m=>musclesFor[m]||[]).map(pattern=>patternMap(pattern,equipment));
+  // Une priorité ne renforce que les séances qui travaillent déjà ce muscle : jamais de dos en Push, ni de pectoraux en Legs.
+  // Chaque mouvement appartient à une famille (poussée, tirage, jambes, gainage) : biceps et arrière d'épaule avec le tirage,
+  // triceps et élévations latérales avec la poussée.
+  const FAMILY={pushH:'push',chestIso:'push',pushV:'push',side:'push',triceps:'push',pullH:'pull',pullV:'pull',rear:'pull',biceps:'pull',squat:'legs',hinge:'legs',quadIso:'legs',hamIso:'legs',calves:'legs',core:'core'};
+  const families=new Set(patterns.map(x=>FAMILY[x]).filter(Boolean));
+  const extra=priorities.flatMap(m=>musclesFor[m]||[]).filter(x=>families.has(FAMILY[x])).map(pattern=>patternMap(pattern,equipment));
   if(extra.length&&maxMoves>3){for(const pattern of extra){if(patterns.includes(pattern))continue;if(patterns.length<maxMoves+1)patterns.push(pattern)}}
   const used=new Set(),items=[];
   for(let slot=0;slot<patterns.length&&items.length<maxMoves;slot++){
