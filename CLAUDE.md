@@ -16,14 +16,14 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
 ## Structure
 - `index.html` : charge les modules dans l'ordre, puis `app.js` (module ES).
   Contient la CSP : tout nouveau domaine externe (API, images, polices) doit y être ajouté.
-- `app.js` : application (écrans, état, stockage local, Supabase). Fichier très gros,
-  aux lignes très longues : chercher avec `grep -n` et ne lire que les passages utiles.
+- `app.js` : coquille de l'application (connexion, questionnaire, réglages du compte, navigation) ; délègue Aujourd'hui,
+  Progrès et Programme à la V2. Lignes très longues : chercher avec `grep -n` et ne lire que les passages utiles.
+  Il garde seulement deux restes de la V1, pour la compatibilité : le plan du questionnaire (`user_programs`) et l'envoi
+  des séries V1 restées en attente sur un appareil (`workout_sets`).
 - Modules purs, exposés en global navigateur et en `module.exports` pour les tests :
-  `sport-rules.js` (validation), `sport-guide.js` (onboarding), `sport-progression.js`
-  (double progression), `program-engine.js` (génération de programme, déterministe ;
+  `sport-rules.js` (validation), `sport-guide.js` (onboarding), `program-engine.js` (génération de programme, déterministe ;
   `buildProgram(p, semaine)` = V1 figée pour les programmes en cours, `{version: 2}` et `buildCycle(p)` = V2),
-  `sport-session.js` (bilan de séance), `sport-import.js` (import texte/CSV/TSV local),
-  `sport-ux.js` (aides UX, records).
+  `sport-session.js` (estimation des calories).
 - `exercise-catalogue.js` : catalogue à clés permanentes (`SteroidCatalogue`), rôles base/finition, recherche
   tolérante (`search`, `resolveName`). Une clé publiée ne change jamais et n'est jamais réutilisée.
 - `session-planner.js` (`SteroidPlanner.nextSession`) : prochaine séance de la suite + garde-fou 48 h expliqué.
@@ -38,7 +38,7 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
   `public.push_config` (aucun accès utilisateur) : jamais dans le dépôt.
 - `ui-v2.js` (`SteroidUI`) : écrans V2 en HTML pur (accueil, séance P1, machine prise, fin, progrès, programme, choix d'exercice).
 - `app-v2.js` (`SteroidAppV2.create`) : contrôleur V2 (stockage, envoi, actions `data-action="v2-…"`), testé sous Node.
-  `app.js` lui délègue Aujourd'hui, Progrès et Programme (`v2Main`) ; l'ancien écran ne sert plus qu'en secours.
+  `app.js` lui délègue Aujourd'hui, Progrès et Programme (`v2Main`) ; s'il ne démarre pas : écran « Réessayer » (`v2Unavailable`).
 - `ui-dialog.js` : panneaux de dialogue de l'app (`SteroidDialog.open/confirm/yesNo/ask`).
   Interdit : `prompt`, `confirm`, `alert` natifs (vérifié par les tests).
 - `app-updates.js` : détection de nouvelle version (`version.json` généré au déploiement).
@@ -79,7 +79,7 @@ maquettes sur le canevas « STÉROÏDE — refonte UX »). Plans : `docs/superpo
 - Lot 2 Générateur et cycles : fait (`buildCycle`, moteur `{version: 2}`, tests sur 4 050 combinaisons).
 - Lot 3a Logique de séance : fait (modules ci-dessus + `alternatives` du catalogue).
 - Lot 3b Écrans P1 et bascule : fait. Les nouvelles séances s'écrivent dans les tables V2 ; Progrès et Programme lisent la V2.
-  Le code V1 (todayUI, guidedWorkoutUI, editUI, statsUI) reste en secours : à supprimer dans un lot de nettoyage.
+  Ancien code V1 (écrans, séance guidée, éditeur, archives, import, partage) supprimé le 22/11/2026.
 - Lot 4 Planning et cardio : fait (`answers.planMode` 'days'|'free', `SteroidCycle.rhythm`, `cycle_cardio`/`cardio_logs`,
   cardio envoyé après les séances ; jours : 0 = lundi).
 - Lot 5 Historique et progrès : fait (Progrès : onglets Exercices / Séances ; conseil en séance ; nouveaux records en fin de séance ;

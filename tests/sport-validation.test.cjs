@@ -5,7 +5,6 @@ const { webcrypto } = require('node:crypto');
 globalThis.crypto ||= webcrypto;
 require('../sport-rules.js');
 require('../program-engine.js');
-const progression = require('../sport-progression.js');
 
 test('programmes de 2 à 6 séances : toutes les méthodes et tous les équipements', () => {
  const methods = ['auto','fullbody','upperlower','ppl','split','hybrid'];
@@ -21,13 +20,3 @@ test('programmes de 2 à 6 séances : toutes les méthodes et tous les équipeme
  }
 });
 
-test('double progression : une charge absente nest pas traitée comme 0 kg', () => {
- const exercise={sets:1,reps:'8–12'};
- const evaluate=(reps,weight)=>progression.evaluate(exercise,[{set_number:1,completed:true,reps,weight}]);
- assert.equal(evaluate(12,null).status,'insufficient');
- assert.equal(evaluate(12,undefined).status,'insufficient');
- assert.equal(evaluate(12,'').status,'insufficient');
- assert.equal(evaluate(12,0).status,'verify');
- assert.equal(evaluate(8,40).status,'reps');
- assert.equal(evaluate(12,-3).status,'insufficient');
-});
