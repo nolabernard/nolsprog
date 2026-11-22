@@ -315,7 +315,7 @@ function programme({cycle,userExercises=[],picking=null,query='',results=[],crea
  if(cycle)html+='<button type="button" class="v2-btn v2-btn--ghost" data-action="v2-review">'+icon('trophy')+'Faire le bilan de ce cycle</button>';
  if(picking)html+='<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="Choisir un exercice"><button type="button" class="v2-grab" data-action="v2-close-sheet" aria-label="Fermer (ou fais glisser vers le bas)"><i></i></button><h2>'+(picking.ce?'Changer d’exercice':'Ajouter un exercice')+'</h2>'+picker({query,results,creating})+'</section></div>';
  // Barre d'enregistrement : visible dès la première modification, au-dessus de la navigation.
- if(editing)html+='<div class="v2-savebar" role="region" aria-label="Modifications du programme"><span><b>Modifications non enregistrées</b><small>Rien ne s’applique avant d’enregistrer.</small></span><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-edit-cancel">Annuler</button><button type="button" class="v2-btn" data-action="v2-edit-save">Enregistrer</button></div>';
+ if(editing)html+='<div class="v2-savebar" role="region" aria-label="Modifications du programme"><span><b>Non enregistré</b><small>Rien ne change avant.</small></span><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-edit-cancel">Annuler</button><button type="button" class="v2-btn" data-action="v2-edit-save">Enregistrer</button></div>';
  return html+'</section>';
 }
 
