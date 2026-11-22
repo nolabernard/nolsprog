@@ -214,6 +214,7 @@ function create(ctx){
     const a=answers(),alts=Cat.alternatives(e.exercise_key,{equipment:a.equipment||'gym',avoid:String(a.avoid||'').split(/[,;\n]/).map(x=>x.trim()).filter(Boolean),exclude:w.exercises.map(x=>x.exercise_key),history:practiced});
     html+=UI.machineSheet({exercise:e,alternatives:alts,canLater:items[items.length-1]?.id!==e.id,practiced})}}
    else if(S.sheet?.type==='more')html+=UI.moreSheet({exercise:items[S.index]});
+   else if(S.sheet?.type==='howto')html+=UI.howtoSheet({key:S.sheet.key,userExercises:S.userExercises});
    return html;
   }
   const next=Planner.nextSession(S.cycle,S.workouts,now());
@@ -333,6 +334,7 @@ function create(ctx){
    case 'v2-pick':pickExercise(d.key);break;
    case 'v2-remove-ex':await removeExercise(d.ce);break;
    case 'v2-create':S.creating=true;break;
+   case 'v2-howto':{const e=current()?list()[S.index]:null;if(!e)return;S.sheet={type:'howto',key:e.exercise_key};break}
    case 'v2-cardio-open':S.sheet={type:'cardio',workout:d.workout||''};break;
    case 'v2-cardio-plan-remove':{
     const cc=S.cycle.cardio||[];if(!cc.some(c=>c.id===d.id))return;

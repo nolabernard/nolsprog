@@ -142,4 +142,13 @@ assert.match(rc,/18:30, lundi, mercredi, vendredi/);assert.match(rc,/<option val
 assert.match(UI.remindersCard({enabled:false,hour:18,minute:0,days:[0,1,2,3,4,5,6]}),/data-action="v2-rem-on"/);
 assert.match(UI.remindersCard({blocker:'install',message:'Ajoute <STÉROÏDE>'}),/Ajoute &lt;STÉROÏDE&gt;/);
 assert(noEmoji(rc)&&!/onclick=/i.test(rc));
+// Comment faire : pictogramme dessiné pour l'app + consignes, par type de mouvement.
+{ globalThis.SteroidMoves=require('../exercise-guide.js');const M=globalThis.SteroidMoves;
+  for(const p of ['pushH','chestIso','pullV','pullH','squat','hinge','hamIso','quadIso','calves','pushV','side','rear','biceps','triceps','core'])
+   {assert(M.MOVES[p],'pictogramme manquant : '+p);assert.equal(M.cues(p).length,3);assert.match(M.svg(p),/^<svg[^>]*aria-hidden="true"/);}
+  const cat=require('../exercise-catalogue.js');for(const e of cat.CATALOGUE)assert(M.MOVES[e.pattern],'mouvement sans illustration : '+e.key);
+  assert.equal(M.label('inconnu'),'Exercice');
+  const s=UI.session({workout});assert.match(s,/data-action="v2-howto"/);assert.match(s,/<svg class="mv-pic"/);
+  const h=UI.howtoSheet({key:'hack-squat'});assert.match(h,/Hack squat/);assert.match(h,/Squat \/ presse · Jambes/);assert.match(h,/genoux dans l’axe/);assert.match(h,/data-action="v2-close-sheet"/);
+  assert(noEmoji(h)&&!/onclick=|<img|https?:/i.test(h),'aucune image externe'); }
 console.log('ui-v2 : ok');
