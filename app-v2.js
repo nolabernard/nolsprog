@@ -168,7 +168,9 @@ function create(ctx){
  const list=()=>[...(current()?.exercises||[])].sort((a,b)=>a.position-b.position).filter(e=>e.status!=='skipped');
  const last=()=>C.lastPerformance(S.setLogs);
  const answers=()=>S.cycle?.answers_snapshot&&Object.keys(S.cycle.answers_snapshot).length?S.cycle.answers_snapshot:(ctx.answers?.()||{});
- function startRest(sec){S.rest={end:now()+sec*1000};saveUi()}
+ function startRest(sec,rate=null){S.rest={end:now()+sec*1000,rate};saveUi()}
+ // Série à noter (ressenti) : la dernière validée, tant que la séance continue.
+ function rateInfo(w){const r=S.rest?.rate||S.rate;if(!r||!w)return null;const e=w.exercises.find(x=>x.id===r.ex),s=e?.sets.find(x=>x.set_number===r.set);if(!s?.completed)return null;return {ex:e.id,set:s.set_number,rir:s.rir,name:C.nameOf(e.exercise_key,S.userExercises)}}
  function restLeft(){if(!S.rest)return null;if(S.rest.frozen!=null)return S.rest.frozen;const left=Math.ceil((S.rest.end-now())/1000);return left>0?left:0}
  function idleMinutes(){const w=current();if(!w||w.paused_at||S.view!=='session'||!ui.lastAction)return 0;const d=now()-ui.lastAction;return d>=IDLE_MS?Math.floor(d/60e3):0}
  function sessionTitle(w){return S.cycle?.sessions.find(s=>s.id===w.cycle_session_id)?.title||'Séance'}
@@ -205,9 +207,9 @@ function create(ctx){
    const items=list();S.index=Math.max(0,Math.min(S.index,items.length-1));
    const left=restLeft();
    // Conseils figés pour la séance : l'historique ne change pas avant la fin.
-   if(S.advice?.id!==w.id||S.advice.n!==w.exercises.length||w.exercises.some(e=>!(e.exercise_key in S.advice.map))){const map={};for(const e of w.exercises)map[e.exercise_key]=H.advice(e.plan,S.setLogs,S.workouts,e.exercise_key);S.advice={id:w.id,n:w.exercises.length,map}}
+   if(S.advice?.id!==w.id||S.advice.n!==w.exercises.length||w.exercises.some(e=>!(e.exercise_key in S.advice.map))){const map={};for(const e of w.exercises)map[e.exercise_key]=H.advice(e.plan,S.setLogs,S.workouts,e.exercise_key)||{status:'calibrate',text:'Première fois sur cet exercice : trouve ta charge. Monte progressivement et garde celle qui te laisse 2 répétitions en réserve, puis note ton ressenti.'};S.advice={id:w.id,n:w.exercises.length,map}}
    const advice=S.advice.map;
-   let html=UI.session({advice,workout:w,index:S.index,elapsed:S.store.elapsedSeconds(),paused:S.store.isPaused(),pausedFor:w.paused_at?Math.round((now()-w.paused_at)/1000):0,rest:left?{remaining:left}:null,last:last(),userExercises:S.userExercises,pending:pending()});
+   let html=UI.session({rate:rateInfo(w),advice,workout:w,index:S.index,elapsed:S.store.elapsedSeconds(),paused:S.store.isPaused(),pausedFor:w.paused_at?Math.round((now()-w.paused_at)/1000):0,rest:left?{remaining:left}:null,last:last(),userExercises:S.userExercises,pending:pending()});
    const idle=idleMinutes();
    if(idle)html+=UI.idlePrompt(idle);
    else if(S.sheet?.type==='machine'){const e=w.exercises.find(x=>x.id===S.sheet.ex);if(e){const practiced={};for(const r of S.setLogs)if(r.completed)practiced[r.exercise_key]=(practiced[r.exercise_key]||0)+1;
@@ -290,9 +292,19 @@ function create(ctx){
     const e=w?.exercises.find(x=>x.id===d.ex),s=e?.sets.find(x=>x.set_number===Number(d.set));if(!s)return;
     if(!s.completed&&s.reps==null){notice('Indique tes répétitions pour valider la série '+s.set_number+'.',true);return}
     S.store.logSet(e.id,s.set_number,{completed:!s.completed});touch();
-    if(s.completed){startRest(e.plan.rest_seconds||90);if(e.sets.every(x=>x.completed)){const items=list(),i=items.findIndex(x=>x.id===e.id);if(i>=0&&i<items.length-1)S.index=i+1}}
+    if(s.completed){S.rate={ex:e.id,set:s.set_number};startRest(e.plan.rest_seconds||90,S.rate);if(e.sets.every(x=>x.completed)){const items=list(),i=items.findIndex(x=>x.id===e.id);if(i>=0&&i<items.length-1)S.index=i+1}}
     saveUi();scheduleFlush();break;
    }
+   case 'v2-rir':{
+    const e=w?.exercises.find(x=>x.id===d.ex),s=e?.sets.find(x=>x.set_number===Number(d.set));if(!s?.completed)return;
+    const rir=Number(d.rir);S.store.logSet(e.id,s.set_number,{rir});touch();scheduleFlush();
+    // Conseil immédiat pour la série suivante (jamais appliqué tout seul) : marge → plus lourd ; échec sous la fourchette → plus léger.
+    const next=e.sets.find(x=>!x.completed&&x.set_number>s.set_number);
+    if(next&&s.weight!=null){
+     if(rir>=3)notice('Belle marge : essaie '+(Number((s.weight+H.increment(s.weight)).toFixed(2))).toLocaleString('fr-FR')+' kg sur la série suivante.');
+     else if(rir===0&&s.reps<(e.plan.reps_min||0))notice('Trop lourd : baisse un peu la charge pour rester dans la fourchette.');
+    }
+    S.rate=null;if(S.rest)S.rest.rate=null;saveUi();break}
    case 'v2-pause':if(S.rest){const l=restLeft();S.rest=l?{frozen:l}:null}S.store.pause();touch();scheduleFlush();break;
    case 'v2-resume':if(S.rest?.frozen!=null)S.rest={end:now()+S.rest.frozen*1000};S.store.resume();touch();scheduleFlush();break;
    case 'v2-idle-yes':S.store.pause(ui.lastAction);S.store.resume();touch();scheduleFlush();break;

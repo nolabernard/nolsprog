@@ -18,7 +18,7 @@ function grouped(setLogs,ids){
   const gid=r.workout_exercise_id||r.exercise_key;let e=w.get(gid);
   if(!e)w.set(gid,e={key:r.exercise_key,from:r.substituted_from_key||null,position:num(r.position),rpe:null,order:seq++,sets:[]});
   if(r.rpe!=null)e.rpe=num(r.rpe);
-  e.sets.push({set_number:num(r.set_number),weight:num(r.weight),reps:num(r.reps),order:seq++});
+  e.sets.push({set_number:num(r.set_number),weight:num(r.weight),reps:num(r.reps),rir:num(r.rir),order:seq++});
  }
  for(const w of by.values())for(const e of w.values())e.sets.sort((a,b)=>(a.set_number??1e9)-(b.set_number??1e9)||a.order-b.order);
  return by;
@@ -92,6 +92,10 @@ function advice(plan,setLogs,workouts,key){
  if(noWeight)return {status:'weight',text:'Note ta charge sur chaque série pour recevoir un conseil précis.'};
  const w=Math.max(...sets.map(s=>s.weight));
  if(top&&w===0)return {status:'bodyweight',text:'Haut de fourchette atteint sur chaque série : ajoute de la charge ou une variante plus dure.'};
+ // Ressenti noté par série (répétitions en réserve) : il prime sur les seules répétitions.
+ const rated=sets.filter(s=>s.rir!=null),easy=rated.length===sets.length&&sets.every(s=>s.rir>=3),failed=rated.some(s=>s.rir===0);
+ if(top&&failed&&w>0)return {status:'hold',text:'Haut de fourchette atteint, mais une série était à l’échec : garde '+fr(w)+' kg jusqu’à ce que ce soit plus facile.'};
+ if(!top&&easy&&w>0&&sets.every(s=>s.reps>=(Number(plan?.reps_min)||0))){const next=Number((w+increment(w)).toFixed(2));return {status:'increase',weight:next,text:'Toutes tes séries étaient faciles à '+fr(w)+' kg : tente '+fr(next)+' kg.'}}
  if(!top)return {status:'reps',text:'Garde '+fr(w)+' kg et vise '+max+' répétitions sur chaque série.'};
  if(last.rpe===10)return {status:'hold',text:'Haut de fourchette atteint, mais à l’échec : garde '+fr(w)+' kg jusqu’à ce que ce soit plus facile.'};
  const next=Number((w+increment(w)).toFixed(2));

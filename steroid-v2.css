@@ -285,6 +285,14 @@ button:active{transform:translateY(1px)}
 @keyframes splash-word{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.splash-handle,.splash-body{stroke-dashoffset:0;animation:none}.splash-bell,.splash-shadow{animation:none}.splash-word{opacity:1;animation:none}}
 
+/* Ressenti par série (répétitions en réserve) */
+.v2-rate{margin:10px 0;padding:12px;border-radius:16px;background:var(--surface);border:1.5px solid var(--line)}
+.v2-rate>span{display:block;font-weight:700;margin-bottom:8px}
+.v2-rate>div{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.v2-rate button{min-height:52px;border:2px solid var(--line);border-radius:12px;background:var(--bg);color:var(--text);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:inherit}
+.v2-rate button b{font-size:15px}.v2-rate button small{font-size:10.5px;color:var(--muted);line-height:1.2;text-align:center}
+.v2-rate button[aria-pressed="true"]{border-color:var(--accent);background:var(--raised)}
+
 /* Rappels (lot 7) */
 .v2-daypick{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:10px 0}
 .v2-daypick button{min-height:44px;border:2px solid var(--line);border-radius:12px;background:var(--surface);color:var(--muted);font-weight:800;cursor:pointer}

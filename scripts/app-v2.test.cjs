@@ -65,7 +65,18 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
    for(const n of [1,2]){h5.input({ex:e.id,set:n,field:'weight',value:String(weight)});h5.input({ex:e.id,set:n,field:'reps',value:String(reps)});await h5.handle('v2-set',{ex:e.id,set:String(n)})}
    await h5.handle('v2-finish');
   };
-  await run(60,8);
+  // Première séance : conseil de calibrage ; après une série, le ressenti se note en un appui.
+  await h5.handle('v2-start',{session:h5.state().cycle.sessions[0].id});
+  assert.match(h5.todayHTML(),/Première fois sur cet exercice : trouve ta charge/);
+  { const e=h5.state().store.current().exercises[0];
+    for(const n of [1,2]){h5.input({ex:e.id,set:n,field:'weight',value:'60'});h5.input({ex:e.id,set:n,field:'reps',value:'8'})}
+    await h5.handle('v2-set',{ex:e.id,set:'1'});
+    assert.match(h5.todayHTML(),/Série 1 · Développé couché barre : c’était…/);
+    await h5.handle('v2-rir',{ex:e.id,set:'1',rir:'2'});
+    assert.equal(h5.state().store.current().exercises[0].sets[0].rir,2);assert.doesNotMatch(h5.todayHTML(),/c’était…/);
+    await h5.handle('v2-set',{ex:e.id,set:'2'});await h5.handle('v2-rir',{ex:e.id,set:'2',rir:'2'});
+    await h5.handle('v2-finish'); }
+  assert(h5.state().setLogs.some(r=>r.rir===2),'ressenti conservé dans l’historique');
   assert.doesNotMatch(h5.todayHTML(),/Nouveau record/,'pas de record à la première séance');
   await h5.handle('v2-close-summary');t+=3*24*3600e3;
   await h5.handle('v2-start',{session:h5.state().cycle.sessions[0].id});
