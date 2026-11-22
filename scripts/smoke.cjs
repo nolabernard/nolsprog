@@ -1,18 +1,19 @@
 const fs=require('fs');const vm=require('vm');const assert=require('assert');
 const source=fs.readFileSync('app.js','utf8');
-const listeners={};const store={'nolsprog-onboarding-seen':'1'};const root={innerHTML:'',addEventListener:(type,fn)=>listeners[type]=fn};
-const ctx={navigator:{onLine:true,vibrate:()=>{}},setInterval:()=>0,clearInterval:()=>{},document:{getElementById:id=>id==='app'?root:null,addEventListener:()=>{},visibilityState:'visible'},localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>{store[k]=v}},window:{addEventListener:()=>{}},clearTimeout:()=>{},crypto:require('crypto').webcrypto,Date,console,Math,Number,String,Array,JSON,Intl,setTimeout:()=>0,URL,URLSearchParams,location:{hash:'',pathname:'/nolsprog/',search:'',origin:'https://nolabernard.github.io'},history:{replaceState:()=>{}},Blob,structuredClone,globalThis:null};ctx.globalThis=ctx;
-vm.createContext(ctx);vm.runInContext(fs.readFileSync('program-engine.js','utf8'),ctx);vm.runInContext(source,ctx);
-assert(root.innerHTML.includes('Développé incliné machine')===false);
-assert(root.innerHTML.includes('data-action="day"'),'Le calendrier doit afficher les jours');
-assert(root.innerHTML.includes('Push')||root.innerHTML.includes('Upper')||root.innerHTML.includes('Repos'));
+const listeners={};const store={'nolsprog-onboarding-seen':'1'};const root={innerHTML:'',addEventListener:(type,fn)=>listeners[type]=fn,querySelector:()=>null,querySelectorAll:()=>[]};
+const ctx={navigator:{onLine:true,vibrate:()=>{}},setInterval:()=>0,clearInterval:()=>{},document:{getElementById:id=>id==='app'?root:null,querySelector:()=>null,querySelectorAll:()=>[],createElement:()=>({}),addEventListener:()=>{},visibilityState:'visible'},localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>{store[k]=v}},window:{addEventListener:()=>{}},clearTimeout:()=>{},crypto:require('crypto').webcrypto,Date,console,Math,Number,String,Array,JSON,Intl,setTimeout:()=>0,URL,URLSearchParams,location:{hash:'',pathname:'/nolsprog/',search:'',origin:'https://nolabernard.github.io'},history:{replaceState:()=>{}},Blob,structuredClone,globalThis:null};ctx.globalThis=ctx;
+const html=fs.readFileSync('index.html','utf8');
+const order=[...html.matchAll(/<script src="\.\/([^"]+\.js)"><\/script>/g)].map(m=>m[1]).filter(f=>f!=='app.js'&&f!=='app-updates.js');
+vm.createContext(ctx);for(const f of order)vm.runInContext(fs.readFileSync(f,'utf8'),ctx,{filename:f});vm.runInContext(source,ctx);
 const click=(action,fields={})=>listeners.click({target:{closest:()=>({dataset:{action,...fields}})}});
-click('day',{day:'0'});assert(root.innerHTML.includes('Développé couché barre'),'La séance de lundi est absente');
-assert(root.innerHTML.includes('data-field="weight"'),'Les séries du premier exercice doivent être visibles');
-click('open',{id:'invalid'});click('day',{day:'2'});assert(root.innerHTML.includes('Hack squat'),'La séance jambes est absente');
-click('day',{day:'3'});assert(root.innerHTML.includes('Repos actif'),'Le jeudi repos actif est absent');
-click('day',{day:'4'});assert(root.innerHTML.includes('Développé incliné machine'),'La séance Upper est absente');
-console.log('NolsProg smoke test OK: écran, 5 séances, repos actif et saisie des séries.');
+(async()=>{
+ for(let i=0;i<20&&!root.innerHTML.includes('Prochaine séance');i++)await new Promise(r=>setImmediate(r));
+ assert(root.innerHTML.includes('Prochaine séance'),'L’app doit démarrer en invité sur l’écran V2 « Prochaine séance »');
+ assert(!root.innerHTML.includes('data-action="day"'),'Plus de calendrier V1');
+ await click('tab',{tab:'stats'});assert(root.innerHTML.includes('Tes progrès'),'Progrès V2');
+ await click('tab',{tab:'edit'});assert(root.innerHTML.includes('Rappels'),'Programme V2');
+ console.log('NolsProg smoke test OK : démarrage invité, Aujourd’hui, Progrès et Programme en V2.');
+})().catch(e=>{console.error(e);process.exit(1)});
 const p={...ctx.NolsEngine.defaults,daysCount:'4',method:'upperlower',days:[0,1,3,5],level:'advanced',duration:'75'};
 const generated=ctx.NolsEngine.buildProgram(p);
 assert(generated.length===7,'Le programme doit couvrir 7 jours');
@@ -20,15 +21,7 @@ assert(generated.filter(x=>x.ex.length).length===4,'Quatre séances doivent êtr
 assert(ctx.NolsEngine.chooseMethod(p)==='upperlower','Upper/Lower doit être sélectionné');
 assert(ctx.NolsEngine.chooseMethod({...p,daysCount:'6',method:'ppl'})==='ppl','PPL doit être sélectionné');
 assert(ctx.NolsEngine.chooseMethod({...p,daysCount:'3',method:'fullbody'})==='fullbody','Full body doit être sélectionné');
-assert(vm.runInContext('formatRest(90)',ctx)==='1 min 30','Le repos de 90 secondes doit être formaté');
-assert(vm.runInContext('formatRest(60)',ctx)==='60 s','Le repos de 60 secondes doit être formaté');
-assert(vm.runInContext('formatRest(45)',ctx)==='45 s','Le repos court doit être en secondes');
-click('day',{day:'0'});
-const firstDate=vm.runInContext('selectedDate(0).getDate()',ctx);
-click('week',{step:'1'});
-const secondDate=vm.runInContext('selectedDate(0).getDate()',ctx);
-assert(vm.runInContext('(selectedDate(0)-new Date(S.start+"T12:00:00"))/86400000',ctx)>=7,'La semaine suivante doit afficher les dates suivantes');
-console.log('Génération de programmes, repos et calendrier : OK');
+console.log('Génération de programmes : OK');
 
 const allDays={...ctx.NolsEngine.defaults,daysCount:'3',method:'auto',days:[0,1,2,3,4,5,6],equipment:'gym'};
 const spread=ctx.NolsEngine.buildProgram(allDays);

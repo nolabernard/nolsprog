@@ -44,7 +44,7 @@ function sessions(workouts,setLogs,{titles={},cardioLogs=[]}={}){
  });
 }
 
-// Événements de record, dans l'ordre chronologique. Règle de comparaison identique à SteroidUX.achievement.
+// Événements de record, dans l'ordre chronologique. Plus lourd à répétitions égales ou plus, ou plus de répétitions à charge égale.
 function events(setLogs,workouts){
  const list=done(workouts),by=grouped(setLogs,new Set(list.map(w=>w.id))),top=new Map(),out=[];
  for(const w of list){
@@ -78,7 +78,7 @@ function exercise(key,setLogs,workouts){
  return {key,entries:entries.reverse(),record:r};
 }
 
-// Paliers de charge identiques à SteroidProgression.
+// Paliers de charge : 2,5 kg dès 60 kg, 1,25 kg dès 20 kg, sinon 0,5 kg.
 const increment=w=>w>=60?2.5:w>=20?1.25:0.5;
 // Double progression : un conseil, jamais une modification. Fondé sur la dernière séance de cette clé.
 function advice(plan,setLogs,workouts,key){
