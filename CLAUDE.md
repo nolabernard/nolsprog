@@ -52,8 +52,11 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
 
 ## Données
 - Stockage local (clés préfixées `nolsprog-`) : mode invité, cache de compte, séance active.
-- Supabase : tables `user_profiles`, `user_programs`, `workout_sets`, `workout_sessions`,
-  RLS `auth.uid() = user_id`. Seule la clé publique `sb_publishable` est autorisée dans le code.
+- Supabase : tables V2 (`cycles`, `cycle_sessions`, `cycle_exercises`, `cycle_cardio`, `workouts`, `workout_exercises`,
+  `workout_set_logs`, `cardio_logs`, `user_exercises`, `push_subscriptions`) + `user_profiles` (réponses du questionnaire),
+  RLS `auth.uid() = user_id`. Tables V1 (`user_programs`, `workout_sets`, `workout_sessions`) : plus écrites par l'app,
+  sauf données restées en attente sur un appareil ; contenu entièrement copié en V2 (vérifié le 22/11/2026 : 221 séries sur 221).
+  Suppression possible plus tard, uniquement sur demande explicite du propriétaire et après sauvegarde. Seule la clé publique `sb_publishable` est autorisée dans le code.
   Jamais de clé `service_role` ni de secret dans le dépôt (il est public).
 - Ne jamais casser la compatibilité des données locales existantes sans migration.
 
@@ -74,8 +77,7 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
 Conception : `docs/superpowers/specs/2026-11-21-steroid-v2-design.md` (interface retenue : proposition P1 « Guidé »,
 maquettes sur le canevas « STÉROÏDE — refonte UX »). Plans : `docs/superpowers/plans/`.
 - Lot 1 Fondations : fait. Tables V2 créées dans Supabase et données V1 copiées (`select public.v2_copy_legacy()`,
-  rejouable ; correspondances des noms dans `public.v2_name_map`). L'app écrit encore dans les tables V1 :
-  relancer la copie au basculement (lot 3).
+  rejouable ; correspondances des noms dans `public.v2_name_map`).
 - Lot 2 Générateur et cycles : fait (`buildCycle`, moteur `{version: 2}`, tests sur 4 050 combinaisons).
 - Lot 3a Logique de séance : fait (modules ci-dessus + `alternatives` du catalogue).
 - Lot 3b Écrans P1 et bascule : fait. Les nouvelles séances s'écrivent dans les tables V2 ; Progrès et Programme lisent la V2.
