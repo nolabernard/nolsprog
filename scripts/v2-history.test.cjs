@@ -74,4 +74,14 @@ assert.equal(H.advice({sets:3,reps_min:8,reps_max:10},twice,workouts,'squat').st
 assert.doesNotMatch(H.advice({sets:1,reps_min:8,reps_max:10},[L('w1','squat',1,0,10)],workouts,'squat').text,/kg/);
 assert.equal(H.increment(60),2.5);assert.equal(H.increment(20),1.25);assert.equal(H.increment(10),0.5);
 
+// Ressenti par série (répétitions en réserve) : il prime sur les seules répétitions.
+{ const w2=[W('r1','2026-11-02T10:00:00Z')];
+  const easy=[L('r1','squat',1,100,8,{rir:3}),L('r1','squat',2,100,8,{rir:4})];
+  let a=H.advice({sets:2,reps_min:6,reps_max:10},easy,w2,'squat');assert.equal(a.status,'increase');assert.equal(a.weight,102.5);assert.match(a.text,/faciles à 100 kg/);
+  const fail=[L('r1','squat',1,100,10,{rir:2}),L('r1','squat',2,100,10,{rir:0})];
+  a=H.advice({sets:2,reps_min:6,reps_max:10},fail,w2,'squat');assert.equal(a.status,'hold');assert.match(a.text,/échec/);
+  const mixed=[L('r1','squat',1,100,8,{rir:3}),L('r1','squat',2,100,8)];
+  assert.equal(H.advice({sets:2,reps_min:6,reps_max:10},mixed,w2,'squat').status,'reps','ressenti incomplet : on reste prudent');
+  const under=[L('r1','squat',1,100,4,{rir:3}),L('r1','squat',2,100,4,{rir:3})];
+  assert.equal(H.advice({sets:2,reps_min:6,reps_max:10},under,w2,'squat').status,'reps','sous la fourchette : pas de hausse'); }
 console.log('v2-history : ok');

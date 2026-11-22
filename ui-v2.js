@@ -72,7 +72,8 @@ function chooser({sessions=[],current}={}){
   +sessions.map(s=>'<button type="button" class="v2-opt'+(s.id===current?' is-current':'')+'" data-action="v2-pick-session" data-session="'+esc(s.id)+'"><span><b>'+esc(s.title)+'</b><small>'+esc((s.focus||[]).join(', '))+' · '+plural((s.exercises||[]).length,'exercice','exercices')+'</small></span></button>').join('')+'</section></div>';
 }
 
-function session({workout,index=0,elapsed=0,paused=false,pausedFor=0,rest=null,last={},advice={},userExercises=[],pending=0}={}){
+const RATES=[[3,'Facile','3 reps ou + en réserve'],[2,'Correct','1 ou 2 en réserve'],[0,'Dur','plus rien en réserve']];
+function session({workout,index=0,elapsed=0,paused=false,pausedFor=0,rest=null,last={},advice={},userExercises=[],pending=0,rate=null}={}){
  const list=ordered(workout).filter(e=>e.status!=='skipped');
  const i=Math.max(0,Math.min(index,list.length-1)),e=list[i];
  if(!e)return '<section class="v2-session"><p>Aucun exercice dans cette séance.</p><button type="button" class="v2-btn" data-action="v2-finish">Terminer la séance</button></section>';
@@ -93,6 +94,8 @@ function session({workout,index=0,elapsed=0,paused=false,pausedFor=0,rest=null,l
    +'<button type="button" class="v2-ok" data-action="v2-set" data-ex="'+esc(e.id)+'" data-set="'+n+'" aria-pressed="'+s.completed+'" aria-label="'+(s.completed?'Série '+n+' validée':'Valider la série '+n)+'">'+icon('check')+'</button></div>';
  }
  html+='</div>';
+ // Ressenti de la dernière série validée, en un appui (répétitions en réserve : facile ≥ 3, correct 1-2, dur 0).
+ if(rate)html+='<div class="v2-rate" role="group" aria-label="Ressenti de la série '+rate.set+'"><span>Série '+rate.set+(rate.name?' · '+esc(rate.name):'')+' : c’était…</span><div>'+RATES.map(([v,t,h])=>'<button type="button" data-action="v2-rir" data-ex="'+esc(rate.ex)+'" data-set="'+rate.set+'" data-rir="'+v+'" aria-pressed="'+(rate.rir===v)+'"><b>'+t+'</b><small>'+h+'</small></button>').join('')+'</div></div>';
  if(rest)html+='<div class="v2-rest" role="timer" aria-live="polite"><span>Repos</span><b>'+clock(rest.remaining).replace(/^0(\d):/,'$1:')+'</b><button type="button" class="v2-btn v2-btn--ghost v2-btn--sm" data-action="v2-rest-plus">+30 s</button><button type="button" class="v2-btn v2-btn--ghost v2-btn--sm" data-action="v2-rest-skip">Passer</button></div>';
  const lastOne=i===list.length-1;
  html+='<footer class="v2-session-foot"><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-machine" data-ex="'+esc(e.id)+'">'+icon('swap')+'Machine prise</button><div class="v2-nav"><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-prev" aria-label="Exercice précédent" '+(i===0?'disabled':'')+'>'+icon('left')+'</button>'
