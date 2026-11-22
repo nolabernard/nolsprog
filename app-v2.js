@@ -293,7 +293,7 @@ function create(ctx){
   const mine=S.userExercises.filter(u=>q&&Cat.normalize(u.name).includes(Cat.normalize(q))).map(u=>({key:u.key,name:u.name,muscle:u.muscle,role:'finition'}));
   return [...mine,...(q?Cat.search(q).slice(0,8):Cat.CATALOGUE.slice(0,8).map(entry=>({entry})))];
  }
- function programmeHTML(){return UI.programme({cycleStatus:S.cycle?C.cycleStatus(S.cycle,S.workouts,now()):null,open:[...openSessions],editing:S.edit?Math.max(1,S.edit.ops.length):0,reminders:remState(),cycle:P(),userExercises:S.userExercises,picking:S.picking,query:S.query,results:S.picking?searchResults():[],creating:S.creating})}
+ function programmeHTML(){return UI.programme({cardioOpen:S.cardioOpen,cycleStatus:S.cycle?C.cycleStatus(S.cycle,S.workouts,now()):null,open:[...openSessions],editing:S.edit?Math.max(1,S.edit.ops.length):0,reminders:remState(),cycle:P(),userExercises:S.userExercises,picking:S.picking,query:S.query,results:S.picking?searchResults():[],creating:S.creating})}
 
  // ----- Programme -----
  function saveCycleExercise(e){later(()=>{if(api&&userId)queueRows({cycle_exercises:[exRow(e)]})})}
@@ -400,6 +400,7 @@ function create(ctx){
    case 'v2-pick':pickExercise(d.key);break;
    case 'v2-remove-ex':await removeExercise(d.ce);break;
    case 'v2-edit-save':saveDraft();break;
+   case 'v2-cardio-toggle':S.cardioOpen=!S.cardioOpen;break;
    case 'v2-prog-toggle':if(openSessions.has(d.session))openSessions.delete(d.session);else openSessions.add(d.session);break;
    case 'v2-move-ex':moveExercise(d.ce,Number(d.dir)===-1?-1:1);break;
    case 'v2-edit-cancel':cancelDraft();break;
