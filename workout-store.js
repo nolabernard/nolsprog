@@ -18,7 +18,7 @@ function createWorkoutStore({storage,api,userId,now=()=>Date.now(),uuid=defaultU
  let flushing=null;
  function save(){if(workout)storage.setItem(WKEY,JSON.stringify(workout));else storage.removeItem(WKEY);storage.setItem(QKEY,JSON.stringify(queue))}
  function enqueue(table,row){queue[table+':'+row.id]={table,row};}
- function workoutRow(w){return {id:w.id,user_id:userId,cycle_id:w.cycle_id,cycle_session_id:w.cycle_session_id,status:w.status,started_at:iso(w.started_at),ended_at:iso(w.ended_at),paused_at:iso(w.paused_at),paused_seconds:w.paused_seconds,duration_seconds:w.duration_seconds,revision:w.revision}}
+ function workoutRow(w){return {id:w.id,user_id:userId,cycle_id:w.cycle_id,cycle_session_id:w.cycle_session_id,status:w.status,started_at:iso(w.started_at),ended_at:iso(w.ended_at),paused_at:iso(w.paused_at),paused_seconds:w.paused_seconds,duration_seconds:w.duration_seconds,revision:w.revision,skip_reason:w.skip_reason??null}}
  function exerciseRow(e){return {id:e.id,user_id:userId,workout_id:workout.id,position:e.position,exercise_key:e.exercise_key,cycle_exercise_id:e.cycle_exercise_id,substituted_from_key:e.substituted_from_key,status:e.status,rpe:e.rpe}}
  function setRow(e,s){return {id:s.id,user_id:userId,workout_exercise_id:e.id,exercise_key:e.exercise_key,set_number:s.set_number,weight:s.weight,reps:s.reps,rir:s.rir,completed:s.completed}}
  function touchWorkout(){workout.revision=(workout.revision||0)+1;enqueue('workouts',workoutRow(workout))}
@@ -98,6 +98,15 @@ function createWorkoutStore({storage,api,userId,now=()=>Date.now(),uuid=defaultU
    for(const e of workout.exercises)for(const s of e.sets)if(s.completed||s.weight!=null||s.reps!=null)enqueue('workout_set_logs',setRow(e,s));
    const done=workout;workout=null;save();return done;
   },
+  // Séance passée (malade, douleur…) : notée sans séries, elle fait avancer la suite. Jamais pendant une séance en cours.
+  skipSession(session,{reason='autre'}={}){
+   if(workout)throw Error('Une séance est déjà en cours.');
+   const t=now(),why=['malade','douleur','temps','autre'].includes(reason)?reason:'autre';
+   const w={id:uuid(),cycle_id:session.cycle_id??null,cycle_session_id:session.id??null,status:'skipped',started_at:t,ended_at:t,paused_at:null,paused_seconds:0,duration_seconds:0,revision:1,skip_reason:why};
+   enqueue('workouts',workoutRow(w));save();return workoutRow(w);
+  },
+  // Erreur de manipulation : la séance passée est annulée (elle ne compte plus dans la suite).
+  cancelSkip(row){if(!row||row.status!=='skipped')return null;const r={...row,user_id:userId,status:'abandoned',skip_reason:null,revision:(row.revision||1)+1};enqueue('workouts',r);save();return r},
   async flush(){
    if(flushing)return flushing;
    // Un envoi sans attente se termine avant l'affectation : on libère le verrou après coup.
@@ -106,6 +115,8 @@ function createWorkoutStore({storage,api,userId,now=()=>Date.now(),uuid=defaultU
      for(const table of TABLES){
       const items=Object.entries(queue).filter(([,v])=>v.table===table);
       if(!items.length)continue;
+      // Lignes mises en file avant l'ajout d'une colonne : mêmes clés pour un envoi groupé.
+      if(table==='workouts')for(const [,v] of items)if(!('skip_reason' in v.row))v.row={...v.row,skip_reason:null};
       try{await api.upsert(table,items.map(([,v])=>v.row))}
       catch(err){
        if(!isRejection(err))throw err;

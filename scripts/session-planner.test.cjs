@@ -35,10 +35,24 @@ r=P.nextSession(c2,[done('s1',50)],now);assert.equal(r.session.id,'s3');assert.e
 // Les finitions ne déclenchent pas le garde-fou (Abdominaux en finition).
 // Tout est en conflit → on propose quand même la prévue, avec l'explication.
 const c3={sessions:[cycle.sessions[1],cycle.sessions[3]]};
-r=P.nextSession(c3,[done('s1',10)],now);
+r=P.nextSession(c3,[done('s1',20)],now);
 assert.equal(r.session.id,'s3');assert.equal(r.reason,"recovery-all");assert.match(r.message,/les jambes/);
 
 // Séances non terminées ignorées.
 r=P.nextSession(cycle,[{cycle_session_id:'s0',status:'abandoned',ended_at:new Date(now-H).toISOString()}],now);
 assert.equal(r.session.id,'s0');
+// Une séance par jour : séance faite aujourd'hui → la suivante attend demain, sans bouton de démarrage.
+{const t=new Date(now);const sameDay=new Date(t.getFullYear(),t.getMonth(),t.getDate(),Math.min(t.getHours(),23),0).getTime();
+ const todayDone={cycle_session_id:'s0',status:'completed',ended_at:new Date(sameDay).toISOString(),id:'w1'};
+ r=P.nextSession(cycle,[todayDone],sameDay+60e3);
+ assert.equal(r.reason,'tomorrow');assert.equal(r.today.status,'completed');assert.equal(r.today.title,'Haut A');assert.equal(r.session.id,'s1');
+ assert.equal(P.today([todayDone],sameDay+60e3).id,'w1');
+ // Lendemain : plus de blocage.
+ r=P.nextSession(cycle,[todayDone],sameDay+30*H);assert.notEqual(r.reason,'tomorrow');assert.equal(r.session.id,'s1');
+ // Séance passée : la suite avance, repos aujourd'hui, et elle ne compte pas comme travaillée (pas de garde-fou).
+ const skipped={cycle_session_id:'s1',status:'skipped',skip_reason:'malade',ended_at:new Date(sameDay).toISOString(),id:'w2'};
+ r=P.nextSession(c2,[skipped],sameDay+60e3);assert.equal(r.reason,'tomorrow');assert.equal(r.today.status,'skipped');assert.equal(r.today.reason,'malade');
+ r=P.nextSession(c2,[skipped],sameDay+30*H);assert.equal(r.session.id,'s3');assert.equal(r.reason,'sequence','une séance passée ne fatigue pas');
+ // Séance passée puis annulée (abandoned) : ignorée.
+ r=P.nextSession(c2,[{...skipped,status:'abandoned'}],sameDay+60e3);assert.equal(r.session.id,'s0');assert.equal(r.reason,'sequence');}
 console.log('Session planner checks passed');

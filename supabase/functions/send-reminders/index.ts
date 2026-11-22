@@ -51,11 +51,11 @@ async function runSchedule() {
   const { data: subs, error } = await db.from("push_subscriptions").select("*").eq("enabled", true);
   if (error) throw error;
   const list = (subs || []) as Sub[];
-  // Séances terminées dans les dernières 36 h : pas de rappel un jour où la séance est déjà faite.
+  // Séances terminées ou passées dans les dernières 36 h : pas de rappel un jour où la séance est faite ou passée.
   const users = [...new Set(list.map(s => s.user_id))];
   const trained = new Map<string, string[]>();
   if (users.length) {
-    const { data: ws } = await db.from("workouts").select("user_id, ended_at").eq("status", "completed").gte("ended_at", new Date(now - 36 * 3600e3).toISOString()).in("user_id", users);
+    const { data: ws } = await db.from("workouts").select("user_id, ended_at").in("status", ["completed", "skipped"]).gte("ended_at", new Date(now - 36 * 3600e3).toISOString()).in("user_id", users);
     for (const w of ws || []) {
       const tz = list.find(s => s.user_id === w.user_id)?.timezone || "Europe/Paris";
       trained.set(w.user_id, [...(trained.get(w.user_id) || []), localDate(Date.parse(w.ended_at), tz)]);

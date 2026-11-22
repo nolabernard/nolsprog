@@ -137,7 +137,7 @@ async function loadCycle(api,userId){
  const uid=encodeURIComponent(userId);
  const [cy]=await api.select('cycles?user_id=eq.'+uid+'&status=eq.active&select=*&limit=1');
  const [workouts,logs,userExercises,cardioLogs]=await Promise.all([
-  api.select('workouts?user_id=eq.'+uid+'&status=eq.completed&select=id,cycle_id,cycle_session_id,status,started_at,ended_at,duration_seconds,cycle_sessions(title)&order=ended_at.desc&limit=500'),
+  api.select('workouts?user_id=eq.'+uid+'&status=in.(completed,skipped)&select=id,cycle_id,cycle_session_id,status,skip_reason,started_at,ended_at,duration_seconds,revision,cycle_sessions(title)&order=ended_at.desc&limit=500'),
   selectAll(api,'workout_set_logs?user_id=eq.'+uid+'&select=exercise_key,workout_exercise_id,set_number,weight,reps,rir,completed,created_at,workout_exercises(workout_id,position,substituted_from_key,rpe)&order=created_at.desc,id',10),
   api.select('user_exercises?user_id=eq.'+uid+'&select=key,name,pattern,muscle,equipment'),
   api.select('cardio_logs?user_id=eq.'+uid+'&select=id,workout_id,cycle_id,done_on,type,minutes&order=done_on.desc&limit=1000')]);
