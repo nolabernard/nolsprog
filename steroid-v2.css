@@ -337,6 +337,16 @@ button:active{transform:translateY(1px)}
 .v2-cardio-plan .v2-select{width:100%;min-width:0;box-sizing:border-box}
 /* Le dernier élément de Programme ne passe plus sous la barre du bas */
 .v2-progress{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
+/* Barre d'avancée du programme */
+.v2-cyclebar{margin:4px 0 14px;padding:12px 14px;border-radius:16px;background:var(--surface,#FFFCF6);border:1px solid var(--line)}
+.v2-cyclebar-top{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted);margin-bottom:8px}
+.v2-cyclebar-top b{color:var(--text)}
+.v2-cyclebar-track{height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.v2-cyclebar-track i{display:block;height:100%;border-radius:99px;background:var(--accent,#0B4D3B)}
+.v2-progress .v2-cyclebar{margin:0}
+/* Cardio en plus (Programme) */
+.v2-cardio-none{margin:0;padding:10px 12px;border-radius:12px;background:var(--raised,#F1E6D6);font-size:14px;color:var(--text)}
+.v2-cardio-add-title{margin:6px 0 0;font-weight:800;font-size:15px}
 /* Séance passée, une séance par jour */
 .v2-coach-links{display:flex;flex-wrap:wrap;gap:6px 20px}
 .v2-next-after{display:flex;align-items:center;gap:8px;margin:14px 0 0;font-size:16px}

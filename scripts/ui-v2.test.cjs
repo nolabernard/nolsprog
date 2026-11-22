@@ -13,6 +13,12 @@ let h=UI.home({next:{session:haut,planned:haut,reason:'sequence',message:''},cyc
 assert.match(h,/Haut A/);assert.match(h,/Pectoraux/);assert.match(h,/Dos/);
 assert.match(h,/>2<\/b>\s*<span>exercices/);assert.match(h,/>5<\/b>\s*<span>séries/);assert.match(h,/48/);
 assert.match(h,/data-action="v2-start" data-session="s1"/);assert.match(h,/aria-label="Avancée du cycle : 11 %"/);
+// Barre d'avancée du programme en haut de l'accueil et de Programme.
+{const st={week:3,weeks:6,done:13,total:36,pct:36};
+ const hb=UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},cycleStatus:st});
+ assert.match(hb,/semaine 3 sur 6/);assert.match(hb,/36 %/);assert.match(hb,/13\/36 séances/);assert.match(hb,/style="width:36%"/);
+ assert.match(UI.programme({cycle:{sessions:[haut]},cycleStatus:st}),/v2-cyclebar/);
+ assert.match(UI.programme({cycle:{sessions:[haut]}}),/Cardio en plus[^]*Aucun objectif de cardio/);}
 // Anneau de l'accueil : séances de la semaine sur l'objectif, écrit en clair.
 {const w=UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},progress:0.36,week:{done:5,goal:6}});
  assert.match(w,/5<small>\/6<\/small>/);assert.match(w,/aria-label="5 séances faites sur 6 cette semaine"/);assert.match(w,/cette semaine<\/span>/);assert.doesNotMatch(w,/36/);
