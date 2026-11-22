@@ -23,7 +23,7 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
   restés en attente sur un appareil.
 - Modules purs, exposés en global navigateur et en `module.exports` pour les tests :
   `sport-rules.js` (validation), `sport-guide.js` (onboarding), `program-engine.js` (génération de programme, déterministe ;
-  `buildProgram(p, semaine)` = V1 figée pour les programmes en cours, `{version: 2}` et `buildCycle(p)` = V2),
+  `buildProgram(p, semaine)` = V1 figée pour les programmes en cours, `{version: 2}` et `buildCycle(p)` = V2).
 - `exercise-catalogue.js` : catalogue à clés permanentes (`SteroidCatalogue`), rôles base/finition, recherche
   tolérante (`search`, `resolveName`). Une clé publiée ne change jamais et n'est jamais réutilisée.
 - `session-planner.js` (`SteroidPlanner.nextSession`) : prochaine séance de la suite + garde-fou 48 h expliqué.
