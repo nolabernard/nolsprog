@@ -229,6 +229,8 @@ function create(ctx){
  // ----- Rendu -----
  function dateText(){const d=new Date(now());return DAYS[d.getDay()]+' '+d.getDate()+' '+MONTHS[d.getMonth()]}
  function minutes(s){try{return G().NolsEngine.estimatedMinutes(s.exercises.map(e=>({name:C.nameOf(e.exercise_key,S.userExercises),sets:e.sets,rest:e.rest_seconds})))}catch{return null}}
+ // Séances faites cette semaine (lundi → dimanche) et objectif : l'anneau de l'accueil.
+ function weekCount(){const d=new Date(now()),monday=new Date(d.getFullYear(),d.getMonth(),d.getDate()-((d.getDay()+6)%7)).getTime();return {done:S.workouts.filter(w=>w.cycle_id===S.cycle.id&&w.status==='completed'&&Date.parse(w.ended_at)>=monday).length,goal:S.cycle.sessions_per_week||S.cycle.sessions.length}}
  function weekLine(){
   const d=new Date(now()),monday=new Date(d.getFullYear(),d.getMonth(),d.getDate()-((d.getDay()+6)%7)).getTime();
   const done=S.workouts.filter(w=>w.cycle_id===S.cycle.id&&w.status==='completed'&&Date.parse(w.ended_at)>=monday).length,goal=S.cycle.sessions_per_week||S.cycle.sessions.length;
@@ -265,7 +267,7 @@ function create(ctx){
   const next=Planner.nextSession(S.cycle,S.workouts,now());
   const active=w?{title:sessionTitle(w),done:w.exercises.reduce((n,e)=>n+e.sets.filter(s=>s.completed).length,0),total:w.exercises.reduce((n,e)=>n+e.sets.length,0)}:null;
   const cardio={target:(S.cycle.cardio||[]).reduce((n,c)=>n+c.minutes*c.per_week,0),minutes:C.cardioWeek(S.cardioLogs,now())};
-  let html=UI.home({next,rhythm:C.rhythm(S.cycle,S.workouts,now()),cardio,hasHistory:S.workouts.some(x=>x.cycle_id===S.cycle.id&&x.status==='completed'),cycle:S.cycle,progress:C.cycleProgress(S.cycle,S.workouts),minutes:next?minutes(next.session):null,firstName:ctx.firstName?.()||'',dateText:dateText(),weekLine:weekLine(),record:recentRecord(),deload:C.deload(S.cycle,S.workouts),last:lastSession(),active});
+  let html=UI.home({next,rhythm:C.rhythm(S.cycle,S.workouts,now()),cardio,hasHistory:S.workouts.some(x=>x.cycle_id===S.cycle.id&&x.status==='completed'),cycle:S.cycle,progress:C.cycleProgress(S.cycle,S.workouts),minutes:next?minutes(next.session):null,firstName:ctx.firstName?.()||'',dateText:dateText(),weekLine:weekLine(),record:recentRecord(),deload:C.deload(S.cycle,S.workouts),last:lastSession(),week:weekCount(),cycleStatus:C.cycleStatus(S.cycle,S.workouts,now()),active});
   if(!w&&(S.proposal||Rv.due(S.cycle,S.workouts,now())))html=html.replace('<section class="v2-next"',UI.reviewCard({proposal:Boolean(S.proposal)})+'<section class="v2-next"');
   if(S.sheet?.type==='choose')html+=UI.chooser({sessions:S.cycle.sessions,current:next?.session.id});
   if(S.sheet?.type==='skip'){const sk=S.cycle.sessions.find(x=>x.id===S.sheet.session);if(sk)html+=UI.skipSheet({session:sk})}
@@ -291,7 +293,7 @@ function create(ctx){
   const mine=S.userExercises.filter(u=>q&&Cat.normalize(u.name).includes(Cat.normalize(q))).map(u=>({key:u.key,name:u.name,muscle:u.muscle,role:'finition'}));
   return [...mine,...(q?Cat.search(q).slice(0,8):Cat.CATALOGUE.slice(0,8).map(entry=>({entry})))];
  }
- function programmeHTML(){return UI.programme({open:[...openSessions],editing:S.edit?Math.max(1,S.edit.ops.length):0,reminders:remState(),cycle:P(),userExercises:S.userExercises,picking:S.picking,query:S.query,results:S.picking?searchResults():[],creating:S.creating})}
+ function programmeHTML(){return UI.programme({cardioOpen:S.cardioOpen,cycleStatus:S.cycle?C.cycleStatus(S.cycle,S.workouts,now()):null,open:[...openSessions],editing:S.edit?Math.max(1,S.edit.ops.length):0,reminders:remState(),cycle:P(),userExercises:S.userExercises,picking:S.picking,query:S.query,results:S.picking?searchResults():[],creating:S.creating})}
 
  // ----- Programme -----
  function saveCycleExercise(e){later(()=>{if(api&&userId)queueRows({cycle_exercises:[exRow(e)]})})}
@@ -398,6 +400,7 @@ function create(ctx){
    case 'v2-pick':pickExercise(d.key);break;
    case 'v2-remove-ex':await removeExercise(d.ce);break;
    case 'v2-edit-save':saveDraft();break;
+   case 'v2-cardio-toggle':S.cardioOpen=!S.cardioOpen;break;
    case 'v2-prog-toggle':if(openSessions.has(d.session))openSessions.delete(d.session);else openSessions.add(d.session);break;
    case 'v2-move-ex':moveExercise(d.ce,Number(d.dir)===-1?-1:1);break;
    case 'v2-edit-cancel':cancelDraft();break;

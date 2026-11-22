@@ -115,3 +115,10 @@ let n=0;const uuid=()=>'00000000-0000-4000-8000-'+String(++n).padStart(12,'0');
   assert.equal(C.warmup(null),null);assert.equal(C.warmup(12),null,'charge légère : pas d’échauffement chiffré'); }
 console.log('v2-cycle : ok');
 })().catch(e=>{console.error(e);process.exit(1)});
+// Où on en est : semaine en cours depuis le début du cycle et séances faites sur le total.
+{const C2=require('../v2-cycle.js'),D=24*3600e3,start=Date.parse('2026-11-02T00:00:00Z');
+ const cy={id:'c9',weeks:6,sessions_per_week:6,started_at:new Date(start).toISOString(),sessions:[]};
+ const ws=Array.from({length:13},(_,i)=>({cycle_id:'c9',status:'completed'})).concat([{cycle_id:'c9',status:'skipped'},{cycle_id:'x',status:'completed'}]);
+ const st=C2.cycleStatus(cy,ws,start+20*D);require('assert').deepStrictEqual(st,{week:3,weeks:6,done:13,total:36,pct:36});
+ require('assert').equal(C2.cycleStatus(cy,[],start+90*D).week,6,'jamais au-delà de la dernière semaine');}
+

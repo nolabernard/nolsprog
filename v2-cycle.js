@@ -101,6 +101,15 @@ function cycleProgress(cycle,workouts){
  return Math.min(1,done/total);
 }
 
+// Où on en est dans le programme : semaine en cours (depuis le début du cycle) et séances faites sur le total prévu.
+function cycleStatus(cycle,workouts,now=Date.now()){
+ if(!cycle)return null;
+ const weeks=Math.max(1,Number(cycle.weeks)||6),perWeek=Math.max(1,Number(cycle.sessions_per_week)||(cycle.sessions||[]).length||1),total=weeks*perWeek;
+ const done=(workouts||[]).filter(w=>w.cycle_id===cycle.id&&w.status==='completed').length;
+ const start=Date.parse(cycle.started_at);
+ const week=Number.isFinite(start)?Math.min(weeks,Math.max(1,Math.floor((now-start)/(7*24*3600e3))+1)):1;
+ return {week,weeks,done:Math.min(done,total),total,pct:Math.round(Math.min(1,done/total)*100)};
+}
 // Supabase renvoie au plus 1000 lignes par réponse : lecture par pages.
 async function selectAll(api,path,maxPages=10){
  const out=[];
@@ -157,5 +166,5 @@ async function loadCycle(api,userId){
  return {cycle:{...cy,user_exercises:userExercises||[],sessions:list,cardio:cardio||[]},truncated,workouts:done,setLogs,userExercises:userExercises||[],cardioLogs:cardioLogs||[]};
 }
 
-return {deload,deloadSets,warmup,rhythm,weekStart,localDate,cardioWeek,cardioProgress,fromEngine,fromLegacyPlan,toRows,lastPerformance,progress,cycleProgress,loadCycle,nameOf,parseReps};
+return {deload,deloadSets,warmup,rhythm,weekStart,localDate,cardioWeek,cardioProgress,fromEngine,fromLegacyPlan,toRows,lastPerformance,progress,cycleProgress,cycleStatus,loadCycle,nameOf,parseReps};
 });
