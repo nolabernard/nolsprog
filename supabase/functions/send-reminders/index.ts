@@ -1,4 +1,4 @@
-// STÉROÏDE — envoi des rappels (notifications web).
+// STEROID — envoi des rappels (notifications web).
 // GET  ?vapid=1                 → clé publique d'envoi (créée au premier appel, gardée dans public.push_config).
 // POST + x-cron-secret          → appel programmé toutes les 15 min : envoie les rappels dus.
 // POST + Authorization: Bearer  → { action: 'save', sub } / { action: 'remove', endpoint } / { test: true } pour l'utilisateur connecté.
@@ -30,7 +30,7 @@ async function vapid() {
 }
 
 type Sub = { id: string; user_id: string; endpoint: string; p256dh: string; auth: string; enabled: boolean; hour: number; minute: number; days: number[]; timezone: string; last_sent_on: string | null };
-const MESSAGE = { title: "STÉROÏDE", body: "C’est l’heure de ta séance. Ta prochaine séance t’attend.", url: "/nolsprog/" };
+const MESSAGE = { title: "STEROID", body: "C’est l’heure de ta séance. Ta prochaine séance t’attend.", url: "/nolsprog/" };
 
 async function send(sub: Sub, payload = MESSAGE) {
   try {

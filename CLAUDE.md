@@ -1,4 +1,4 @@
-# STÉROÏDE — consignes de travail
+# STEROID — consignes de travail
 
 Application web mobile-first de suivi d'entraînement (musculation + cardio).
 Site statique (HTML/CSS/JS, sans framework ni build), publié sur GitHub Pages :
@@ -81,7 +81,7 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
 
 ## Avancement V2 (cahier des charges : `docs/cahier-des-charges-v2.md`)
 Conception : `docs/superpowers/specs/2026-11-21-steroid-v2-design.md` (interface retenue : proposition P1 « Guidé »,
-maquettes sur le canevas « STÉROÏDE — refonte UX »). Plans : `docs/superpowers/plans/`.
+maquettes sur le canevas « STEROID — refonte UX »). Plans : `docs/superpowers/plans/`.
 - Lot 1 Fondations : fait. Tables V2 créées dans Supabase et données V1 copiées (`select public.v2_copy_legacy()`,
   rejouable ; correspondances des noms dans `public.v2_name_map`).
 - Lot 2 Générateur et cycles : fait (`buildCycle`, moteur `{version: 2}`, tests sur 4 050 combinaisons).

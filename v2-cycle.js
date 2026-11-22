@@ -1,4 +1,4 @@
-/* STÉROÏDE V2 — cycle actif côté app.
+/* STEROID V2 — cycle actif côté app.
  * Construit le cycle (générateur ou ancien plan pour le mode invité), le lit depuis Supabase,
  * et calcule les dernières performances et le progrès, toujours par clé d'exercice. Charge non saisie = null. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.SteroidCycle=api})(typeof globalThis!=='undefined'?globalThis:this,function(){

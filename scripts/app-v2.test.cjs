@@ -118,6 +118,12 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  await c.createExercise({name:'Mon mollet maison',muscle:'Jambes',pattern:'iso'});await c.handle('v2-edit-save');
  const mine=c.state().cycle.sessions[1].exercises.at(-1);assert.match(mine.exercise_key,/^u-[0-9a-f-]{36}$/);
  assert.match(c.programmeHTML(),/Mon mollet maison/);
+ // Ordre des exercices : descendre le premier exercice, brouillon puis enregistrement.
+ {const s1=c.state().cycle.sessions[1],first=s1.exercises[0].id;await c.handle('v2-move-ex',{ce:first,dir:'1'});
+  assert.equal(c.state().cycle.sessions[1].exercises[0].id,first,'rien ne change avant Enregistrer');
+  await c.handle('v2-edit-save');assert.equal(c.state().cycle.sessions[1].exercises[1].id,first);assert.equal(c.state().cycle.sessions[1].exercises[1].position,1);
+  await c.handle('v2-prog-toggle',{session:s1.id});assert.doesNotMatch(c.programmeHTML(),new RegExp('data-ce="'+first+'"'));
+  await c.handle('v2-prog-toggle',{session:s1.id});assert.match(c.programmeHTML(),new RegExp('data-ce="'+first+'"'))}
 
  // ----- Lot 6 : bilan de fin de cycle, cycle suivant proposé puis validé -----
  {

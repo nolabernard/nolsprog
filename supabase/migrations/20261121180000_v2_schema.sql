@@ -1,4 +1,4 @@
--- STÉROÏDE V2 : schéma additif. Ne modifie ni ne supprime aucune table V1.
+-- STEROID V2 : schéma additif. Ne modifie ni ne supprime aucune table V1.
 -- Idempotent : peut être relancé sans effet.
 
 create table if not exists public.cycles (

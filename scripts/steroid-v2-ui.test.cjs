@@ -13,7 +13,7 @@ assert(app.includes('v2Unavailable()'),'Écran de repli sans V1');
 assert(css.includes('.tabbar button.active'),'Floating navigation active state missing');
 assert(css.includes('prefers-reduced-motion:reduce'),'Reduced motion preference must be respected');
 assert(css.includes('min-height:46px'),'Touch targets should remain comfortably tappable');
-console.log('STÉROÏDE V2 design-system checks passed.');
+console.log('STEROID V2 design-system checks passed.');
 // Lot 5 : module d'historique chargé avant le contrôleur, styles présents.
 assert(html.indexOf('./v2-history.js')>0&&html.indexOf('./v2-history.js')<html.indexOf('./app-v2.js'),'v2-history.js doit être chargé avant app-v2.js');
 assert(html.indexOf('./v2-review.js')>0&&html.indexOf('./v2-review.js')<html.indexOf('./app-v2.js'),'v2-review.js doit être chargé avant app-v2.js');

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Lance tous les contrôles de STÉROÏDE (utilisé en local et par GitHub Actions).
+# Lance tous les contrôles de STEROID (utilisé en local et par GitHub Actions).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

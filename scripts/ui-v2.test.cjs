@@ -98,7 +98,11 @@ for(const html of [h,s,m,f,p,k])assert(noEmoji(html)&&!/onclick=/i.test(html),'p
 // Échappement.
 assert(!/<script>/.test(UI.home({next:{session:{...haut,title:'<script>'},planned:haut,reason:'sequence'},cycle:{sessions:[haut]}})));
 // Programme : exercices du cycle modifiables via le catalogue.
-const prog=UI.programme({cycle:{sessions:[haut,bas]}});
+const prog=UI.programme({cycle:{sessions:[haut,bas]},open:['s1']});
+// Séances repliées par défaut : titre et nombre d'exercices visibles, détail masqué.
+{const closed=UI.programme({cycle:{sessions:[haut,bas]}});assert.match(closed,/data-action="v2-prog-toggle" data-session="s1" aria-expanded="false"/);assert.doesNotMatch(closed,/data-action="v2-edit-ex"/);assert.match(closed,/exercices?<\/small>/)}
+assert.match(prog,/aria-expanded="true"/);assert.match(prog,/data-action="v2-move-ex" data-ce="e1" data-dir="-1"[^>]*disabled/);
+assert.match(UI.pickerResults({query:'zzz',results:[]}),/Aucun exercice trouvé/);
 assert.match(prog,/Haut A/);assert.match(prog,/data-action="v2-edit-ex" data-ce="e1"/);assert.match(prog,/data-action="v2-add-ex" data-session="s1"/);
 assert.match(prog,/data-action="v2-remove-ex" data-ce="e1"/);assert.match(prog,/data-v2-sets="e1"/);
 assert(!/<input[^>]*name="name"/.test(prog),'pas de saisie libre du nom');
@@ -140,7 +144,7 @@ for(const html of [rh,nf,pr])assert(noEmoji(html)&&!/onclick=/i.test(html));
 const rc=UI.remindersCard({enabled:true,hour:18,minute:30,days:[0,2,4],blocker:null});
 assert.match(rc,/18:30, lundi, mercredi, vendredi/);assert.match(rc,/<option value="18:30" selected>/);assert.match(rc,/data-day="2" aria-pressed="true"/);assert.match(rc,/data-day="1" aria-pressed="false"/);assert.match(rc,/v2-rem-test/);assert.match(rc,/v2-rem-off/);
 assert.match(UI.remindersCard({enabled:false,hour:18,minute:0,days:[0,1,2,3,4,5,6]}),/data-action="v2-rem-on"/);
-assert.match(UI.remindersCard({blocker:'install',message:'Ajoute <STÉROÏDE>'}),/Ajoute &lt;STÉROÏDE&gt;/);
+assert.match(UI.remindersCard({blocker:'install',message:'Ajoute <STEROID>'}),/Ajoute &lt;STEROID&gt;/);
 assert(noEmoji(rc)&&!/onclick=/i.test(rc));
 // Accueil : dernière séance effectuée.
 const hl=UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},last:{id:'w9',title:'Bas A',date:'2026-11-12T11:00:00Z',minutes:48,sets:16}});

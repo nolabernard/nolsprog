@@ -1,4 +1,4 @@
-/* STÉROÏDE V2 — bilan de fin de cycle.
+/* STEROID V2 — bilan de fin de cycle.
  * Constats fondés uniquement sur les séances réellement faites dans le cycle ; recommandation expliquée, jamais appliquée seule.
  * Le cycle suivant part de la photographie du cycle en cours + les réponses actualisées ; il n'est activé qu'après validation. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.SteroidReview=api})(typeof globalThis!=='undefined'?globalThis:this,function(){

@@ -1,4 +1,4 @@
--- STÉROÏDE V2 : copie des données V1 vers les tables V2.
+-- STEROID V2 : copie des données V1 vers les tables V2.
 -- Lecture seule sur les tables V1, uniquement des ajouts côté V2, rejouable sans doublon.
 -- Prérequis : public.v2_name_map rempli (scripts/v2/build-name-map.cjs).
 -- Usage (administrateur) : select public.v2_copy_legacy();

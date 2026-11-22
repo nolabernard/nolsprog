@@ -1,9 +1,9 @@
-# CAHIER DES CHARGES — ÉVOLUTIONS STÉROÏDE
+# CAHIER DES CHARGES — ÉVOLUTIONS STEROID
 **Version 1.0 — Novembre 2026**
 
 ## 1. Présentation et vision du projet
 
-STÉROÏDE est une application de coaching sportif destinée à accompagner les utilisateurs dans leur entraînement en salle de sport.
+STEROID est une application de coaching sportif destinée à accompagner les utilisateurs dans leur entraînement en salle de sport.
 
 L'application repose sur deux piliers complémentaires :
 
@@ -18,7 +18,7 @@ L'interface doit rester épurée. La complexité doit être gérée par le moteu
 
 ## 2. Fonctionnement général de l'application
 
-STÉROÏDE repose sur une logique de fonctionnement en plusieurs étapes :
+STEROID repose sur une logique de fonctionnement en plusieurs étapes :
 
 1. L'utilisateur répond à un questionnaire initial.
 2. Le moteur analyse ses réponses et génère automatiquement un programme personnalisé.
@@ -85,7 +85,7 @@ Aucune suppression de données ou modification destructive de la base de donnée
 
 ## 3.2. Amélioration du moteur de génération des programmes
 
-Le moteur de génération constitue le cœur de STÉROÏDE.
+Le moteur de génération constitue le cœur de STEROID.
 
 Il doit transformer les réponses au questionnaire en un programme structuré, cohérent et adapté à chaque utilisateur.
 
@@ -220,7 +220,7 @@ Les performances de deux exercices différents ne doivent pas être fusionnées 
 
 ## 3.6. Bilan et renouvellement du programme
 
-À la fin d'un cycle, STÉROÏDE doit générer un bilan personnalisé.
+À la fin d'un cycle, STEROID doit générer un bilan personnalisé.
 
 Ce bilan doit analyser :
 - Les performances réalisées.
@@ -262,7 +262,7 @@ L'utilisateur doit pouvoir consulter et enregistrer ses performances rapidement,
 
 Éviter les tableaux trop complexes, les menus surchargés et les informations secondaires affichées en permanence.
 
-Conserver l'identité visuelle existante de STÉROÏDE, notamment son wordmark et son système d'icônes SVG linéaires. Ne pas introduire d'émojis comme icônes de navigation.
+Conserver l'identité visuelle existante de STEROID, notamment son wordmark et son système d'icônes SVG linéaires. Ne pas introduire d'émojis comme icônes de navigation.
 
 ## 4.2. Questionnaire et création du programme
 
@@ -284,7 +284,7 @@ Améliorations attendues :
 - La répartition des séances.
 - Les principales caractéristiques du programme.
 
-L'utilisateur doit comprendre ce que STÉROÏDE lui propose avant de commencer.
+L'utilisateur doit comprendre ce que STEROID lui propose avant de commencer.
 
 ## 4.3. Tableau de bord
 
@@ -660,7 +660,7 @@ Les évolutions devront être livrées progressivement afin de permettre une val
 
 ## 10. OBJECTIF FINAL
 
-À terme, STÉROÏDE doit devenir une application capable de :
+À terme, STEROID doit devenir une application capable de :
 
 - Comprendre le profil sportif de chaque utilisateur.
 - Générer automatiquement un programme cohérent.
@@ -672,6 +672,6 @@ Les évolutions devront être livrées progressivement afin de permettre une val
 - Construire progressivement un historique sportif exploitable.
 - Générer un nouveau programme adapté à son évolution.
 
-**STÉROÏDE ne doit pas être un simple carnet d'entraînement numérique. Il doit devenir un véritable assistant sportif qui connaît le programme de l'utilisateur, comprend sa progression et l'aide à s'améliorer.**
+**STEROID ne doit pas être un simple carnet d'entraînement numérique. Il doit devenir un véritable assistant sportif qui connaît le programme de l'utilisateur, comprend sa progression et l'aide à s'améliorer.**
 
 La priorité reste toutefois la fiabilité du moteur sportif et la qualité de l'expérience utilisateur. L'intelligence de l'application doit se ressentir dans la pertinence de ses décisions, pas dans la complexité de son interface.

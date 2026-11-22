@@ -1,4 +1,4 @@
-/* STÉROÏDE V2 — design system visuel, sans modification des données ni des règles sportives. */
+/* STEROID V2 — design system visuel, sans modification des données ni des règles sportives. */
 :root{
  color-scheme:light;
  --bg:#F5F0E5;--surface:#FFFCF7;--raised:#E6EFE5;--line:#DCE8DD;
@@ -319,9 +319,21 @@ button:active{transform:translateY(1px)}
 .v2-savebar .v2-btn{min-height:46px;padding:0 14px;border-radius:17px;font-size:14px}.v2-savebar .v2-btn--ghost{background:transparent;color:#F5F0E5;border-color:rgba(245,240,229,.45)}
 .v2-savebar .v2-btn:not(.v2-btn--ghost){background:#F5F0E5;color:#0B4D3B}
 
+<<<<<<< HEAD
 /* Séance passée, une séance par jour */
 .v2-coach-links{display:flex;flex-wrap:wrap;gap:6px 20px}
 .v2-next-after{display:flex;align-items:center;gap:8px;margin:14px 0 0;font-size:16px}
+=======
+/* Programme : séances repliables et ordre des exercices */
+.v2-prog-head{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:44px;padding:0;border:0;background:none;color:inherit;text-align:left;cursor:pointer}
+.v2-prog-head span{display:flex;flex-direction:column;gap:2px}.v2-prog-head b{font-family:Archivo,Inter,sans-serif;font-weight:900;font-size:22px}.v2-prog-head small{color:var(--muted);font-size:13px}
+.v2-prog-head:focus-visible{outline:2px solid var(--accent,currentColor);outline-offset:4px;border-radius:8px}
+.v2-prog-list li:has(.v2-prog-move){grid-template-columns:auto 1fr auto}
+.v2-prog-move{display:flex;flex-direction:column;gap:4px;grid-row:span 2}
+.v2-move{display:grid;place-items:center;width:44px;height:36px;border:1px solid var(--line);border-radius:10px;background:none;color:inherit;cursor:pointer}
+.v2-move:disabled{opacity:.3;cursor:default}
+.v2-prog-list li:has(.v2-prog-move) .v2-prog-actions{grid-column:2/-1}
+>>>>>>> origin/main
 /* Rappels (lot 7) */
 .v2-daypick{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:10px 0}
 .v2-daypick button{min-height:44px;border:2px solid var(--line);border-radius:12px;background:var(--surface);color:var(--muted);font-weight:800;cursor:pointer}
