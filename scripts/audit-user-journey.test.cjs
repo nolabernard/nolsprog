@@ -18,7 +18,7 @@ else if(path.startsWith('/auth/v1/recover'))data={};
 else if(path.startsWith('/auth/v1/resend'))data={};
 return {ok:status<400,status,text:async()=>data===null?'':JSON.stringify(data)}};
 vm.createContext(ctx);
-for(const file of ['sport-rules.js','sport-guide.js','program-engine.js','sport-session.js','app.js'])vm.runInContext(fs.readFileSync(file,'utf8'),ctx,{filename:file});
+for(const file of ['sport-rules.js','sport-guide.js','program-engine.js','app.js'])vm.runInContext(fs.readFileSync(file,'utf8'),ctx,{filename:file});
 const state=expr=>vm.runInContext(expr,ctx);
 const click=async(action,fields={})=>{await listeners.click({target:{closest:()=>({dataset:{action,...fields}})}})};
 const submit=async(fields)=>{await listeners.submit({target:{id:'auth-form',fields},preventDefault:()=>{}})};
@@ -34,7 +34,7 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
  await click('auth-login');await submit({email:'audit@example.invalid',password:'strong-test-123'});assert.equal(state('A.view'),'onboard','First login without profile should open onboarding');
  const p={...ctx.NolsEngine.defaults,method:'upperlower',daysCount:'4',days:[0,1,3,5],equipment:'gym',level:'advanced',currentSessions:'4',duration:'75'};
  ctx.auditProfile=p;state('A.answers=auditProfile');await state('finishOnboarding()');await tick();
- assert.equal(state('A.view'),'app','Onboarding should finish');assert(profile&&program,'Profile and plan must be saved to Supabase');assert.equal(program.plan.length,7);assert.equal(program.plan.filter(d=>d.ex.length).length,4);
+ assert.equal(state('A.view'),'app','Onboarding should finish');assert(profile&&profile.answers.daysCount==='4','Les réponses du questionnaire doivent être enregistrées dans Supabase');assert.equal(program,null,'Plus de plan V1 envoyé : le programme est le cycle V2');
  // Compatibilité : séries V1 restées en attente sur l'appareil (saisies avant la V2).
  const uid='audit-test-user',pending=[{user_id:uid,week_number:1,day_index:0,exercise_id:'ex-legacy',set_number:1,weight:60,reps:8,completed:true}];
  store['steroid-pending-sets-v1:'+uid]=JSON.stringify(pending);
@@ -45,6 +45,11 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
  await click('logout');assert(state('A.session!==null'),'Déconnexion bloquée tant que des séries ne sont pas envoyées');
  networkDown=false;const before=sets.length;await state('flushSets()');
  assert.equal(sets.length,before+1,'Au retour du réseau, la série V1 en attente est envoyée');assert(!store['steroid-pending-sets-v1:'+uid],'File vidée après confirmation du serveur');
+ // Questionnaire refait hors ligne : réponses gardées sur l'appareil puis envoyées au retour du réseau.
+ networkDown=true;ctx.auditProfile2={...p,daysCount:'3',days:[0,2,4],method:'fullbody'};state('A.answers=auditProfile2');await state('finishOnboarding()');
+ assert(JSON.parse(store['steroid-pending-program-v1:audit-test-user']).profile.answers.daysCount==='3','Réponses en attente sur l’appareil');
+ await click('logout');assert(state('A.session!==null'),'Déconnexion bloquée tant que le questionnaire n’est pas envoyé');
+ networkDown=false;await state('flushProgram()');assert.equal(profile.answers.daysCount,'3','Réponses envoyées au retour du réseau');assert(!store['steroid-pending-program-v1:audit-test-user']);
  // V1 supprimée : plus d'éditeur ni de séance V1 ; le compte se déconnecte et se reconnecte proprement.
  await click('logout');assert.equal(state('A.session'),null);assert.equal(state('A.view'),'welcome');
  assert(!store['nolsprog-account-audit-test-user'],'Logout must clear account data cache');

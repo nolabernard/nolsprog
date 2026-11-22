@@ -18,7 +18,7 @@ const accountCacheKey=id=>'nolsprog-account-'+id;
 const pendingSets=new Map();let syncTimer=null,syncInFlight=false,programSyncPromise=null;
 const pendingKey=id=>'steroid-pending-sets-v1:'+id;
 const pendingProgramKey=id=>'steroid-pending-program-v1:'+id;
-function pendingProgram(uid){if(!uid)return null;try{const data=JSON.parse(localStorage.getItem(pendingProgramKey(uid))||'null');return data?.user_id===uid&&Array.isArray(data.plan)&&data.plan.length===7?data:null}catch{return null}}
+function pendingProgram(uid){if(!uid)return null;try{const data=JSON.parse(localStorage.getItem(pendingProgramKey(uid))||'null');return data?.user_id===uid&&(data.profile||Array.isArray(data.plan)&&data.plan.length===7)?data:null}catch{return null}}
 function hasPendingChanges(uid){return pendingFor(uid).length>0||Boolean(pendingProgram(uid))}
 // Données V1 et V2 : jamais « Enregistré sur ton compte » tant que l'une des deux attend un envoi.
 function anyPending(uid){return hasPendingChanges(uid)||Boolean(v2Pending())}
@@ -32,106 +32,12 @@ function pendingFor(uid){return [...pendingSets.values()].filter(r=>r.user_id===
 const A={session:null,profile:null,answers:null,step:0,guide:false,view:'app',mode:'login',email:'',busy:false,syncing:false,menuOpen:false,firstName:''};
 
 const SESSION_PREFIX='steroid-workouts-v1:';
-const sessionStorageKey=()=>SESSION_PREFIX+(A.session?.user?.id||'guest');
-let workouts={};
-function loadWorkouts(){try{workouts=JSON.parse(localStorage.getItem(sessionStorageKey())||'{}')||{}}catch{workouts={}}}
-function persistWorkouts(){try{localStorage.setItem(sessionStorageKey(),JSON.stringify(workouts))}catch{setNotice('Impossible de sauvegarder le parcours sur cet appareil.',true)}const w=activeWorkout();if(w?.status==='active')queueActiveSnapshot(S.week,S.day)}
 // Keep active session checkpoints separate from completed workout history.
 // Write only matching revision numbers so a stale device cannot silently replace a newer checkpoint.
-const activeSyncQueue=new Set();
-let activeSyncTimer=null,activeSyncRunning=false;
-function queueActiveSnapshot(week,day){
- if(!A.session)return;
- activeSyncQueue.add(week+':'+day);
- if(activeSyncTimer)clearTimeout(activeSyncTimer);
- activeSyncTimer=setTimeout(()=>{flushActiveSnapshots().catch(e=>console.warn('Sauvegarde de séance en attente',e))},650);
-}
-async function syncActiveSnapshot(key){
- if(!A.session)return;
- const w=workouts[key],parts=key.split(':').map(Number);
- if(w?.status!=='active'||parts.length!==2||!Number.isInteger(parts[0])||!Number.isInteger(parts[1]))return;
- const uid=A.session.user.id,week=parts[0],day=parts[1];
- const filter='user_id=eq.'+encodeURIComponent(uid)+'&week_number=eq.'+week+'&day_index=eq.'+day;
- const payload={user_id:uid,week_number:week,day_index:day,status:'in_progress',title:'Séance de musculation',started_at:new Date(w.started_at).toISOString(),summary:{active_workout:{id:w.id,mode:'guided',active_exercise_id:w.active_exercise_id,elapsed_offset_seconds:Number(w.elapsed_offset_seconds)||0}}};
- let rows=await cloud('workout_sessions?'+filter+'&select=id,status,revision,summary');
- if(!rows.length){
-  await cloud('workout_sessions?on_conflict=user_id,week_number,day_index',{method:'POST',prefer:'resolution=ignore-duplicates',body:payload});
-  rows=await cloud('workout_sessions?'+filter+'&select=id,status,revision,summary');
- }
- const remote=rows[0];if(!remote||remote.status!=='in_progress')return;
- const remoteId=remote.summary?.active_workout?.id;
- if(remoteId&&remoteId!==w.id){setNotice('Une autre séance est enregistrée sur un autre appareil. Ta version locale est conservée ; aucune donnée distante n’a été écrasée.',true);return}
- if(w.cloud_revision!=null&&Number(w.cloud_revision)!==Number(remote.revision)){setNotice('Séance modifiée sur un autre appareil. Ta version locale est conservée : recharge après avoir synchronisé tes séries.',true);return}
- const changed=await cloud('workout_sessions?'+filter+'&status=eq.in_progress&revision=eq.'+remote.revision+'&select=revision',{method:'PATCH',prefer:'return=representation',body:{started_at:payload.started_at,summary:payload.summary,revision:Number(remote.revision)+1}});
- if(!changed?.length){setNotice('Conflit de synchronisation détecté. Tes données locales sont conservées.',true);return}
- if(workouts[key]?.id===w.id){w.cloud_revision=Number(changed[0].revision);try{localStorage.setItem(sessionStorageKey(),JSON.stringify(workouts))}catch{}}
-}
-async function flushActiveSnapshots(){
- if(activeSyncRunning||!A.session)return;
- activeSyncRunning=true;
- try{
-  while(activeSyncQueue.size&&A.session){
-   const key=activeSyncQueue.values().next().value;
-   activeSyncQueue.delete(key);
-   try{await syncActiveSnapshot(key)}catch(e){activeSyncQueue.add(key);console.warn('Checkpoint de séance',e);setNotice('Séance conservée sur cet appareil, sauvegarde cloud en attente.',true);break}
-  }
- }finally{activeSyncRunning=false}
-}
-async function loadActiveSnapshots(){
- if(!A.session)return;
- const uid=encodeURIComponent(A.session.user.id);
- const rows=await cloud('workout_sessions?user_id=eq.'+uid+'&status=eq.in_progress&select=week_number,day_index,started_at,revision,summary&limit=500');
- let restored=0;
- for(const row of rows||[]){
-  const snap=row.summary?.active_workout,key=row.week_number+':'+row.day_index;
-  if(!snap?.id||workouts[key])continue;
-  const started=Date.parse(row.started_at);
-  if(!Number.isFinite(started))continue;
-  workouts[key]={id:snap.id,status:'active',mode:'guided',started_at:started,active_exercise_id:snap.active_exercise_id||null,elapsed_offset_seconds:Number(snap.elapsed_offset_seconds)||0,cloud_revision:Number(row.revision)};
-  restored++;
- }
- if(restored){try{localStorage.setItem(sessionStorageKey(),JSON.stringify(workouts))}catch{}}
-}
 
 // Completed workout journal is stored in the account's existing program JSON,
 // in addition to the local workout cache, so it survives device changes.
-function journalEntries(){return Array.isArray(S.plan?.[0]?.workoutHistory)?S.plan[0].workoutHistory:[]}
-function journalKey(w){return String(w.week_number)+':'+String(w.day_index)}
-function journalRecord(w,week,day){
- const duration=Math.max(0,Number(w.duration_seconds)||0);
- const summary=w.summary||{done:0,total:0,exercises:0};
- return {week_number:week,day_index:day,id:w.id||week+':'+day,started_at:Number(w.started_at)||0,ended_at:Number(w.ended_at)||0,duration_seconds:duration,weight:Number(w.weight)||0,summary:{done:Number(summary.done)||0,total:Number(summary.total)||0,exercises:Number(summary.exercises)||0},cardio:[],title:String(w.title||'Séance de musculation'),calories_estimate:globalThis.SteroidSession.calories(w.weight,duration,summary.done,summary.total)};
-}
 // Independent cloud journal: preserve the legacy program journal during migration.
-async function loadSessionJournal(){
- if(!A.session||!S.plan?.[0])return;
- const uid=encodeURIComponent(A.session.user.id);
- const rows=await cloud('workout_sessions?user_id=eq.'+uid+'&status=eq.completed&select=week_number,day_index,legacy_entry&limit=2000');
- const existing=new Set(journalEntries().map(journalKey));
- let changed=false;
- for(const row of rows||[]){
-  const entry=row.legacy_entry;
-  if(!entry||existing.has(journalKey(row)))continue;
-  S.plan[0].workoutHistory=[...journalEntries(),entry];
-  existing.add(journalKey(row));changed=true;
- }
- if(changed){persist();cacheAccount()}
-}
-function migrateLocalJournal(){
- if(!S.plan?.[0])return;
- const existing=new Set(journalEntries().map(journalKey));
- let changed=false;
- for(const [key,w] of Object.entries(workouts)){
-  if(w?.status!=='finished'||existing.has(key))continue;
-  const parts=key.split(':').map(Number);
-  if(parts.length!==2||!Number.isInteger(parts[0])||!Number.isInteger(parts[1])||parts[0]<1||parts[1]<0||parts[1]>6)continue;
-  const item=journalRecord(w,parts[0],parts[1]);
-  S.plan[0].workoutHistory=[...journalEntries(),item];existing.add(key);changed=true;
- }
- if(changed){persist();if(A.session)syncProgram().catch(e=>console.warn('Carnet en attente de synchronisation',e))}
-}
-function workoutId(){return S.week+':'+S.day}
-function activeWorkout(){return workouts[workoutId()]||null}
 
 
 
@@ -145,24 +51,20 @@ const req=async(path,{method='GET',body,token,prefer}={})=>{
  if(!res.ok){const err=Error(data?.msg||data?.error_description||data?.message||'Erreur réseau ('+res.status+')');err.status=res.status;err.code=data?.code;throw err}return data;
 };
 const token=()=>A.session?.access_token;
-function setSession(s){const oldId=A.session?.user?.id,newId=s?.user?.id;if(oldId&&oldId!==newId){persistPending(oldId);clearPrivateCache(oldId)}A.session=s;if(oldId!==newId)restorePending(newId);loadWorkouts();if(s)localStorage.setItem(AUTH_KEY,JSON.stringify(s));else localStorage.removeItem(AUTH_KEY)}
+function setSession(s){const oldId=A.session?.user?.id,newId=s?.user?.id;if(oldId&&oldId!==newId){persistPending(oldId);clearPrivateCache(oldId)}A.session=s;if(oldId!==newId)restorePending(newId);if(s)localStorage.setItem(AUTH_KEY,JSON.stringify(s));else localStorage.removeItem(AUTH_KEY)}
 async function renew(){if(!A.session)return false;if(A.session.expires_at&&A.session.expires_at>Date.now()/1000+90)return true;try{const s=await req('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:{refresh_token:A.session.refresh_token}});setSession({...s,expires_at:Math.floor(Date.now()/1000)+s.expires_in});return true}catch{setSession(null);return false}}
 async function cloud(path,opts={}){if(!await renew())throw Error('Session expirée. Reconnecte-toi.');return req('/rest/v1/'+path,{...opts,token:token()})}
-async function loadCloud(){loadWorkouts();
+async function loadCloud(){
  // Toujours récupérer l'identité depuis Supabase Auth : le cache local peut être ancien.
  try{const freshUser=await req('/auth/v1/user',{token:token()});if(freshUser?.id===A.session?.user?.id){A.session.user=freshUser;setSession(A.session);A.firstName=''}}catch(err){console.warn('Profil Auth non actualisé :',err)}
  const uid=encodeURIComponent(A.session.user.id);
- const [program,profile,logs]=await Promise.all([cloud('user_programs?user_id=eq.'+uid+'&select=plan,start_date&limit=1'),cloud('user_profiles?user_id=eq.'+uid+'&select=answers,method&limit=1'),cloud('workout_sets?user_id=eq.'+uid+'&select=week_number,day_index,exercise_id,set_number,weight,reps,completed&order=week_number.asc&limit=20000')]);
+ const [program,profile]=await Promise.all([cloud('user_programs?user_id=eq.'+uid+'&select=plan,start_date&limit=1'),cloud('user_profiles?user_id=eq.'+uid+'&select=answers,method&limit=1')]);
  const queuedProgram=pendingProgram(A.session.user.id);
  A.profile=queuedProgram?.profile||profile?.[0]||null;A.answers=A.profile?.answers||structuredClone(eng().defaults);
- if(queuedProgram||program?.[0]?.plan&&Array.isArray(program[0].plan)){S.plan=queuedProgram?.plan||program[0].plan;S.start=queuedProgram?.start_date||program[0].start_date;S.logs=logs||[];S.week=currentWeek(S.start)}
+ if(queuedProgram?.plan||program?.[0]?.plan&&Array.isArray(program[0].plan)){S.plan=queuedProgram?.plan||program[0].plan;S.start=queuedProgram?.start_date||program[0].start_date;S.logs=[];S.week=currentWeek(S.start)}
  else {S.plan=seed();S.start=iso(monday(new Date()));S.logs=[];S.week=currentWeek(S.start)}
  for(const row of pendingFor(A.session.user.id)){S.logs=S.logs.filter(l=>!(l.week_number===row.week_number&&l.day_index===row.day_index&&l.exercise_id===row.exercise_id&&l.set_number===row.set_number));S.logs.push({...row})}
  cacheAccount();if(pendingFor(A.session.user.id).length)flushSets().catch(e=>console.warn('Synchronisation différée',e));if(queuedProgram)flushProgram().catch(e=>console.warn('Programme en attente',e));
- try{ensureWeekPlan(S.week)}catch(e){setNotice('Calendrier indisponible : '+e.message,true)}
- migrateLocalJournal();
- try{await loadSessionJournal()}catch(e){console.warn('Carnet dédié indisponible, utilisation du journal historique :',e)}
- try{await loadActiveSnapshots()}catch(e){console.warn('Reprise des séances actives indisponible :',e)}
  A.view=A.profile?'app':'onboard';A.step=0;render()
 }
 async function flushProgram(){if(programSyncPromise)return programSyncPromise;
@@ -171,15 +73,11 @@ async function flushProgram(){if(programSyncPromise)return programSyncPromise;
  programSyncPromise=(async()=>{while(A.session?.user?.id===uid){
   const payload=pendingProgram(uid);if(!payload)break;
   if(payload.profile)await cloud('user_profiles?on_conflict=user_id',{method:'POST',prefer:'resolution=merge-duplicates',body:{user_id:uid,...payload.profile}});
-  await cloud('user_programs?on_conflict=user_id',{method:'POST',prefer:'resolution=merge-duplicates',body:{user_id:uid,plan:payload.plan,start_date:payload.start_date}});
+  // Ancien format (V1) : le plan en attente est encore envoyé pour ne rien perdre.
+  if(Array.isArray(payload.plan))await cloud('user_programs?on_conflict=user_id',{method:'POST',prefer:'resolution=merge-duplicates',body:{user_id:uid,plan:payload.plan,start_date:payload.start_date}});
   if(localStorage.getItem(pendingProgramKey(uid))===JSON.stringify(payload))localStorage.removeItem(pendingProgramKey(uid));updateSyncStatus();
  }})();
  try{await programSyncPromise}finally{programSyncPromise=null}
-}
-async function syncProgram(){if(!A.session)return;const uid=A.session.user.id;
- const payload={user_id:uid,plan:structuredClone(S.plan),start_date:S.start,profile:A.profile?{answers:structuredClone(A.profile.answers),method:A.profile.method}:null};
- try{localStorage.setItem(pendingProgramKey(uid),JSON.stringify(payload));updateSyncStatus()}catch(e){setNotice('Sauvegarde locale indisponible : ne quitte pas cette page.',true);throw e}
- try{await flushProgram()}catch(e){setNotice('Programme conservé sur cet appareil, synchronisation en attente.',true);throw e}
 }
 
 function cacheAccount(){if(!A.session)return;try{localStorage.setItem(accountCacheKey(A.session.user.id),JSON.stringify({plan:S.plan,start:S.start,logs:S.logs}))}catch{}}
@@ -207,8 +105,8 @@ async function flushSets(){
   }
  }
 }
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushSets();else{if(A.session)flushActiveSnapshots().catch(()=>{})}});
-window.addEventListener('online',()=>{flushSets();flushActiveSnapshots().catch(e=>console.warn('Séances en attente',e));flushProgram().catch(e=>console.warn('Programme toujours en attente',e))});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushSets();});
+window.addEventListener('online',()=>{flushSets();flushProgram().catch(e=>console.warn('Programme toujours en attente',e))});
 // Deux modes de planning : jours choisis (rythme conseillé) ou N séances par semaine, quand on veut.
 function planModeField(){const free=A.answers.planMode==='free',opt=(v,t,d)=>'<button type="button" class="choice '+((v==='free')===free?'selected':'')+'" data-action="choice" data-key="planMode" data-value="'+v+'" aria-pressed="'+((v==='free')===free)+'"><span><b>'+t+'</b><br><small>'+d+'</small></span><span class="choice-end">'+((v==='free')===free?'✓':'›')+'</span></button>';return '<div class="choice-grid plan-mode">'+opt('days','Je choisis mes jours','L’app te les rappelle, sans rien bloquer.')+opt('free',(A.answers.daysCount||3)+' séances par semaine, quand je veux','L’app propose toujours la séance suivante.')+'</div>'}
 function profileField(f){const val=A.answers[f.key]??'';if(f.type==='days'&&A.answers.planMode==='free')return planModeField();if(f.type==='days')return planModeField()+profileFieldBase(f,val);return profileFieldBase(f,val)}
@@ -249,38 +147,20 @@ async function finishOnboarding(){const p=A.answers;if(Number(p.age)&&Number(p.a
  if(!d.ok){A.guide=true;render();scrollToSectionTop();return}
  // Première configuration : le programme V2 suit les réponses. Questionnaire refait : on demande.
  if(V2?.ready()&&(!A.profile||await globalThis.SteroidDialog.confirm('Ton cycle actuel sera archivé. Ton historique est conservé.',{title:'Appliquer à ton programme ?',ok:'Nouveau programme',cancel:'Garder l’actuel'})))await V2.rebuild();
- let program;
- try{program=eng().buildProgram(p)}catch(e){setNotice(e.message||'Impossible de générer ce programme.',true);return}
- if(A.profile&&(S.logs.length||journalEntries().length)){
- // Keep the current cycle and all recorded exercise IDs unchanged. Apply the
- // updated questionnaire only to the next training week.
- const nextWeek=Math.max(S.week,...S.logs.map(r=>r.week_number),...journalEntries().map(r=>r.week_number))+1;
- if(nextWeek>52){setNotice('Cycle de 52 semaines terminé. Exporte tes données avant de recommencer.',true);return}
- const future=eng().buildProgram(p,nextWeek-1);
- for(let day=0;day<future.length;day++)for(let i=0;i<future[day].ex.length;i++)future[day].ex[i].id='w'+nextWeek+'-d'+day+'-e'+i;
- if(!S.plan[0].weeklyPlans)S.plan[0].weeklyPlans={};
- // Discard only future snapshots without any logged performance.
- for(const week of Object.keys(S.plan[0].weeklyPlans)){
-  const n=Number(week);
-  if(n>=nextWeek&&!S.logs.some(r=>r.week_number===n)&&!journalEntries().some(r=>r.week_number===n))delete S.plan[0].weeklyPlans[week];
- }
- S.plan[0].weeklyPlans[nextWeek]=future;
- A.profile={answers:structuredClone(p),method:p.method};A.view='app';S.tab='today';A.guide=false;
- persist();render();
- if(A.session){try{await syncProgram();setNotice('Nouveau programme prévu dès la semaine '+nextWeek+'. Historique conservé')}catch(e){setNotice('Modification enregistrée sur cet appareil, synchronisation en attente.',true)}}
- else setNotice('Nouveau programme prévu dès la semaine '+nextWeek+'. Historique conservé');
- return;
-}
- S.plan=program;A.profile={answers:structuredClone(p),method:p.method};S.start=iso(monday(new Date()));S.logs=[];S.week=1;S.tab='today';S.open='auto';A.view='app';localStorage.setItem('nolsprog-onboarding-seen','1');if(!A.session)persist();else cacheAccount();render();
- if(A.session){try{await cloud('user_profiles?on_conflict=user_id',{method:'POST',prefer:'resolution=merge-duplicates',body:{user_id:A.session.user.id,answers:p,method:p.method}});await syncProgram();A.profile={answers:p,method:p.method};setNotice('Programme personnalisé créé et synchronisé')}catch(e){setNotice('Programme créé localement, mais synchronisation impossible : '+e.message,true)}}
- else setNotice('Programme créé sur cet appareil')
+ // Réponses enregistrées ; le programme lui-même est le cycle V2 (construit à partir de ces réponses).
+ A.profile={answers:structuredClone(p),method:p.method};A.view='app';S.tab='today';A.guide=false;localStorage.setItem('nolsprog-onboarding-seen','1');
+ if(!A.session){persist();render();setNotice('Programme créé sur cet appareil');return}
+ cacheAccount();render();
+ const uid=A.session.user.id;
+ try{localStorage.setItem(pendingProgramKey(uid),JSON.stringify({user_id:uid,profile:A.profile}));updateSyncStatus()}catch{}
+ try{await flushProgram();setNotice('Questionnaire enregistré')}catch(e){setNotice('Questionnaire gardé sur cet appareil, synchronisation en attente.',true)}
 }
 async function initAuth(){const hash=new URLSearchParams(location.hash.slice(1));if(hash.get('access_token')&&hash.get('refresh_token')){try{const access_token=hash.get('access_token'),refresh_token=hash.get('refresh_token');const user=await req('/auth/v1/user',{token:access_token});setSession({access_token,refresh_token,user,expires_at:Math.floor(Date.now()/1000)+Number(hash.get('expires_in')||3600)});history.replaceState(null,'',location.pathname+location.search);if(hash.get('type')==='recovery'){A.view='account';A.mode='reset';render();return}await loadCloud();return}catch(e){history.replaceState(null,'',location.pathname+location.search);setNotice('Lien expiré ou invalide : '+e.message,true)}}try{const saved=localStorage.getItem(AUTH_KEY);if(saved)A.session=JSON.parse(saved)}catch{}if(A.session){restorePending(A.session.user.id);try{if(await renew()){await loadCloud();return}}catch(e){console.warn('NolsProg: chargement du compte impossible',e);try{const cached=JSON.parse(localStorage.getItem(accountCacheKey(A.session.user.id)));if(cached&&Array.isArray(cached.plan)){S.plan=cached.plan;S.start=cached.start;S.logs=cached.logs||[];for(const row of pendingFor(A.session.user.id)){S.logs=S.logs.filter(l=>!(l.week_number===row.week_number&&l.day_index===row.day_index&&l.exercise_id===row.exercise_id&&l.set_number===row.set_number));S.logs.push(row)}S.week=currentWeek(S.start);A.view='app';setNotice('Mode hors ligne : dernières données locales du compte.',true);return}}catch{}A.view='account';render();return}}
  A.view=localStorage.getItem('nolsprog-onboarding-seen')==='1'?'app':'welcome';render()}
 function welcomeUI(){return '<section class="fit-entry"><div class="fit-entry-top"><span class="fit-overline">STÉROÏDE · TRAINING CLUB</span><h1>Entraîne-toi<br><em>plus intelligent.</em></h1></div><div class="fit-logo"><img class="steroid-mark" src="./steroid-icon.svg" alt="" aria-hidden="true"><img class="fit-wordmark official-wordmark" src="./steroide-wordmark.svg" alt="STÉROÏDE"></div><div class="fit-entry-bottom"><p>Ton programme. Tes séances.<br>Ta progression, à ton rythme.</p><button class="fit-action" data-action="auth-signup">Commencer <span>→</span></button><button class="fit-outline" data-action="auth-login">Me connecter</button><button class="fit-quiet" data-action="guest">Utiliser sans compte</button></div></section>'}
 
 function persist(){if(A.session){cacheAccount();return true}try{localStorage.setItem(STORAGE_KEY,JSON.stringify({version:1,plan:S.plan,start:S.start,logs:S.logs,answers:A.answers||A.profile?.answers||null}));return true}catch(e){setNotice('Stockage local indisponible : exporte tes données avant de quitter.',true);return false}}
-function loadLocal(){loadWorkouts();try{const raw=localStorage.getItem(STORAGE_KEY);const data=raw?JSON.parse(raw):null;if(data&&Array.isArray(data.plan)&&data.plan.length===7&&Array.isArray(data.logs)&&typeof data.start==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(data.start)){S.plan=data.plan;S.start=data.start;A.answers=data.answers||null;S.logs=data.logs.filter(x=>x&&Number.isInteger(x.week_number)&&Number.isInteger(x.day_index)&&typeof x.exercise_id==='string'&&Number.isInteger(x.set_number)).slice(-20000)}else{S.plan=seed();S.start=iso(monday(new Date()));S.logs=[];persist()}}catch(e){S.plan=seed();S.start=iso(monday(new Date()));S.logs=[];setNotice('Lecture du stockage impossible. Vérifie les paramètres du navigateur.',true)}S.week=currentWeek(S.start);migrateLocalJournal();try{ensureWeekPlan(S.week)}catch(e){setNotice('Calendrier indisponible : '+e.message,true)}render()}
+function loadLocal(){try{const raw=localStorage.getItem(STORAGE_KEY);const data=raw?JSON.parse(raw):null;if(data&&Array.isArray(data.plan)&&data.plan.length===7&&Array.isArray(data.logs)&&typeof data.start==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(data.start)){S.plan=data.plan;S.start=data.start;A.answers=data.answers||null;S.logs=data.logs.filter(x=>x&&Number.isInteger(x.week_number)&&Number.isInteger(x.day_index)&&typeof x.exercise_id==='string'&&Number.isInteger(x.set_number)).slice(-20000)}else{S.plan=seed();S.start=iso(monday(new Date()));S.logs=[];persist()}}catch(e){S.plan=seed();S.start=iso(monday(new Date()));S.logs=[];setNotice('Lecture du stockage impossible. Vérifie les paramètres du navigateur.',true)}S.week=currentWeek(S.start);render()}
 // Sauvegarde V2 : cycle, séances, séries, cardio et exercices perso (+ anciennes données V1 encore présentes sur l'appareil).
 function downloadBackup(){const v=V2?.state()||{};const payload=JSON.stringify({app:'STEROIDE',version:2,exported_at:new Date().toISOString(),answers:A.answers||A.profile?.answers||null,cycle:v.cycle||null,workouts:v.workouts||[],set_logs:v.setLogs||[],cardio_logs:v.cardioLogs||[],user_exercises:v.userExercises||[],legacy:{plan:S.plan,start:S.start,logs:S.logs}},null,2);const blob=new Blob([payload],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='steroide-sauvegarde-'+iso(new Date())+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 
@@ -302,30 +182,6 @@ const setNotice=(msg,error=false)=>{
 };
 // Weekly plans are immutable snapshots persisted inside the existing plan JSON.
 // This preserves exercise IDs and historical set records across navigation/reloads.
-function baseWeekPlan(){
- const weeks=S.plan?.[0]?.weeklyPlans;
- return S.week>1&&Array.isArray(weeks?.[S.week])?weeks[S.week]:S.plan;
-}
-function ensureWeekPlan(week){
- if(week<=1||week>52||!S.plan?.length)return;
- if(!S.plan[0].weeklyPlans)S.plan[0].weeklyPlans={};
- if(S.plan[0].weeklyPlans[week])return;
- const profile=A.profile?.answers||A.answers;
- if(!profile||!globalThis.NolsEngine?.buildProgram)return;
- const generated=eng().buildProgram(profile,week-1);
- // Preserve recurring cardio planned on the base programme when generating a new week.
- for(let day=0;day<generated.length;day++){
-  const template=Array.isArray(S.plan?.[day]?.cardio)?S.plan[day].cardio:[];
-  if(template.length)generated[day].cardio=structuredClone(template);
- }
- // IDs are scoped to the week; snapshots are never regenerated once recorded.
- for(let day=0;day<generated.length;day++)for(let i=0;i<generated[day].ex.length;i++){
-  generated[day].ex[i].id='w'+week+'-d'+day+'-e'+i;
- }
- S.plan[0].weeklyPlans[week]=generated;
- if(A.session){cacheAccount();syncProgram().catch(e=>setNotice('Synchronisation du calendrier en attente : '+e.message,true))}
- else persist();
-}
 // Compare exercise names across weekly snapshots; IDs are week-scoped.
 const navIcons={
  today:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18M8 14h3M8 18h3"/></svg>',
@@ -388,7 +244,7 @@ setInterval(()=>{
  if(rest&&t.rest!=null)rest.textContent=globalThis.SteroidUI.clock(t.rest).replace(/^0(\d):/,'$1:');
 },1000);
 const scrollToSectionTop=()=>{if(typeof window.scrollTo==='function')window.scrollTo({top:0,behavior:'instant'});const scroller=document.scrollingElement;if(scroller)scroller.scrollTop=0};
-root.addEventListener('click',async e=>{const b=e.target.closest('[data-action]');if(!b)return;const a=b.dataset.action;if(a==='v2-retry'){V2owner=null;V2state=null;render();return}if(a.startsWith('v2-')&&V2){const d={...b.dataset};if((a==='v2-review'||a==='v2-proposal-open')&&S.tab!=='today'){S.tab='today'}if(a==='v2-sub')d.keep=Boolean(document.getElementById('v2-keep')?.checked);try{await V2.handle(a,d)}catch(err){setNotice(err.message,true)}return}if(a==='auth-login'){A.mode='login';A.view='account';render()}else if(a==='auth-signup'){A.mode='signup';A.view='account';render()}else if(a==='auth-recover'){A.mode='recover';A.view='account';render()}else if(a==='resend-confirm'){if(!A.email){setNotice('Renseigne ton email pour renvoyer la confirmation.',true);return}try{await req('/auth/v1/resend',{method:'POST',body:{type:'signup',email:A.email,options:{emailRedirectTo:location.origin+location.pathname}}});setNotice('Si ton adresse est en attente de confirmation, un nouvel email a été demandé.')}catch(err){setNotice('Impossible de renvoyer le message : '+err.message,true)}}else if(a==='back-app'){A.view='app';render()}else if(a==='account-menu'){A.menuOpen=!A.menuOpen;render()}else if(a==='open-settings'){A.menuOpen=false;S.tab='settings';render()}else if(a==='settings-back'){S.tab='today';render()}else if(a==='logout'){if(A.busy)return;A.busy=true;await flushSets();await V2?.remindersOff?.();if(syncInFlight||programSyncPromise||anyPending(A.session?.user?.id)){A.busy=false;setNotice('Déconnexion bloquée : des données ne sont pas encore synchronisées. Reconnecte-toi au réseau et réessaie.',true);return}try{await req('/auth/v1/logout',{method:'POST',token:token()})}catch(e){console.warn('Déconnexion distante indisponible',e)}const previousUserId=A.session?.user?.id;clearPrivateCache(previousUserId);setSession(null);A.profile=null;A.answers=null;A.firstName='';A.menuOpen=false;workouts={};S.logs=[];S.plan=seed();S.start=iso(monday(new Date()));S.week=currentWeek(S.start);S.tab='today';S.draft=null;A.view='welcome';A.busy=false;render()}else if(a==='edit-profile'){A.menuOpen=false;A.answers=structuredClone(A.profile?.answers||eng().defaults);A.step=0;A.view='onboard';render()}else if(a==='guest'){A.view='onboard';A.step=0;A.answers=structuredClone(eng().defaults);render()}else if(a==='account'){A.view='account';A.mode='login';render()}else if(a==='onboard-exit'){A.view=A.session?'app':'welcome';render()}else if(a==='guide-close'){A.guide=false;render();scrollToSectionTop()}else if(a==='guide-edit'){A.guide=false;A.step=Math.max(0,Math.min(onboardingStages.length-1,Number(b.dataset.step)||0));render();scrollToSectionTop()}else if(a==='guide-apply'){
+root.addEventListener('click',async e=>{const b=e.target.closest('[data-action]');if(!b)return;const a=b.dataset.action;if(a==='v2-retry'){V2owner=null;V2state=null;render();return}if(a.startsWith('v2-')&&V2){const d={...b.dataset};if((a==='v2-review'||a==='v2-proposal-open')&&S.tab!=='today'){S.tab='today'}if(a==='v2-sub')d.keep=Boolean(document.getElementById('v2-keep')?.checked);try{await V2.handle(a,d)}catch(err){setNotice(err.message,true)}return}if(a==='auth-login'){A.mode='login';A.view='account';render()}else if(a==='auth-signup'){A.mode='signup';A.view='account';render()}else if(a==='auth-recover'){A.mode='recover';A.view='account';render()}else if(a==='resend-confirm'){if(!A.email){setNotice('Renseigne ton email pour renvoyer la confirmation.',true);return}try{await req('/auth/v1/resend',{method:'POST',body:{type:'signup',email:A.email,options:{emailRedirectTo:location.origin+location.pathname}}});setNotice('Si ton adresse est en attente de confirmation, un nouvel email a été demandé.')}catch(err){setNotice('Impossible de renvoyer le message : '+err.message,true)}}else if(a==='back-app'){A.view='app';render()}else if(a==='account-menu'){A.menuOpen=!A.menuOpen;render()}else if(a==='open-settings'){A.menuOpen=false;S.tab='settings';render()}else if(a==='settings-back'){S.tab='today';render()}else if(a==='logout'){if(A.busy)return;A.busy=true;await flushSets();await V2?.remindersOff?.();if(syncInFlight||programSyncPromise||anyPending(A.session?.user?.id)){A.busy=false;setNotice('Déconnexion bloquée : des données ne sont pas encore synchronisées. Reconnecte-toi au réseau et réessaie.',true);return}try{await req('/auth/v1/logout',{method:'POST',token:token()})}catch(e){console.warn('Déconnexion distante indisponible',e)}const previousUserId=A.session?.user?.id;clearPrivateCache(previousUserId);setSession(null);A.profile=null;A.answers=null;A.firstName='';A.menuOpen=false;S.logs=[];S.plan=seed();S.start=iso(monday(new Date()));S.week=currentWeek(S.start);S.tab='today';S.draft=null;A.view='welcome';A.busy=false;render()}else if(a==='edit-profile'){A.menuOpen=false;A.answers=structuredClone(A.profile?.answers||eng().defaults);A.step=0;A.view='onboard';render()}else if(a==='guest'){A.view='onboard';A.step=0;A.answers=structuredClone(eng().defaults);render()}else if(a==='account'){A.view='account';A.mode='login';render()}else if(a==='onboard-exit'){A.view=A.session?'app':'welcome';render()}else if(a==='guide-close'){A.guide=false;render();scrollToSectionTop()}else if(a==='guide-edit'){A.guide=false;A.step=Math.max(0,Math.min(onboardingStages.length-1,Number(b.dataset.step)||0));render();scrollToSectionTop()}else if(a==='guide-apply'){
  const d=globalThis.SteroidGuide.diagnostic(A.answers),choice=d.choices[Number(b.dataset.index)];if(!choice)return;
  A.answers=globalThis.SteroidGuide.change(A.answers,choice.patch);
  const next=globalThis.SteroidGuide.diagnostic(A.answers);
@@ -402,7 +258,7 @@ root.addEventListener('input',e=>{
 });
 window.addEventListener('online',()=>{V2?.flushNow()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&root.querySelector('.v2-sheet [data-action="v2-close-sheet"],.v2-sheet-wrap [data-action="v2-close-sheet"]')){V2?.handle('v2-close-sheet')}});
-window.addEventListener('pagehide',()=>{V2?.flushNow();persistWorkouts();if(A.session)flushSets().catch(()=>{})});
+window.addEventListener('pagehide',()=>{V2?.flushNow();if(A.session)flushSets().catch(()=>{})});
 
 root.addEventListener('change',async e=>{const el=e.target;if('v2RemTime' in (el.dataset||{})){V2?.change({kind:'rem-time',value:el.value});return}if(el.dataset?.v2Sets){V2?.change({kind:'sets',ce:el.dataset.v2Sets,value:el.value});return}if('v2Progress' in (el.dataset||{})){V2?.change({kind:'progress',value:el.value});return}if(el.dataset.profile&&A.answers){A.answers[el.dataset.profile]=el.value;return}});
 root.addEventListener('submit',async e=>{
@@ -429,7 +285,7 @@ root.addEventListener('submit',async e=>{
 });
 loadLocal();initAuth();
 window.SteroidUpdates?.start({
- isSafe:()=>A.view==='app'&&!V2?.busy()&&activeWorkout()?.status!=='active'&&!A.busy&&!syncInFlight&&!programSyncPromise&&!hasPendingChanges(A.session?.user?.id)&&!(S.tab==='edit'&&S.draft)&&!document.querySelector('input:focus,textarea:focus,select:focus'),
+ isSafe:()=>A.view==='app'&&!V2?.busy()&&!A.busy&&!syncInFlight&&!programSyncPromise&&!hasPendingChanges(A.session?.user?.id)&&!document.querySelector('input:focus,textarea:focus,select:focus'),
  autoOnLaunch:true
 });
 
