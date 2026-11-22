@@ -107,6 +107,14 @@ function createWorkoutStore({storage,api,userId,now=()=>Date.now(),uuid=defaultU
   },
   // Erreur de manipulation : la séance passée est annulée (elle ne compte plus dans la suite).
   cancelSkip(row){if(!row||row.status!=='skipped')return null;const r={...row,user_id:userId,status:'abandoned',skip_reason:null,revision:(row.revision||1)+1};enqueue('workouts',r);save();return r},
+  // Séance quittée sans aucune série validée : notée abandonnée (ne compte pas, ne fait pas avancer la suite).
+  abandon(){
+   if(!workout)return null;
+   if(workout.paused_at)this.resume();
+   const t=now();workout.status='abandoned';workout.ended_at=t;
+   workout.duration_seconds=Math.max(0,Math.round((t-workout.started_at)/1000)-workout.paused_seconds);
+   touchWorkout();const gone=workout;workout=null;save();return gone;
+  },
   async flush(){
    if(flushing)return flushing;
    // Un envoi sans attente se termine avant l'affectation : on libère le verrou après coup.

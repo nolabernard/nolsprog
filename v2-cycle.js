@@ -101,6 +101,20 @@ function cycleProgress(cycle,workouts){
  return Math.min(1,done/total);
 }
 
+// Règle unique de comptage : une séance terminée ne compte que si elle contient au moins une série validée
+// ou du cardio noté. Terminée vide (ex. ouverte puis fermée), elle passe au statut « empty » : ni comptée,
+// ni dans la suite, ni dans l'historique. Les séances importées de la V1 comptent toujours. Si l'historique
+// des séries est tronqué, les séances plus anciennes que la plus ancienne série chargée comptent (on ne sait pas).
+function countable(workouts,setLogs,cardioLogs,{truncated=false}={}){
+ const withSets=new Set();let oldest=Infinity;
+ for(const r of setLogs||[]){if(r.completed&&r.workout_id)withSets.add(r.workout_id);const t=Date.parse(r.created_at);if(t<oldest)oldest=t}
+ for(const c of cardioLogs||[])if(c.workout_id)withSets.add(c.workout_id);
+ return (workouts||[]).map(w=>{
+  if(w.status!=='completed'||withSets.has(w.id)||w.legacy_week!=null)return w;
+  if(truncated&&Date.parse(w.ended_at||w.started_at)<oldest)return w;
+  return {...w,status:'empty'};
+ });
+}
 // Où on en est dans le programme : semaine en cours (depuis le début du cycle) et séances faites sur le total prévu.
 function cycleStatus(cycle,workouts,now=Date.now()){
  if(!cycle)return null;
@@ -146,7 +160,7 @@ async function loadCycle(api,userId){
  const uid=encodeURIComponent(userId);
  const [cy]=await api.select('cycles?user_id=eq.'+uid+'&status=eq.active&select=*&limit=1');
  const [workouts,logs,userExercises,cardioLogs]=await Promise.all([
-  api.select('workouts?user_id=eq.'+uid+'&status=in.(completed,skipped)&select=id,cycle_id,cycle_session_id,status,skip_reason,started_at,ended_at,duration_seconds,revision,cycle_sessions(title)&order=ended_at.desc&limit=500'),
+  api.select('workouts?user_id=eq.'+uid+'&status=in.(completed,skipped)&select=id,cycle_id,cycle_session_id,status,skip_reason,started_at,ended_at,duration_seconds,revision,legacy_week,cycle_sessions(title)&order=ended_at.desc&limit=500'),
   selectAll(api,'workout_set_logs?user_id=eq.'+uid+'&select=exercise_key,workout_exercise_id,set_number,weight,reps,rir,completed,created_at,workout_exercises(workout_id,position,substituted_from_key,rpe)&order=created_at.desc,id',10),
   api.select('user_exercises?user_id=eq.'+uid+'&select=key,name,pattern,muscle,equipment'),
   api.select('cardio_logs?user_id=eq.'+uid+'&select=id,workout_id,cycle_id,done_on,type,minutes&order=done_on.desc&limit=1000')]);
@@ -166,5 +180,5 @@ async function loadCycle(api,userId){
  return {cycle:{...cy,user_exercises:userExercises||[],sessions:list,cardio:cardio||[]},truncated,workouts:done,setLogs,userExercises:userExercises||[],cardioLogs:cardioLogs||[]};
 }
 
-return {deload,deloadSets,warmup,rhythm,weekStart,localDate,cardioWeek,cardioProgress,fromEngine,fromLegacyPlan,toRows,lastPerformance,progress,cycleProgress,cycleStatus,loadCycle,nameOf,parseReps};
+return {deload,deloadSets,warmup,rhythm,weekStart,localDate,cardioWeek,cardioProgress,fromEngine,fromLegacyPlan,toRows,lastPerformance,progress,cycleProgress,cycleStatus,countable,loadCycle,nameOf,parseReps};
 });

@@ -121,4 +121,12 @@ console.log('v2-cycle : ok');
  const ws=Array.from({length:13},(_,i)=>({cycle_id:'c9',status:'completed'})).concat([{cycle_id:'c9',status:'skipped'},{cycle_id:'x',status:'completed'}]);
  const st=C2.cycleStatus(cy,ws,start+20*D);require('assert').deepStrictEqual(st,{week:3,weeks:6,done:13,total:36,pct:36});
  require('assert').equal(C2.cycleStatus(cy,[],start+90*D).week,6,'jamais au-delà de la dernière semaine');}
-
+// Règle unique de comptage : une séance terminée sans série validée ni cardio ne compte pas.
+{const C3=require('../v2-cycle.js'),A=require('assert');
+ const ws=[{id:'a',status:'completed',ended_at:'2026-11-22T10:00:00Z'},{id:'b',status:'completed',ended_at:'2026-11-22T11:00:00Z'},
+  {id:'c',status:'completed',ended_at:'2026-11-22T12:00:00Z'},{id:'d',status:'completed',legacy_week:2,ended_at:'2026-11-10T12:00:00Z'},
+  {id:'e',status:'skipped',ended_at:'2026-11-22T13:00:00Z'},{id:'f',status:'completed',ended_at:'2026-11-01T12:00:00Z'}];
+ const logs=[{workout_id:'a',completed:true,created_at:'2026-11-22T10:00:00Z'},{workout_id:'b',completed:false,created_at:'2026-11-05T11:00:00Z'}];
+ const out=C3.countable(ws,logs,[{workout_id:'c'}]);
+ A.deepStrictEqual(out.map(w=>w.status),['completed','empty','completed','completed','skipped','empty']);
+ A.equal(C3.countable(ws,logs,[],{truncated:true}).find(w=>w.id==='f').status,'completed','avant la plus ancienne série chargée : on ne sait pas, elle compte');}

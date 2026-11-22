@@ -67,6 +67,11 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
   avant confirmation du serveur. Local et Cloud sont deux états distincts.
 - Records : uniquement à partir de séries validées et comparables. Aucun faux record.
 - Charge manquante ≠ 0 kg.
+- Comptage des séances (règle unique `SteroidCycle.countable`, appliquée partout via `W()` dans `app-v2.js` et dans
+  `send-reminders`) : une séance compte si elle est terminée avec au moins une série validée ou du cardio noté.
+  Terminer sans rien valider propose d'abandonner (non comptée). Séance passée : avance la suite, ne compte pas.
+- Suite des séances par tours (`SteroidPlanner.round`) : prochaine = première séance du tour pas encore faite ni passée ;
+  une séance déplacée n'est jamais sautée. Une séance par jour.
 - Calories = estimations indicatives, jamais présentées comme exactes.
 - Pas de diagnostic médical ; le moteur de programme reste déterministe.
 
