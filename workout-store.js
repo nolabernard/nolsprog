@@ -101,7 +101,7 @@ function createWorkoutStore({storage,api,userId,now=()=>Date.now(),uuid=defaultU
   // Séance passée (malade, douleur…) : notée sans séries, elle fait avancer la suite. Jamais pendant une séance en cours.
   skipSession(session,{reason='autre'}={}){
    if(workout)throw Error('Une séance est déjà en cours.');
-   const t=now(),why=['malade','douleur','temps','autre'].includes(reason)?reason:'autre';
+   const t=now(),why=['malade','douleur','temps','envie','autre'].includes(reason)?reason:'autre';
    const w={id:uuid(),cycle_id:session.cycle_id??null,cycle_session_id:session.id??null,status:'skipped',started_at:t,ended_at:t,paused_at:null,paused_seconds:0,duration_seconds:0,revision:1,skip_reason:why};
    enqueue('workouts',workoutRow(w));save();return workoutRow(w);
   },
