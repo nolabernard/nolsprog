@@ -195,7 +195,7 @@ function create(ctx){
  }
  function todayHTML(){
   if(!S.cycle)return UI.home({next:null,cycle:null,building:S.building,retry:loadFailed});
-  const cardioSheet=S.sheet?.type==='cardio'?UI.cardioSheet({workoutId:S.sheet.workout||''}):'';
+  const cardioSheet=cardioSheetHTML();
   if(S.view==='summary'&&S.summary)return UI.summary({records:H.newRecords(S.summary.id,S.setLogs,S.workouts,{truncated:S.truncated}),workout:S.summary,pending:pending(),local:!(api&&userId),userExercises:S.userExercises})+cardioSheet;
   if(S.view==='review')return UI.review({review:Rv.review(S.cycle,S.workouts,S.setLogs,S.userExercises,now()),userExercises:S.userExercises});
   if(S.view==='next')return UI.nextForm({answers:S.nextAnswers||nextDefaults(),weeks:S.nextWeeks||S.cycle.weeks||6,methods:G().NolsEngine.methods,recommendation:reviewNow().recommendation});
@@ -214,25 +214,30 @@ function create(ctx){
     const a=answers(),alts=Cat.alternatives(e.exercise_key,{equipment:a.equipment||'gym',avoid:String(a.avoid||'').split(/[,;\n]/).map(x=>x.trim()).filter(Boolean),exclude:w.exercises.map(x=>x.exercise_key),history:practiced});
     html+=UI.machineSheet({exercise:e,alternatives:alts,canLater:items[items.length-1]?.id!==e.id,practiced})}}
    else if(S.sheet?.type==='more')html+=UI.moreSheet({exercise:items[S.index]});
+   else if(S.sheet?.type==='howto')html+=UI.howtoSheet({key:S.sheet.key,userExercises:S.userExercises});
    return html;
   }
   const next=Planner.nextSession(S.cycle,S.workouts,now());
   const active=w?{title:sessionTitle(w),done:w.exercises.reduce((n,e)=>n+e.sets.filter(s=>s.completed).length,0),total:w.exercises.reduce((n,e)=>n+e.sets.length,0)}:null;
   const cardio={target:(S.cycle.cardio||[]).reduce((n,c)=>n+c.minutes*c.per_week,0),minutes:C.cardioWeek(S.cardioLogs,now())};
-  let html=UI.home({next,rhythm:C.rhythm(S.cycle,S.workouts,now()),cardio,hasHistory:S.workouts.some(x=>x.cycle_id===S.cycle.id&&x.status==='completed'),cycle:S.cycle,progress:C.cycleProgress(S.cycle,S.workouts),minutes:next?minutes(next.session):null,firstName:ctx.firstName?.()||'',dateText:dateText(),weekLine:weekLine(),record:recentRecord(),active});
+  let html=UI.home({next,rhythm:C.rhythm(S.cycle,S.workouts,now()),cardio,hasHistory:S.workouts.some(x=>x.cycle_id===S.cycle.id&&x.status==='completed'),cycle:S.cycle,progress:C.cycleProgress(S.cycle,S.workouts),minutes:next?minutes(next.session):null,firstName:ctx.firstName?.()||'',dateText:dateText(),weekLine:weekLine(),record:recentRecord(),last:lastSession(),active});
   if(!w&&(S.proposal||Rv.due(S.cycle,S.workouts,now())))html=html.replace('<section class="v2-next"',UI.reviewCard({proposal:Boolean(S.proposal)})+'<section class="v2-next"');
   if(S.sheet?.type==='choose')html+=UI.chooser({sessions:S.cycle.sessions,current:next?.session.id});
   return html+cardioSheet;
  }
+ // Dernière séance terminée (tous cycles), affichée sur l'accueil.
+ function lastSession(){const titles={};for(const x of S.cycle?.sessions||[])titles[x.id]=x.title;return H.sessions(S.workouts,S.setLogs,{titles})[0]||null}
+ function cardioSheetHTML(){if(S.sheet?.type!=='cardio')return '';const edit=S.sheet.edit?S.cardioLogs.find(c=>c.id===S.sheet.edit)||null:null;return UI.cardioSheet({workoutId:S.sheet.workout||'',edit})}
  // Dernier record des 14 derniers jours, affiché sur l'accueil.
  function recentRecord(){const r=H.latestRecord(S.setLogs,S.workouts,{truncated:S.truncated});if(!r||now()-Date.parse(r.date)>14*24*3600e3)return null;return 'Record récent : '+C.nameOf(r.key,S.userExercises)+', '+Number(r.weight).toLocaleString('fr-FR')+' kg × '+r.reps}
- function statsHTML(){
+ function statsHTML(){return statsBody()+cardioSheetHTML()}
+ function statsBody(){
   const prog=C.progress(S.setLogs,S.workouts),keys=Object.keys(prog.byKey);
   const key=keys.includes(S.selected)?S.selected:keys.sort((a,b)=>C.nameOf(a,S.userExercises).localeCompare(C.nameOf(b,S.userExercises),'fr'))[0];
   const titles={};for(const x of S.cycle?.sessions||[])titles[x.id]=x.title;
   const plan=(S.cycle?.sessions||[]).flatMap(x=>x.exercises).find(e=>e.exercise_key===key);
   return UI.progress({progress:prog,selected:S.selected,metric:S.metric,userExercises:S.userExercises,cardio:C.cardioProgress(S.cardioLogs,now()),
-   tab:S.tab,history:key?H.exercise(key,S.setLogs,S.workouts):null,advice:key&&plan?H.advice(plan,S.setLogs,S.workouts,key):null,
+   cardioList:S.tab==='sessions'?[...S.cardioLogs].sort((a,b)=>String(b.done_on).localeCompare(String(a.done_on))):[],tab:S.tab,history:key?H.exercise(key,S.setLogs,S.workouts):null,advice:key&&plan?H.advice(plan,S.setLogs,S.workouts,key):null,
    sessions:S.tab==='sessions'?H.sessions(S.workouts,S.setLogs,{titles,cardioLogs:S.cardioLogs}):[],open:S.open,records:S.open?H.newRecords(S.open,S.setLogs,S.workouts,{truncated:S.truncated}):[],truncated:S.truncated});
  }
  function searchResults(){
@@ -327,13 +332,23 @@ function create(ctx){
    case 'v2-rem-day':{if(!Rem)return;const st=Rem.state(),day=Number(d.day);const days=st.days.includes(day)?st.days.filter(x=>x!==day):[...st.days,day];await remRun(()=>Rem.update({days}));return}
    case 'v2-progress-tab':S.tab=d.tab==='sessions'?'sessions':'exercises';S.open=null;break;
    case 'v2-history-open':S.open=d.id||null;break;
+   case 'v2-last-open':S.tab='sessions';S.open=d.id||null;break;
    case 'v2-history-close':S.open=null;break;
    case 'v2-edit-ex':S.picking={ce:d.ce};S.query='';S.creating=false;break;
    case 'v2-add-ex':S.picking={session:d.session};S.query='';S.creating=false;break;
    case 'v2-pick':pickExercise(d.key);break;
    case 'v2-remove-ex':await removeExercise(d.ce);break;
    case 'v2-create':S.creating=true;break;
+   case 'v2-howto':{const e=current()?list()[S.index]:null;if(!e)return;S.sheet={type:'howto',key:e.exercise_key};break}
    case 'v2-cardio-open':S.sheet={type:'cardio',workout:d.workout||''};break;
+   case 'v2-cardio-edit':if(!S.cardioLogs.some(c=>c.id===d.id))return;S.sheet={type:'cardio',edit:d.id};break;
+   case 'v2-cardio-delete':{
+    const row=S.cardioLogs.find(c=>c.id===d.id);if(!row)return;
+    if(!await confirm(cardioLabel(row)+' sera retiré de ton historique.',{title:'Supprimer cette activité ?',ok:'Supprimer',cancel:'Garder'}))return;
+    S.cardioLogs=S.cardioLogs.filter(c=>c.id!==d.id);S.sheet=null;persistLocal();
+    // Retrait côté serveur (sans effet si la ligne n'y est jamais arrivée) ; l'envoi en attente est annulé.
+    if(api&&userId){outbox=outbox.filter(x=>!(x.table==='cardio_logs'&&x.row?.id===d.id));outbox.push({table:'cardio_logs',op:'delete',id:d.id});write(K.outbox,outbox);scheduleFlush()}
+    notice('Activité supprimée.');break}
    case 'v2-cardio-plan-remove':{
     const cc=S.cycle.cardio||[];if(!cc.some(c=>c.id===d.id))return;
     S.cycle.cardio=cc.filter(c=>c.id!==d.id);persistLocal();
@@ -387,8 +402,16 @@ function create(ctx){
   if(!Number.isInteger(p)||p<1||p>7){notice('Choisis entre 1 et 7 fois par semaine.',true);return null}
   return {m,p};
  }
- async function saveCardio({type,minutes,workout}){
+ const cardioLabel=c=>({marche:'Marche',course:'Course',velo:'Vélo',elliptique:'Elliptique',rameur:'Rameur',natation:'Natation',escaliers:'Escaliers'}[c.type]||'Cardio')+' ('+c.minutes+' min)';
+ async function saveCardio({type,minutes,workout,id}){
   const ok=checkCardio(type,minutes);if(!ok)return false;
+  const old=id?S.cardioLogs.find(c=>c.id===id):null;
+  if(old){
+   // Modification : même ligne (même identifiant), date et séance d'origine conservées.
+   const row={...old,type,minutes:ok.m};S.cardioLogs=S.cardioLogs.map(c=>c.id===id?row:c);persistLocal();
+   if(api&&userId){outbox=outbox.filter(x=>!(x.table==='cardio_logs'&&!x.op&&x.row?.id===id));outbox.push({table:'cardio_logs',row:{...row,user_id:userId}});write(K.outbox,outbox);scheduleFlush()}
+   S.sheet=null;notice('Cardio modifié : '+ok.m+' min.');render();return true;
+  }
   const row={id:uuid(),workout_id:workout||null,cycle_id:S.cycle?.id||null,done_on:C.localDate(now()),type,minutes:ok.m};
   S.cardioLogs.unshift(row);persistLocal();
   if(api&&userId){outbox.push({table:'cardio_logs',row:{...row,user_id:userId}});write(K.outbox,outbox);scheduleFlush()}

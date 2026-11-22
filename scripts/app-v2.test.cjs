@@ -1,6 +1,6 @@
 // Contrôleur V2 : parcours complet invité et compte, sans navigateur.
 const assert=require('assert');
-for(const [g,f] of [['SteroidCatalogue','exercise-catalogue'],['SteroidCycle','v2-cycle'],['SteroidHistory','v2-history'],['SteroidReview','v2-review'],['SteroidReminders','reminders'],['SteroidUI','ui-v2'],['SteroidPlanner','session-planner'],['SteroidWorkout','workout-store']])globalThis[g]=require('../'+f+'.js');
+for(const [g,f] of [['SteroidCatalogue','exercise-catalogue'],['SteroidMoves','exercise-guide'],['SteroidCycle','v2-cycle'],['SteroidHistory','v2-history'],['SteroidReview','v2-review'],['SteroidReminders','reminders'],['SteroidUI','ui-v2'],['SteroidPlanner','session-planner'],['SteroidWorkout','workout-store']])globalThis[g]=require('../'+f+'.js');
 require('../program-engine.js');
 const V2=require('../app-v2.js');
 
@@ -71,6 +71,7 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
   await h5.handle('v2-start',{session:h5.state().cycle.sessions[0].id});
   assert.match(h5.todayHTML(),/class="v2-advice"[^]*tente 62,5 kg/,'conseil fondé sur la séance précédente');
   assert.match(h5.todayHTML(),/value="60"/,'les cases restent préremplies avec la dernière performance');
+  await h5.handle('v2-howto');assert.match(h5.todayHTML(),/Poussée horizontale · Pectoraux/);assert.match(h5.todayHTML(),/Omoplates serrées/);await h5.handle('v2-close-sheet');assert.doesNotMatch(h5.todayHTML(),/Omoplates serrées/);
   await h5.handle('v2-exit');
   const e=h5.state().store.current().exercises[0];
   for(const n of [1,2]){h5.input({ex:e.id,set:n,field:'weight',value:'62.5'});await h5.handle('v2-set',{ex:e.id,set:String(n)})}
@@ -78,6 +79,8 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
   assert.match(h5.todayHTML(),/Nouveau record : Développé couché barre : 62,5 kg × 8 \(\+2,5 kg\)/);
   await h5.handle('v2-close-summary');
   assert.match(h5.todayHTML(),/Record récent : Développé couché barre, 62,5 kg × 8/);
+  const lastId=h5.todayHTML().match(/data-action="v2-last-open" data-id="([^"]+)"/)[1];assert.match(h5.todayHTML(),/Dernière séance[^]*Push A/);
+  await h5.handle('v2-last-open',{id:lastId});assert.match(h5.statsHTML(),/data-action="v2-history-close"/);await h5.handle('v2-progress-tab',{tab:'exercises'});
   let st5=h5.statsHTML();assert.match(st5,/Séance par séance/);assert.match(st5,/62,5 × 8 · 62,5 × 8/);assert.match(st5,/Meilleure série : 62,5 kg × 8/);assert.match(st5,/Prochaine fois/);
   await h5.handle('v2-progress-tab',{tab:'sessions'});st5=h5.statsHTML();
   const ids=[...st5.matchAll(/data-action="v2-history-open" data-id="([^"]+)"/g)].map(m=>m[1]);assert.equal(ids.length,2);
@@ -140,6 +143,17 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
   const b8=V2.create({...ctx,storage:st8b,api:lag,userId:U6});
   await b8.init();await b8.whenFresh();assert.equal(b8.state().cycle.id,nextId2);
  }
+ // Cardio : modifier puis supprimer une activité enregistrée (compte), avec envoi au serveur.
+ { const ops=[],api8={async select(){return []},async upsert(t,rows){for(const r of rows)ops.push(['up',t,r.id,r.minutes])},async remove(t,id){ops.push(['del',t,id])},async fn(){return {}}};
+   const c8=V2.create({...ctx,storage:memory(),api:api8,userId:'66666666-6666-4666-8666-666666666666'});await c8.init();
+   await c8.saveCardio({type:'velo',minutes:'20'});await c8.flushNow();const id=c8.state().cardioLogs[0].id;
+   await c8.handle('v2-progress-tab',{tab:'sessions'});assert.match(c8.statsHTML(),/data-action="v2-cardio-edit" data-id="/);
+   await c8.handle('v2-cardio-edit',{id});assert.match(c8.statsHTML(),/Modifier le cardio/);
+   await c8.saveCardio({id,type:'course',minutes:'35'});await c8.flushNow();
+   assert.equal(c8.state().cardioLogs.length,1);assert.equal(c8.state().cardioLogs[0].type,'course');assert.equal(c8.state().cardioLogs[0].id,id,'même ligne modifiée');
+   assert.deepEqual(ops.filter(o=>o[1]==='cardio_logs').map(o=>o[0]+o[3]),['up20','up35']);
+   await c8.handle('v2-cardio-delete',{id});await c8.flushNow();assert.equal(c8.state().cardioLogs.length,0);assert(ops.some(o=>o[0]==='del'&&o[2]===id));
+   assert.doesNotMatch(c8.statsHTML(),/v2-cardio-edit/); }
  // Lot 7 : choix d'un jour enregistré (sans exception), même rappels désactivés.
  { const st7=memory(),c7=V2.create({...ctx,storage:st7,api:{async select(){return []},async upsert(){},async remove(){},async fn(){return {}}},userId:'55555555-5555-4555-8555-555555555555'});
    await c7.handle('v2-rem-day',{day:'6'});assert.deepEqual(JSON.parse(st7.getItem('nolsprog-v2-reminders:55555555-5555-4555-8555-555555555555')).days,[0,1,2,3,4,5]);
@@ -213,7 +227,7 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  const back={async select(p){if(p.startsWith('cycles'))return [{...cycleRows,sessions:undefined,user_exercises:undefined}];if(p.startsWith('cycle_sessions'))return cycleRows.sessions.map(({exercises,muscles,...x})=>x);if(p.startsWith('cycle_exercises'))return cycleRows.sessions.flatMap(x=>x.exercises);return []},async upsert(){throw Error('Failed to fetch')}};
  const c9=V2.create({...ctx,storage:st8,api:back,userId:U});await c9.init();await c9.whenFresh();
  assert(c9.state().workouts.some(w=>w.cycle_session_id===first.id),'séance non envoyée conservée');
- assert.match(c9.statsHTML(),/série validée/);assert(!c9.todayHTML().includes('>'+first.title+'<'),'la suite avance');
+ assert.match(c9.statsHTML(),/série validée/);assert(!c9.todayHTML().includes('v2-next-title">'+first.title+'<'),'la suite avance');
  // I5 : réseau qui ne répond jamais → le cache s'affiche tout de suite.
  const hang=V2.create({...ctx,storage:st8,api:{select:()=>new Promise(()=>{}),upsert:()=>new Promise(()=>{})},userId:U});
  await Promise.race([hang.init(),new Promise((_,no)=>setTimeout(()=>no(Error('init bloqué')),500))]);assert(hang.ready());

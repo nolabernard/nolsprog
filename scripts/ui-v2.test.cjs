@@ -142,4 +142,31 @@ assert.match(rc,/18:30, lundi, mercredi, vendredi/);assert.match(rc,/<option val
 assert.match(UI.remindersCard({enabled:false,hour:18,minute:0,days:[0,1,2,3,4,5,6]}),/data-action="v2-rem-on"/);
 assert.match(UI.remindersCard({blocker:'install',message:'Ajoute <STÉROÏDE>'}),/Ajoute &lt;STÉROÏDE&gt;/);
 assert(noEmoji(rc)&&!/onclick=/i.test(rc));
+// Accueil : dernière séance effectuée.
+const hl=UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},last:{id:'w9',title:'Bas A',date:'2026-11-12T11:00:00Z',minutes:48,sets:16}});
+assert.match(hl,/data-action="v2-last-open" data-id="w9"/);assert.match(hl,/Dernière séance/);assert.match(hl,/jeu\. 12 nov\. · 48 min · 16 séries/);
+assert.doesNotMatch(UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]}}),/Dernière séance/);
+// Cardio : liste des activités, modification et suppression.
+const cl=UI.cardioLogs([{id:'c1',type:'velo',minutes:25,done_on:'2026-11-12'}]);
+assert.match(cl,/data-action="v2-cardio-edit" data-id="c1"/);assert.match(cl,/Vélo · 25 min/);assert.match(cl,/jeu\. 12 nov\./);assert.equal(UI.cardioLogs([]),'');
+const ce=UI.cardioSheet({edit:{id:'c1',type:'course',minutes:40,workout_id:'w1'}});
+assert.match(ce,/Modifier le cardio/);assert.match(ce,/name="id" value="c1"/);assert.match(ce,/value="course" checked/);assert.match(ce,/value="40"/);assert.match(ce,/data-action="v2-cardio-delete" data-id="c1"/);
+assert.doesNotMatch(UI.cardioSheet({}),/v2-cardio-delete/);
+// Questionnaire : récapitulatif avant génération et présentation du programme.
+{ require('../sport-rules.js');const E=globalThis.NolsEngine,a={...E.defaults,goal:'strength'},pv=E.buildCycle(a);
+  const rc=UI.recapCard({answers:a,preview:pv,methods:E.methods});
+  assert.match(rc,/Méthode<\/dt><dd>Full body/);assert.match(rc,/Durée du cycle<\/dt><dd>6 semaines/);assert.match(rc,/Gagner en force/);assert.match(rc,/Répartition des séances/);assert.match(rc,/Full body A/);assert.match(rc,/lundi, mercredi, vendredi/);
+  assert.match(rc,/Exercices de base : \d+ à \d+ répétitions/);assert.doesNotMatch(rc,/45 répétitions/,'gainage exclu des fourchettes');
+  const pi=UI.programIntro({cycle:{method:'fullbody',weeks:6,sessions_per_week:3,sessions:[{},{},{}]},methods:E.methods});
+  assert.match(pi,/Ton programme est prêt/);assert.match(pi,/Full body · 6 semaines/);assert.match(pi,/3 séances différentes/);assert.match(pi,/data-action="intro-start"/);assert.equal(UI.programIntro({}),'');
+  for(const h of [rc,pi])assert(noEmoji(h)&&!/onclick=/i.test(h)); }
+// Comment faire : pictogramme dessiné pour l'app + consignes, par type de mouvement.
+{ globalThis.SteroidMoves=require('../exercise-guide.js');const M=globalThis.SteroidMoves;
+  for(const p of ['pushH','chestIso','pullV','pullH','squat','hinge','hamIso','quadIso','calves','pushV','side','rear','biceps','triceps','core'])
+   {assert(M.MOVES[p],'pictogramme manquant : '+p);assert.equal(M.cues(p).length,3);assert.match(M.svg(p),/^<svg[^>]*aria-hidden="true"/);}
+  const cat=require('../exercise-catalogue.js');for(const e of cat.CATALOGUE)assert(M.MOVES[e.pattern],'mouvement sans illustration : '+e.key);
+  assert.equal(M.label('inconnu'),'Exercice');
+  const s=UI.session({workout});assert.match(s,/data-action="v2-howto"/);assert.match(s,/<svg class="mv-pic"/);
+  const h=UI.howtoSheet({key:'hack-squat'});assert.match(h,/Hack squat/);assert.match(h,/Squat \/ presse · Jambes/);assert.match(h,/genoux dans l’axe/);assert.match(h,/data-action="v2-close-sheet"/);
+  assert(noEmoji(h)&&!/onclick=|<img|https?:/i.test(h),'aucune image externe'); }
 console.log('ui-v2 : ok');

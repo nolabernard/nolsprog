@@ -248,6 +248,27 @@ button:active{transform:translateY(1px)}
 .v2-results{display:flex;flex-direction:column;gap:8px}
 .v2-create{display:flex;flex-direction:column;gap:10px}
 
+/* Dernière séance sur l'accueil */
+.v2-last{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto auto;column-gap:10px;width:100%;text-align:left;cursor:pointer;color:var(--text);font:inherit;min-height:44px}
+.v2-last>.v2-ic{grid-column:2;grid-row:1/span 3;align-self:center;color:var(--muted)}
+.v2-last-kicker{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.v2-last b{font-size:17px}.v2-last small{color:var(--muted)}
+/* Cardio : modifier / supprimer */
+.v2-danger{color:#9B2C2C;margin-top:8px;width:100%}
+/* Récapitulatif du questionnaire et présentation du programme */
+.v2-recap-body{display:flex;flex-direction:column;gap:14px;padding:8px 20px 32px}
+.v2-recap{display:flex;flex-direction:column;margin:0;background:var(--surface);border-radius:18px;padding:4px 16px}
+.v2-recap div{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}.v2-recap div:last-child{border:0}
+.v2-recap dt{color:var(--muted);font-weight:600}.v2-recap dd{margin:0;font-weight:800;text-align:right}
+.v2-recap-sessions{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px}.v2-recap-sessions small{display:block;color:var(--muted)}
+.v2-intro .v2-btn{margin-top:12px;width:100%}
+/* Comment faire : pictogrammes et consignes */
+.v2-ex-name{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.v2-howto-btn{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:72px;min-height:44px;padding:6px;border:2px solid var(--line);border-radius:14px;background:var(--surface);color:var(--accent);font:700 11px/1.2 Inter,sans-serif;cursor:pointer}
+.mv-pic .mv-arrow{stroke:#C46B2D}.mv-pic .mv-floor{stroke:var(--line)}
+.v2-howto-pic{display:flex;justify-content:center;color:var(--accent);background:var(--raised);border-radius:18px;padding:12px;margin-bottom:10px}
+.v2-howto-cues{margin:10px 0;padding-left:22px;display:flex;flex-direction:column;gap:8px;line-height:1.4}
+
 /* Rappels (lot 7) */
 .v2-daypick{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:10px 0}
 .v2-daypick button{min-height:44px;border:2px solid var(--line);border-radius:12px;background:var(--surface);color:var(--muted);font-weight:800;cursor:pointer}
