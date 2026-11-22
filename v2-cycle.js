@@ -81,6 +81,20 @@ function progress(setLogs,workouts){
  return {totals,byKey};
 }
 
+// Semaine allégée : la dernière semaine de séances du cycle (en séances réellement faites, pas au calendrier).
+// Environ 40 % de séries en moins, mêmes charges : la fatigue retombe avant le bilan et le cycle suivant.
+function deload(cycle,workouts){
+ if(!cycle||(cycle.weeks||6)<4)return false;const spw=cycle.sessions_per_week||1,total=(cycle.weeks||6)*spw;
+ const done=(workouts||[]).filter(w=>w.cycle_id===cycle.id&&w.status==='completed').length;
+ return done>=total-spw&&done<total;
+}
+const deloadSets=n=>Math.max(1,Math.round((Number(n)||1)*0.6));
+// Échauffement du premier exercice de base : 2 séries de montée à partir de la charge de travail (arrondi au palier).
+function warmup(weight){
+ const w=Number(weight);if(!Number.isFinite(w)||w<20)return null;
+ const step=w>=60?2.5:1,r=x=>Math.max(step,Math.round(x/step)*step);
+ return [{weight:r(w*0.5),reps:8},{weight:r(w*0.75),reps:4}];
+}
 function cycleProgress(cycle,workouts){
  if(!cycle)return 0;const total=(cycle.weeks||6)*(cycle.sessions_per_week||1);
  const done=(workouts||[]).filter(w=>w.cycle_id===cycle.id&&w.status==='completed').length;
@@ -143,5 +157,5 @@ async function loadCycle(api,userId){
  return {cycle:{...cy,user_exercises:userExercises||[],sessions:list,cardio:cardio||[]},truncated,workouts:done,setLogs,userExercises:userExercises||[],cardioLogs:cardioLogs||[]};
 }
 
-return {rhythm,weekStart,localDate,cardioWeek,cardioProgress,fromEngine,fromLegacyPlan,toRows,lastPerformance,progress,cycleProgress,loadCycle,nameOf,parseReps};
+return {deload,deloadSets,warmup,rhythm,weekStart,localDate,cardioWeek,cardioProgress,fromEngine,fromLegacyPlan,toRows,lastPerformance,progress,cycleProgress,loadCycle,nameOf,parseReps};
 });

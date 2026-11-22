@@ -65,7 +65,18 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
    for(const n of [1,2]){h5.input({ex:e.id,set:n,field:'weight',value:String(weight)});h5.input({ex:e.id,set:n,field:'reps',value:String(reps)});await h5.handle('v2-set',{ex:e.id,set:String(n)})}
    await h5.handle('v2-finish');
   };
-  await run(60,8);
+  // Première séance : conseil de calibrage ; après une série, le ressenti se note en un appui.
+  await h5.handle('v2-start',{session:h5.state().cycle.sessions[0].id});
+  assert.match(h5.todayHTML(),/Première fois sur cet exercice : trouve ta charge/);
+  { const e=h5.state().store.current().exercises[0];
+    for(const n of [1,2]){h5.input({ex:e.id,set:n,field:'weight',value:'60'});h5.input({ex:e.id,set:n,field:'reps',value:'8'})}
+    await h5.handle('v2-set',{ex:e.id,set:'1'});
+    assert.match(h5.todayHTML(),/Série 1 · Développé couché barre : c’était…/);
+    await h5.handle('v2-rir',{ex:e.id,set:'1',rir:'2'});
+    assert.equal(h5.state().store.current().exercises[0].sets[0].rir,2);assert.doesNotMatch(h5.todayHTML(),/c’était…/);
+    await h5.handle('v2-set',{ex:e.id,set:'2'});await h5.handle('v2-rir',{ex:e.id,set:'2',rir:'2'});
+    await h5.handle('v2-finish'); }
+  assert(h5.state().setLogs.some(r=>r.rir===2),'ressenti conservé dans l’historique');
   assert.doesNotMatch(h5.todayHTML(),/Nouveau record/,'pas de record à la première séance');
   await h5.handle('v2-close-summary');t+=3*24*3600e3;
   await h5.handle('v2-start',{session:h5.state().cycle.sessions[0].id});
@@ -154,6 +165,15 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
    assert.deepEqual(ops.filter(o=>o[1]==='cardio_logs').map(o=>o[0]+o[3]),['up20','up35']);
    await c8.handle('v2-cardio-delete',{id});await c8.flushNow();assert.equal(c8.state().cardioLogs.length,0);assert(ops.some(o=>o[0]==='del'&&o[2]===id));
    assert.doesNotMatch(c8.statsHTML(),/v2-cardio-edit/); }
+ // Semaine allégée : dernière semaine du cycle, séries réduites, séance exclue des conseils.
+ { const st=memory(),one=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',sets:3,reps:'6–8',rest:120}]}];
+   const c=V2.create({...ctx,storage:st,legacyPlan:()=>one});await c.init();
+   const cy=c.state().cycle,total=(cy.weeks||6)*(cy.sessions_per_week||1);
+   for(let i=0;i<total-(cy.sessions_per_week||1);i++)c.state().workouts.push({id:'old'+i,cycle_id:cy.id,status:'completed',ended_at:new Date(t-86400e3*(i+1)).toISOString()});
+   assert.match(c.todayHTML(),/semaine allégée/);
+   await c.handle('v2-start',{session:cy.sessions[0].id});
+   const w=c.state().store.current();assert.equal(w.exercises[0].sets.length,2,'3 séries → 2');assert.match(c.todayHTML(),/Semaine allégée/);assert.match(c.todayHTML(),/Échauffement/);
+   assert(JSON.parse(st.getItem([...st.m.keys()].find(k=>k.startsWith('nolsprog-v2-deload:')))).includes(w.id)); }
  // Lot 7 : choix d'un jour enregistré (sans exception), même rappels désactivés.
  { const st7=memory(),c7=V2.create({...ctx,storage:st7,api:{async select(){return []},async upsert(){},async remove(){},async fn(){return {}}},userId:'55555555-5555-4555-8555-555555555555'});
    await c7.handle('v2-rem-day',{day:'6'});assert.deepEqual(JSON.parse(st7.getItem('nolsprog-v2-reminders:55555555-5555-4555-8555-555555555555')).days,[0,1,2,3,4,5]);

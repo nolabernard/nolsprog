@@ -204,6 +204,8 @@ function fitDuration(items,p){
  return items;
 }
 function buildProgram(p,weekIndex=0,{version=1}={}){
+ // Deux priorités au maximum : au-delà (anciennes réponses), tout cocher revient à ne rien prioriser.
+ if(Array.isArray(p.priority)&&p.priority.length>2)p={...p,priority:[]};
  const v2=version>=2;
  if(!Number.isInteger(weekIndex)||weekIndex<0||weekIndex>51)throw Error('Semaine de programmation invalide.');
  const n=Math.max(2,Math.min(6,Number(p.daysCount)||3));
@@ -243,7 +245,12 @@ function buildProgram(p,weekIndex=0,{version=1}={}){
   }
   // Promote requested muscle groups within the relevant session, without removing primary movement coverage.
   const musclesFor={Pectoraux:['pushH','chestIso'],Dos:['pullH','pullV'],Épaules:['side','pushV'],Bras:['biceps','triceps'],Jambes:['squat','hinge'],Abdominaux:['core']};
-  const extra=priorities.flatMap(m=>musclesFor[m]||[]).map(pattern=>patternMap(pattern,equipment));
+  // Une priorité ne renforce que les séances qui travaillent déjà ce muscle : jamais de dos en Push, ni de pectoraux en Legs.
+  // Chaque mouvement appartient à une famille (poussée, tirage, jambes, gainage) : biceps et arrière d'épaule avec le tirage,
+  // triceps et élévations latérales avec la poussée.
+  const FAMILY={pushH:'push',chestIso:'push',pushV:'push',side:'push',triceps:'push',pullH:'pull',pullV:'pull',rear:'pull',biceps:'pull',squat:'legs',hinge:'legs',quadIso:'legs',hamIso:'legs',calves:'legs',core:'core'};
+  const families=new Set(patterns.map(x=>FAMILY[x]).filter(Boolean));
+  const extra=priorities.flatMap(m=>musclesFor[m]||[]).filter(x=>families.has(FAMILY[x])).map(pattern=>patternMap(pattern,equipment));
   if(extra.length&&maxMoves>3){for(const pattern of extra){if(patterns.includes(pattern))continue;if(patterns.length<maxMoves+1)patterns.push(pattern)}}
   const used=new Set(),items=[];
   for(let slot=0;slot<patterns.length&&items.length<maxMoves;slot++){
@@ -299,7 +306,7 @@ const steps=[
 {key:'daysCount',label:'Séances souhaitées par semaine',type:'select',options:[['2','2 séances'],['3','3 séances'],['4','4 séances'],['5','5 séances'],['6','6 séances']]},
 {key:'duration',label:'Durée par séance',type:'select',options:[['30','30 min'],['45','45 min'],['60','60 min'],['75','75 min'],['90','90 min']]},
 {key:'equipment',label:'Lieu / équipement',type:'select',options:[['gym','Salle équipée'],['dumbbells','Domicile avec haltères'],['none','Domicile sans matériel']]},
-{key:'priority',label:'Muscles prioritaires (plusieurs choix)',type:'multi',options:['Pectoraux','Dos','Épaules','Bras','Jambes','Abdominaux']}]},
+{key:'priority',label:'Un ou deux muscles à faire progresser (facultatif)',type:'multi',options:['Pectoraux','Dos','Épaules','Bras','Jambes','Abdominaux']}]},
 {title:'Ton organisation',subtitle:'Choisis tes disponibilités et la méthode qui te plaît.',fields:[
 {key:'days',label:'Ton rythme',type:'days',options:['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche']},
 {key:'method',label:'Méthode d’entraînement',type:'methods',options:Object.entries(definitions)},

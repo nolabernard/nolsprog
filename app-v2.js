@@ -14,7 +14,7 @@ function create(ctx){
  const {storage,api,userId,now=()=>Date.now(),uuid=()=>G().crypto.randomUUID(),render=()=>{},notice=()=>{},confirm=async()=>true}=ctx;
  const C=G().SteroidCycle,H=G().SteroidHistory,Rv=G().SteroidReview,UI=G().SteroidUI,Planner=G().SteroidPlanner,Cat=G().SteroidCatalogue;
  const owner=userId||'guest';
- const K={cycle:'nolsprog-v2-cycle:'+owner,history:'nolsprog-v2-history:'+owner,ui:'nolsprog-v2-ui:'+owner,outbox:'nolsprog-v2-outbox:'+owner,proposal:'nolsprog-v2-proposal:'+owner};
+ const K={cycle:'nolsprog-v2-cycle:'+owner,history:'nolsprog-v2-history:'+owner,ui:'nolsprog-v2-ui:'+owner,outbox:'nolsprog-v2-outbox:'+owner,deload:'nolsprog-v2-deload:'+owner,proposal:'nolsprog-v2-proposal:'+owner};
  const read=(k,d)=>{try{const v=JSON.parse(storage.getItem(k)||'null');return v??d}catch{return d}};
  const write=(k,v)=>{try{storage.setItem(k,JSON.stringify(v))}catch{notice('Espace de stockage plein sur ce téléphone.',true)}};
  const S={cardioLogs:[],cycle:null,workouts:[],setLogs:[],userExercises:[],store:null,view:'home',index:0,sheet:null,rest:null,summary:null,metric:'weight',selected:null,tab:'exercises',open:null,truncated:false,advice:null,proposal:null,nextAnswers:null,picking:null,query:'',creating:false,building:false};
@@ -168,14 +168,22 @@ function create(ctx){
  const list=()=>[...(current()?.exercises||[])].sort((a,b)=>a.position-b.position).filter(e=>e.status!=='skipped');
  const last=()=>C.lastPerformance(S.setLogs);
  const answers=()=>S.cycle?.answers_snapshot&&Object.keys(S.cycle.answers_snapshot).length?S.cycle.answers_snapshot:(ctx.answers?.()||{});
- function startRest(sec){S.rest={end:now()+sec*1000};saveUi()}
+ function startRest(sec,rate=null){S.rest={end:now()+sec*1000,rate};saveUi()}
+ // Série à noter (ressenti) : la dernière validée, tant que la séance continue.
+ function rateInfo(w){const r=S.rest?.rate||S.rate;if(!r||!w)return null;const e=w.exercises.find(x=>x.id===r.ex),s=e?.sets.find(x=>x.set_number===r.set);if(!s?.completed)return null;return {ex:e.id,set:s.set_number,rir:s.rir,name:C.nameOf(e.exercise_key,S.userExercises)}}
  function restLeft(){if(!S.rest)return null;if(S.rest.frozen!=null)return S.rest.frozen;const left=Math.ceil((S.rest.end-now())/1000);return left>0?left:0}
  function idleMinutes(){const w=current();if(!w||w.paused_at||S.view!=='session'||!ui.lastAction)return 0;const d=now()-ui.lastAction;return d>=IDLE_MS?Math.floor(d/60e3):0}
+ // Séances de semaine allégée : exclues des conseils de progression (moins de séries volontairement).
+ function normalWorkouts(){const ids=new Set(read(K.deload,[]));return ids.size?S.workouts.filter(w=>!ids.has(w.id)):S.workouts}
  function sessionTitle(w){return S.cycle?.sessions.find(s=>s.id===w.cycle_session_id)?.title||'Séance'}
  function startSession(id){
   const s=S.cycle.sessions.find(x=>x.id===id);if(!s)return;
   if(current()){S.view='session';return}
-  S.store.start({...s,cycle_id:S.cycle.id},{last:last()});S.view='session';S.index=0;S.rest=null;S.sheet=null;touch();scheduleFlush();
+  // Semaine allégée : moins de séries, mêmes charges ; la séance est notée comme telle (conseils et bilan n'en tirent pas de conclusion).
+  const light=C.deload(S.cycle,S.workouts);
+  S.store.start({...s,cycle_id:S.cycle.id,exercises:light?s.exercises.map(e=>({...e,sets:C.deloadSets(e.sets)})):s.exercises},{last:last()});
+  if(light){const ids=read(K.deload,[]);ids.push(S.store.current().id);write(K.deload,ids.slice(-200))}
+  S.view='session';S.index=0;S.rest=null;S.sheet=null;touch();scheduleFlush();
  }
  function finishSession(){
   const done=S.store.finish();if(!done)return;
@@ -205,9 +213,13 @@ function create(ctx){
    const items=list();S.index=Math.max(0,Math.min(S.index,items.length-1));
    const left=restLeft();
    // Conseils figés pour la séance : l'historique ne change pas avant la fin.
-   if(S.advice?.id!==w.id||S.advice.n!==w.exercises.length||w.exercises.some(e=>!(e.exercise_key in S.advice.map))){const map={};for(const e of w.exercises)map[e.exercise_key]=H.advice(e.plan,S.setLogs,S.workouts,e.exercise_key);S.advice={id:w.id,n:w.exercises.length,map}}
+   if(S.advice?.id!==w.id||S.advice.n!==w.exercises.length||w.exercises.some(e=>!(e.exercise_key in S.advice.map))){const map={};for(const e of w.exercises)map[e.exercise_key]=H.advice(e.plan,S.setLogs,normalWorkouts(),e.exercise_key)||{status:'calibrate',text:'Première fois sur cet exercice : trouve ta charge. Monte progressivement et garde celle qui te laisse 2 répétitions en réserve, puis note ton ressenti.'};S.advice={id:w.id,n:w.exercises.length,map}}
    const advice=S.advice.map;
-   let html=UI.session({advice,workout:w,index:S.index,elapsed:S.store.elapsedSeconds(),paused:S.store.isPaused(),pausedFor:w.paused_at?Math.round((now()-w.paused_at)/1000):0,rest:left?{remaining:left}:null,last:last(),userExercises:S.userExercises,pending:pending()});
+   const light=new Set(read(K.deload,[])).has(w.id);
+   // Échauffement : premier exercice de base de la séance, tant qu'aucune série n'est validée.
+   const firstBase=items.find(x=>x.plan?.role==='base');let warm=null;
+   if(firstBase&&items[S.index]?.id===firstBase.id&&!firstBase.sets.some(x=>x.completed)){const ref=firstBase.sets.find(x=>x.weight!=null)?.weight??last()[firstBase.exercise_key]?.weight;warm={ex:firstBase.id,sets:C.warmup(ref)}}
+   let html=UI.session({light,warmup:warm,rate:rateInfo(w),advice,workout:w,index:S.index,elapsed:S.store.elapsedSeconds(),paused:S.store.isPaused(),pausedFor:w.paused_at?Math.round((now()-w.paused_at)/1000):0,rest:left?{remaining:left}:null,last:last(),userExercises:S.userExercises,pending:pending()});
    const idle=idleMinutes();
    if(idle)html+=UI.idlePrompt(idle);
    else if(S.sheet?.type==='machine'){const e=w.exercises.find(x=>x.id===S.sheet.ex);if(e){const practiced={};for(const r of S.setLogs)if(r.completed)practiced[r.exercise_key]=(practiced[r.exercise_key]||0)+1;
@@ -220,7 +232,7 @@ function create(ctx){
   const next=Planner.nextSession(S.cycle,S.workouts,now());
   const active=w?{title:sessionTitle(w),done:w.exercises.reduce((n,e)=>n+e.sets.filter(s=>s.completed).length,0),total:w.exercises.reduce((n,e)=>n+e.sets.length,0)}:null;
   const cardio={target:(S.cycle.cardio||[]).reduce((n,c)=>n+c.minutes*c.per_week,0),minutes:C.cardioWeek(S.cardioLogs,now())};
-  let html=UI.home({next,rhythm:C.rhythm(S.cycle,S.workouts,now()),cardio,hasHistory:S.workouts.some(x=>x.cycle_id===S.cycle.id&&x.status==='completed'),cycle:S.cycle,progress:C.cycleProgress(S.cycle,S.workouts),minutes:next?minutes(next.session):null,firstName:ctx.firstName?.()||'',dateText:dateText(),weekLine:weekLine(),record:recentRecord(),last:lastSession(),active});
+  let html=UI.home({next,rhythm:C.rhythm(S.cycle,S.workouts,now()),cardio,hasHistory:S.workouts.some(x=>x.cycle_id===S.cycle.id&&x.status==='completed'),cycle:S.cycle,progress:C.cycleProgress(S.cycle,S.workouts),minutes:next?minutes(next.session):null,firstName:ctx.firstName?.()||'',dateText:dateText(),weekLine:weekLine(),record:recentRecord(),deload:C.deload(S.cycle,S.workouts),last:lastSession(),active});
   if(!w&&(S.proposal||Rv.due(S.cycle,S.workouts,now())))html=html.replace('<section class="v2-next"',UI.reviewCard({proposal:Boolean(S.proposal)})+'<section class="v2-next"');
   if(S.sheet?.type==='choose')html+=UI.chooser({sessions:S.cycle.sessions,current:next?.session.id});
   return html+cardioSheet;
@@ -237,7 +249,7 @@ function create(ctx){
   const titles={};for(const x of S.cycle?.sessions||[])titles[x.id]=x.title;
   const plan=(S.cycle?.sessions||[]).flatMap(x=>x.exercises).find(e=>e.exercise_key===key);
   return UI.progress({progress:prog,selected:S.selected,metric:S.metric,userExercises:S.userExercises,cardio:C.cardioProgress(S.cardioLogs,now()),
-   cardioList:S.tab==='sessions'?[...S.cardioLogs].sort((a,b)=>String(b.done_on).localeCompare(String(a.done_on))):[],tab:S.tab,history:key?H.exercise(key,S.setLogs,S.workouts):null,advice:key&&plan?H.advice(plan,S.setLogs,S.workouts,key):null,
+   cardioList:S.tab==='sessions'?[...S.cardioLogs].sort((a,b)=>String(b.done_on).localeCompare(String(a.done_on))):[],tab:S.tab,history:key?H.exercise(key,S.setLogs,S.workouts):null,advice:key&&plan?H.advice(plan,S.setLogs,normalWorkouts(),key):null,
    sessions:S.tab==='sessions'?H.sessions(S.workouts,S.setLogs,{titles,cardioLogs:S.cardioLogs}):[],open:S.open,records:S.open?H.newRecords(S.open,S.setLogs,S.workouts,{truncated:S.truncated}):[],truncated:S.truncated});
  }
  function searchResults(){
@@ -290,9 +302,19 @@ function create(ctx){
     const e=w?.exercises.find(x=>x.id===d.ex),s=e?.sets.find(x=>x.set_number===Number(d.set));if(!s)return;
     if(!s.completed&&s.reps==null){notice('Indique tes répétitions pour valider la série '+s.set_number+'.',true);return}
     S.store.logSet(e.id,s.set_number,{completed:!s.completed});touch();
-    if(s.completed){startRest(e.plan.rest_seconds||90);if(e.sets.every(x=>x.completed)){const items=list(),i=items.findIndex(x=>x.id===e.id);if(i>=0&&i<items.length-1)S.index=i+1}}
+    if(s.completed){S.rate={ex:e.id,set:s.set_number};startRest(e.plan.rest_seconds||90,S.rate);if(e.sets.every(x=>x.completed)){const items=list(),i=items.findIndex(x=>x.id===e.id);if(i>=0&&i<items.length-1)S.index=i+1}}
     saveUi();scheduleFlush();break;
    }
+   case 'v2-rir':{
+    const e=w?.exercises.find(x=>x.id===d.ex),s=e?.sets.find(x=>x.set_number===Number(d.set));if(!s?.completed)return;
+    const rir=Number(d.rir);S.store.logSet(e.id,s.set_number,{rir});touch();scheduleFlush();
+    // Conseil immédiat pour la série suivante (jamais appliqué tout seul) : marge → plus lourd ; échec sous la fourchette → plus léger.
+    const next=e.sets.find(x=>!x.completed&&x.set_number>s.set_number);
+    if(next&&s.weight!=null){
+     if(rir>=3)notice('Belle marge : essaie '+(Number((s.weight+H.increment(s.weight)).toFixed(2))).toLocaleString('fr-FR')+' kg sur la série suivante.');
+     else if(rir===0&&s.reps<(e.plan.reps_min||0))notice('Trop lourd : baisse un peu la charge pour rester dans la fourchette.');
+    }
+    S.rate=null;if(S.rest)S.rest.rate=null;saveUi();break}
    case 'v2-pause':if(S.rest){const l=restLeft();S.rest=l?{frozen:l}:null}S.store.pause();touch();scheduleFlush();break;
    case 'v2-resume':if(S.rest?.frozen!=null)S.rest={end:now()+S.rest.frozen*1000};S.store.resume();touch();scheduleFlush();break;
    case 'v2-idle-yes':S.store.pause(ui.lastAction);S.store.resume();touch();scheduleFlush();break;

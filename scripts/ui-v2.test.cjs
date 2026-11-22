@@ -169,4 +169,14 @@ assert.doesNotMatch(UI.cardioSheet({}),/v2-cardio-delete/);
   const s=UI.session({workout});assert.match(s,/data-action="v2-howto"/);assert.match(s,/<svg class="mv-pic"/);
   const h=UI.howtoSheet({key:'hack-squat'});assert.match(h,/Hack squat/);assert.match(h,/Squat \/ presse · Jambes/);assert.match(h,/genoux dans l’axe/);assert.match(h,/data-action="v2-close-sheet"/);
   assert(noEmoji(h)&&!/onclick=|<img|https?:/i.test(h),'aucune image externe'); }
+// Ressenti en un appui après une série validée.
+{ const r=UI.session({workout,rate:{ex:'x1',set:2,rir:null,name:'Hack squat'}});
+  assert.match(r,/Série 2 · Hack squat : c’était…/);assert.match(r,/data-action="v2-rir" data-ex="x1" data-set="2" data-rir="3"/);assert.match(r,/Facile[^]*Correct[^]*Dur/);
+  assert.match(UI.session({workout,rate:{ex:'x1',set:1,rir:2}}),/data-rir="2" aria-pressed="true"/);assert.doesNotMatch(UI.session({workout}),/v2-rate/); }
+// Semaine allégée et échauffement.
+{ const l=UI.session({workout,light:true,warmup:{ex:workout.exercises[0].id,sets:[{weight:50,reps:8},{weight:75,reps:4}]}});
+  assert.match(l,/Semaine allégée/);assert.match(l,/Échauffement[^]*50 kg × 8[^]*75 kg × 4/);
+  assert.match(UI.session({workout,warmup:{ex:workout.exercises[0].id,sets:null}}),/2 séries légères/);
+  assert.doesNotMatch(UI.session({workout}),/Échauffement|Semaine allégée/);
+  assert.match(UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},deload:true}),/semaine allégée/); }
 console.log('ui-v2 : ok');
