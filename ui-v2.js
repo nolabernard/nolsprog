@@ -45,7 +45,7 @@ function cardioSheet({workoutId=''}={}){
   +'<label class="v2-field-label">Durée (minutes)<input name="minutes" type="number" inputmode="numeric" min="1" max="600" required value="30"></label>'
   +'<button type="submit" class="v2-btn">Enregistrer le cardio</button></form></section></div>';
 }
-function home({next,hasHistory=false,cycle,progress=0,minutes,firstName,dateText,weekLine,record,building=false,active=null,retry=false,rhythm=null,cardio=null}={}){
+function home({next,hasHistory=false,cycle,progress=0,minutes,firstName,dateText,weekLine,record,building=false,active=null,retry=false,rhythm=null,cardio=null,last=null}={}){
  const head='<header class="v2-home-head"><div>'+(dateText?'<p class="v2-date">'+esc(dateText)+'</p>':'')+'<h1 class="v2-hello">'+esc(firstName?'Salut '+firstName:'Salut')+'</h1></div></header>';
  if(!cycle||!next)return '<section class="v2-home">'+head+'<div class="v2-card v2-empty">'+(retry?'<h2>Programme indisponible</h2><p>Impossible de joindre ton compte. Vérifie ta connexion.</p>':'<h2>Ton programme t’attend</h2><p>Je prépare ta suite de séances à partir de tes réponses.</p>')+'<button type="button" class="v2-btn" data-action="v2-build" '+(building?'disabled':'')+'>'+(building?'Préparation…':retry?'Réessayer':'Préparer mon programme')+'</button></div></section>';
  const s=next.session,count=(s.exercises||[]).length;
@@ -58,6 +58,8 @@ function home({next,hasHistory=false,cycle,progress=0,minutes,firstName,dateText
  html+='<div class="v2-coach">'+icon('coach','v2-ic v2-coach-ic')+'<div><p>'+(coach?esc(next.message):(hasHistory?'On reprend la suite là où tu t’es arrêté, sans séance « manquée ».':'Première séance de ton cycle. Ensuite, chaque séance suit la précédente, quel que soit le jour.'))+'</p>'
   +(next.reason==='recovery'?'<div class="v2-coach-actions"><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-start" data-session="'+esc(s.id)+'">D’accord</button><button type="button" class="v2-link" data-action="v2-start" data-session="'+esc(next.planned.id)+'">Faire '+esc(next.planned.title)+' quand même</button></div>':'')
   +'<button type="button" class="v2-link" data-action="v2-choose">Changer de séance</button></div></div>';
+ // Dernière séance effectuée : un appui ouvre son détail dans Progrès.
+ if(last)html+='<button type="button" class="v2-card v2-last" data-action="v2-last-open" data-id="'+esc(last.id)+'"><span class="v2-last-kicker">Dernière séance</span><b>'+esc(last.title)+'</b><small>'+esc([dayText(last.date),last.minutes!=null?last.minutes+' min':null,plural(last.sets,'série','séries')].filter(Boolean).join(' · '))+'</small>'+icon('right','v2-ic v2-ic--sm')+'</button>';
  if(weekLine||record||rhythm||cardio)html+='<section class="v2-card v2-week">'+(weekLine?'<p class="v2-week-line">'+esc(weekLine)+'</p>':'')+rhythmHTML(rhythm)+cardioHTML(cardio)+(record?'<p class="v2-muted">'+icon('trophy','v2-ic v2-ic--sm')+esc(record)+'</p>':'')+'</section>';
  return html+'</section>';
 }

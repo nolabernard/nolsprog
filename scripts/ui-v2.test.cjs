@@ -142,4 +142,8 @@ assert.match(rc,/18:30, lundi, mercredi, vendredi/);assert.match(rc,/<option val
 assert.match(UI.remindersCard({enabled:false,hour:18,minute:0,days:[0,1,2,3,4,5,6]}),/data-action="v2-rem-on"/);
 assert.match(UI.remindersCard({blocker:'install',message:'Ajoute <STÉROÏDE>'}),/Ajoute &lt;STÉROÏDE&gt;/);
 assert(noEmoji(rc)&&!/onclick=/i.test(rc));
+// Accueil : dernière séance effectuée.
+const hl=UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},last:{id:'w9',title:'Bas A',date:'2026-11-12T11:00:00Z',minutes:48,sets:16}});
+assert.match(hl,/data-action="v2-last-open" data-id="w9"/);assert.match(hl,/Dernière séance/);assert.match(hl,/jeu\. 12 nov\. · 48 min · 16 séries/);
+assert.doesNotMatch(UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]}}),/Dernière séance/);
 console.log('ui-v2 : ok');

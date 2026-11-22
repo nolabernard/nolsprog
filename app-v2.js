@@ -219,11 +219,13 @@ function create(ctx){
   const next=Planner.nextSession(S.cycle,S.workouts,now());
   const active=w?{title:sessionTitle(w),done:w.exercises.reduce((n,e)=>n+e.sets.filter(s=>s.completed).length,0),total:w.exercises.reduce((n,e)=>n+e.sets.length,0)}:null;
   const cardio={target:(S.cycle.cardio||[]).reduce((n,c)=>n+c.minutes*c.per_week,0),minutes:C.cardioWeek(S.cardioLogs,now())};
-  let html=UI.home({next,rhythm:C.rhythm(S.cycle,S.workouts,now()),cardio,hasHistory:S.workouts.some(x=>x.cycle_id===S.cycle.id&&x.status==='completed'),cycle:S.cycle,progress:C.cycleProgress(S.cycle,S.workouts),minutes:next?minutes(next.session):null,firstName:ctx.firstName?.()||'',dateText:dateText(),weekLine:weekLine(),record:recentRecord(),active});
+  let html=UI.home({next,rhythm:C.rhythm(S.cycle,S.workouts,now()),cardio,hasHistory:S.workouts.some(x=>x.cycle_id===S.cycle.id&&x.status==='completed'),cycle:S.cycle,progress:C.cycleProgress(S.cycle,S.workouts),minutes:next?minutes(next.session):null,firstName:ctx.firstName?.()||'',dateText:dateText(),weekLine:weekLine(),record:recentRecord(),last:lastSession(),active});
   if(!w&&(S.proposal||Rv.due(S.cycle,S.workouts,now())))html=html.replace('<section class="v2-next"',UI.reviewCard({proposal:Boolean(S.proposal)})+'<section class="v2-next"');
   if(S.sheet?.type==='choose')html+=UI.chooser({sessions:S.cycle.sessions,current:next?.session.id});
   return html+cardioSheet;
  }
+ // Dernière séance terminée (tous cycles), affichée sur l'accueil.
+ function lastSession(){const titles={};for(const x of S.cycle?.sessions||[])titles[x.id]=x.title;return H.sessions(S.workouts,S.setLogs,{titles})[0]||null}
  // Dernier record des 14 derniers jours, affiché sur l'accueil.
  function recentRecord(){const r=H.latestRecord(S.setLogs,S.workouts,{truncated:S.truncated});if(!r||now()-Date.parse(r.date)>14*24*3600e3)return null;return 'Record récent : '+C.nameOf(r.key,S.userExercises)+', '+Number(r.weight).toLocaleString('fr-FR')+' kg × '+r.reps}
  function statsHTML(){
@@ -327,6 +329,7 @@ function create(ctx){
    case 'v2-rem-day':{if(!Rem)return;const st=Rem.state(),day=Number(d.day);const days=st.days.includes(day)?st.days.filter(x=>x!==day):[...st.days,day];await remRun(()=>Rem.update({days}));return}
    case 'v2-progress-tab':S.tab=d.tab==='sessions'?'sessions':'exercises';S.open=null;break;
    case 'v2-history-open':S.open=d.id||null;break;
+   case 'v2-last-open':S.tab='sessions';S.open=d.id||null;break;
    case 'v2-history-close':S.open=null;break;
    case 'v2-edit-ex':S.picking={ce:d.ce};S.query='';S.creating=false;break;
    case 'v2-add-ex':S.picking={session:d.session};S.query='';S.creating=false;break;

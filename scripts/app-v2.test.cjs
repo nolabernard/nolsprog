@@ -78,6 +78,8 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
   assert.match(h5.todayHTML(),/Nouveau record : Développé couché barre : 62,5 kg × 8 \(\+2,5 kg\)/);
   await h5.handle('v2-close-summary');
   assert.match(h5.todayHTML(),/Record récent : Développé couché barre, 62,5 kg × 8/);
+  const lastId=h5.todayHTML().match(/data-action="v2-last-open" data-id="([^"]+)"/)[1];assert.match(h5.todayHTML(),/Dernière séance[^]*Push A/);
+  await h5.handle('v2-last-open',{id:lastId});assert.match(h5.statsHTML(),/data-action="v2-history-close"/);await h5.handle('v2-progress-tab',{tab:'exercises'});
   let st5=h5.statsHTML();assert.match(st5,/Séance par séance/);assert.match(st5,/62,5 × 8 · 62,5 × 8/);assert.match(st5,/Meilleure série : 62,5 kg × 8/);assert.match(st5,/Prochaine fois/);
   await h5.handle('v2-progress-tab',{tab:'sessions'});st5=h5.statsHTML();
   const ids=[...st5.matchAll(/data-action="v2-history-open" data-id="([^"]+)"/g)].map(m=>m[1]);assert.equal(ids.length,2);
@@ -213,7 +215,7 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  const back={async select(p){if(p.startsWith('cycles'))return [{...cycleRows,sessions:undefined,user_exercises:undefined}];if(p.startsWith('cycle_sessions'))return cycleRows.sessions.map(({exercises,muscles,...x})=>x);if(p.startsWith('cycle_exercises'))return cycleRows.sessions.flatMap(x=>x.exercises);return []},async upsert(){throw Error('Failed to fetch')}};
  const c9=V2.create({...ctx,storage:st8,api:back,userId:U});await c9.init();await c9.whenFresh();
  assert(c9.state().workouts.some(w=>w.cycle_session_id===first.id),'séance non envoyée conservée');
- assert.match(c9.statsHTML(),/série validée/);assert(!c9.todayHTML().includes('>'+first.title+'<'),'la suite avance');
+ assert.match(c9.statsHTML(),/série validée/);assert(!c9.todayHTML().includes('v2-next-title">'+first.title+'<'),'la suite avance');
  // I5 : réseau qui ne répond jamais → le cache s'affiche tout de suite.
  const hang=V2.create({...ctx,storage:st8,api:{select:()=>new Promise(()=>{}),upsert:()=>new Promise(()=>{})},userId:U});
  await Promise.race([hang.init(),new Promise((_,no)=>setTimeout(()=>no(Error('init bloqué')),500))]);assert(hang.ready());
