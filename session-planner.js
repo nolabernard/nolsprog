@@ -1,17 +1,12 @@
 /* STEROID V2 — prochaine séance.
  * Le programme est une suite (A → B → C…) parcourue par tours. Dans le tour en cours, on propose la première séance
- * (dans l'ordre du programme) pas encore faite ni passée : une séance déplacée (« Changer de séance ») n'est donc
- * jamais sautée, elle reste à faire. Un tour se termine quand chaque séance a été faite ou passée.
- * Jamais de séance « manquée » ni de rattrapage : refaire une séance du tour en ouvre un nouveau. Garde-fou : si un groupe travaillé en exercice de base l'a été il y a
- * moins de 48 h, on conseille la prochaine séance compatible, en expliquant pourquoi.
- * Une séance par jour : une fois la séance du jour faite (ou passée), la suivante attend le lendemain.
- * Une séance passée (« Je ne fais pas cette séance ») fait avancer la suite sans compter comme travaillée. */
+ * (dans l'ordre du programme) pas encore faite ni passée : une séance déplacée (choisie à la place d'une autre) n'est
+ * donc jamais sautée, elle reste à faire. Aucune suggestion automatique : on suit l'ordre du programme.
+ * Un tour se termine quand chaque séance a été faite ou passée ; refaire une séance du tour en ouvre un nouveau
+ * (jamais de rattrapage). Une séance par jour : une fois la séance du jour faite ou passée, la suivante attend demain.
+ * Une séance passée (« Je ne la fais pas aujourd'hui ») fait avancer le tour sans compter comme faite. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.SteroidPlanner=api})(typeof globalThis!=='undefined'?globalThis:this,function(){
 'use strict';
-const RECOVERY_HOURS=48;
-const baseMuscles=s=>new Set((s.muscles||[]).filter(m=>m.role==='base').map(m=>m.muscle));
-const PHRASE={Pectoraux:'les pectoraux',Dos:'le dos',Jambes:'les jambes',Épaules:'les épaules',Bras:'les bras',Abdominaux:'les abdominaux'};
-function list(set){const a=[...set].map(m=>PHRASE[m]||m.toLowerCase());return a.length<=1?a.join(''):a.slice(0,-1).join(', ')+' et '+a[a.length-1]}
 const dayKey=ms=>{const d=new Date(ms);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
 // Séance faite ou passée aujourd'hui (jour du téléphone) : la plus récente.
 function today(workouts,now=Date.now()){
@@ -24,11 +19,11 @@ function nextSession(cycle,workouts,now=Date.now()){
  const done=today(workouts,now);
  if(done){
   // Prochaine séance calculée pour demain à la même heure (récupération comprise).
-  const next=plan(sessions,workouts,now+24*3600e3);
+  const next=plan(sessions,workouts);
   const title=sessions.find(s=>s.id===done.cycle_session_id)?.title||done.title||'Ta séance';
   return {...next,reason:'tomorrow',today:{id:done.id,status:done.status,title,reason:done.skip_reason||null},message:''};
  }
- return plan(sessions,workouts,now);
+ return plan(sessions,workouts);
 }
 // Tour en cours : séances faites ou passées depuis le début du tour, et celles qui restent (dans l'ordre du programme).
 function round(cycleOrSessions,workouts){
@@ -43,26 +38,10 @@ function round(cycleOrSessions,workouts){
  }
  return {handled:[...current],remaining:sessions.filter(x=>!current.has(x.id)),total:sessions.length};
 }
-function plan(sessions,workouts,now){
- const finished=(workouts||[]).filter(w=>w.status==='completed'&&w.ended_at).sort((a,b)=>Date.parse(b.ended_at)-Date.parse(a.ended_at));
+function plan(sessions,workouts){
  const {remaining}=round(sessions,workouts);
  const planned=remaining[0]||sessions[0];
- // Groupes encore en récupération (base, < 48 h).
- const tired=new Map();
- for(const w of finished){
-  const hours=(now-Date.parse(w.ended_at))/3600e3;if(hours<0)continue;if(hours>=RECOVERY_HOURS)break;
-  const s=sessions.find(x=>x.id===w.cycle_session_id);if(!s)continue;
-  for(const m of baseMuscles(s))if(!tired.has(m))tired.set(m,{session:s,hours});
- }
- const clash=s=>[...baseMuscles(s)].filter(m=>tired.has(m));
- if(!clash(planned).length)return {session:planned,planned,reason:'sequence',message:''};
- const muscles=new Set(clash(planned)),src=tired.get([...muscles][0]);
- const why=`Tu as travaillé ${list(muscles)} il y a ${Math.round(src.hours)} h (${src.session.title}) : il faut environ ${RECOVERY_HOURS} h pour récupérer.`;
- // Autre séance du tour en cours, compatible : on intervertit, la prévue reste à faire juste après.
- for(const s of remaining.slice(1)){
-  if(!clash(s).length)return {session:s,planned,reason:'recovery',message:`${why} Je te propose ${s.title} aujourd’hui, ${planned.title} sera parfait ensuite.`};
- }
- return {session:planned,planned,reason:'recovery-all',message:`${why} Les séances qui te restent les sollicitent aussi : allège les charges aujourd’hui si tu sens de la fatigue.`};
+ return {session:planned,planned,reason:'sequence',message:''};
 }
-return {nextSession,today,round,RECOVERY_HOURS};
+return {nextSession,today,round};
 });

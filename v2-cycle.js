@@ -115,6 +115,42 @@ function countable(workouts,setLogs,cardioLogs,{truncated=false}={}){
   return {...w,status:'empty'};
  });
 }
+// Semaine en cours pour l'accueil (lundi → dimanche, séances déjà passées par countable) :
+// état de chaque jour, séances faites / objectif, séries validées, volume (charge × répétitions, charges manquantes
+// ignorées : jamais comptées 0 kg) comparé à la semaine précédente, et semaines d'affilée à l'objectif.
+function weekView(cycle,workouts,setLogs,now=Date.now()){
+ if(!cycle)return null;
+ const start=weekStart(now),d0=new Date(start),dayAt=k=>new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()+k).getTime();
+ const end=dayAt(7),prevStart=new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()-7).getTime();
+ const goal=Math.max(1,Number(cycle.sessions_per_week)||(cycle.sessions||[]).length||1);
+ const planned=Array.isArray(cycle.preferred_days)?cycle.preferred_days:[];
+ const mine=(workouts||[]).filter(w=>w.cycle_id===cycle.id&&w.ended_at);
+ const t=dayIndex(now);
+ const days=Array.from({length:7},(_,k)=>{
+  const a=dayAt(k),b=dayAt(k+1),here=mine.filter(w=>{const e=Date.parse(w.ended_at);return e>=a&&e<b});
+  const state=here.some(w=>w.status==='completed')?'done':here.some(w=>w.status==='skipped')?'skipped':'';
+  return {state,today:k===t,planned:planned.includes(k)};
+ });
+ const done=mine.filter(w=>w.status==='completed'&&Date.parse(w.ended_at)>=start&&Date.parse(w.ended_at)<end).length;
+ const skipped=mine.filter(w=>w.status==='skipped'&&Date.parse(w.ended_at)>=start&&Date.parse(w.ended_at)<end).length;
+ // Date de la séance (pas celle de la série : les séries copiées de la V1 portent la date de la copie).
+ const counted=new Map((workouts||[]).filter(w=>w.status==='completed'&&w.ended_at).map(w=>[w.id,Date.parse(w.ended_at)]));
+ let sets=0,volume=0,prevVolume=0;
+ for(const r of setLogs||[]){
+  if(!r.completed||!counted.has(r.workout_id))continue;const at=counted.get(r.workout_id);
+  const v=r.weight!=null&&r.reps!=null?Number(r.weight)*Number(r.reps):0;
+  if(at>=start&&at<end){sets++;volume+=v}else if(at>=prevStart&&at<start)prevVolume+=v;
+ }
+ // Semaines pleines d'affilée à l'objectif, en remontant depuis la semaine dernière (+ la semaine en cours si atteinte).
+ let streak=done>=goal?1:0;const cycleStart=Date.parse(cycle.started_at)||0;
+ for(let k=1;k<60;k++){
+  const a=new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()-7*k).getTime(),b=new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()-7*(k-1)).getTime();
+  if(b<=cycleStart)break;
+  const n=mine.filter(w=>w.status==='completed'&&Date.parse(w.ended_at)>=a&&Date.parse(w.ended_at)<b).length;
+  if(n>=goal)streak++;else break;
+ }
+ return {days,done,goal,skipped,sets,volume:Math.round(volume),prevVolume:Math.round(prevVolume),streak};
+}
 // Où on en est dans le programme : semaine en cours (depuis le début du cycle) et séances faites sur le total prévu.
 function cycleStatus(cycle,workouts,now=Date.now()){
  if(!cycle)return null;
@@ -180,5 +216,5 @@ async function loadCycle(api,userId){
  return {cycle:{...cy,user_exercises:userExercises||[],sessions:list,cardio:cardio||[]},truncated,workouts:done,setLogs,userExercises:userExercises||[],cardioLogs:cardioLogs||[]};
 }
 
-return {deload,deloadSets,warmup,rhythm,weekStart,localDate,cardioWeek,cardioProgress,fromEngine,fromLegacyPlan,toRows,lastPerformance,progress,cycleProgress,cycleStatus,countable,loadCycle,nameOf,parseReps};
+return {deload,deloadSets,warmup,rhythm,weekStart,localDate,cardioWeek,cardioProgress,fromEngine,fromLegacyPlan,toRows,lastPerformance,progress,cycleProgress,cycleStatus,countable,weekView,loadCycle,nameOf,parseReps};
 });

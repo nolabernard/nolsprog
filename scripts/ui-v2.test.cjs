@@ -12,11 +12,11 @@ const noEmoji=s=>!/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(s);
 let h=UI.home({next:{session:haut,planned:haut,reason:'sequence',message:''},cycle:{sessions:[haut,bas],weeks:6,sessions_per_week:3},progress:2/18,minutes:48,firstName:'Nolan',dateText:'Lundi 23 novembre'});
 assert.match(h,/Haut A/);assert.match(h,/Pectoraux/);assert.match(h,/Dos/);
 assert.match(h,/>2<\/b>\s*<span>exercices/);assert.match(h,/>5<\/b>\s*<span>séries/);assert.match(h,/48/);
-assert.match(h,/data-action="v2-start" data-session="s1"/);assert.match(h,/aria-label="Avancée du cycle : 11 %"/);
+assert.match(h,/data-action="v2-recap" data-session="s1"/);assert.match(h,/aria-label="Avancée du cycle : 11 %"/);
 // Barre d'avancée du programme en haut de l'accueil et de Programme.
 {const st={week:3,weeks:6,done:13,total:36,pct:36};
  const hb=UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},cycleStatus:st});
- assert.match(hb,/semaine 3 sur 6/);assert.match(hb,/36 %/);assert.match(hb,/13\/36 séances/);assert.match(hb,/style="width:36%"/);
+ assert.match(hb,/semaine 3 sur 6/);assert.match(hb,/36 %/);assert.match(hb,/13 séances faites sur 36/);assert.match(hb,/style="width:36%"/);
  assert.match(UI.programme({cycle:{sessions:[haut]},cycleStatus:st}),/v2-cyclebar/);
  {const closed=UI.programme({cycle:{sessions:[haut]}});assert.match(closed,/Cardio en plus[^]*Facultatif/);assert.doesNotMatch(closed,/data-v2-cardio-plan/,'replié par défaut');
   assert.match(UI.programme({cycle:{sessions:[haut]},cardioOpen:true}),/data-v2-cardio-plan[^]*Ajouter cet objectif/);
@@ -26,16 +26,25 @@ assert.match(h,/data-action="v2-start" data-session="s1"/);assert.match(h,/aria-
  assert.match(w,/5<small>\/6<\/small>/);assert.match(w,/aria-label="5 séances faites sur 6 cette semaine"/);assert.match(w,/cette semaine<\/span>/);assert.doesNotMatch(w,/36/);
  assert.match(UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},week:{done:6,goal:6}}),/v2-ring is-full/);}assert.match(h,/Salut Nolan/);
 assert(!/quand même/.test(h));
-assert.match(h,/Première séance de ton cycle/);
 assert(!/class="v2-ring-value"/.test(UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},progress:0})),'anneau vide sans point parasite');
-assert.match(UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},progress:0.1,hasHistory:true}),/On reprend la suite/);
-// Garde-fou : phrase expliquée + « D'accord » / « Faire X quand même ».
-h=UI.home({next:{session:haut,planned:bas,reason:'recovery',message:'Tu as travaillé les jambes il y a 20 h (Bas A).'},cycle:{sessions:[haut,bas]},progress:0});
-assert.match(h,/Tu as travaillé les jambes il y a 20 h/);assert.match(h,/D’accord/);
-assert.match(h,/data-action="v2-start" data-session="s2"[^>]*>Faire Bas A quand même/);
-// Choix libre d'une autre séance.
-assert.match(h,/data-action="v2-choose"/);
-assert.match(UI.chooser({sessions:[haut,bas],current:'s1'}),/data-action="v2-pick-session" data-session="s2"/);
+// Accueil : « Commencer » ouvre le récapitulatif ; plus de garde-fou ni de liens de changement sur l'accueil.
+assert.doesNotMatch(h,/data-action="v2-choose"|data-action="v2-skip"|quand même/);
+// Récapitulatif : exercices, confirmer, choisir une autre séance du tour, passer.
+{const r=UI.recapSheet({session:haut,minutes:48,remaining:[haut,bas]});
+ assert.match(r,/C’est bien cette séance \?/);assert.match(r,/Haut A/);assert.match(r,/data-action="v2-start" data-session="s1"[^>]*>[^]*Oui, je commence/);
+ assert.match(r,/data-action="v2-recap-choose"/);assert.match(r,/data-action="v2-skip" data-session="s1"/);assert.match(r,/\d+ × /);
+ assert.doesNotMatch(UI.recapSheet({session:haut,remaining:[haut]}),/v2-recap-choose/,'rien d’autre à choisir');
+ const c=UI.recapSheet({session:haut,remaining:[haut,bas],choosing:true,planned:'s1'});assert.match(c,/data-action="v2-recap" data-session="s2"/);assert.match(c,/Haut A · prévue/);}
+assert.match(UI.skipSheet({session:haut}),/data-reason="envie"[^]*Pas envie aujourd’hui/);
+// Indicateurs de l'accueil.
+{const view={days:Array.from({length:7},(_,k)=>({state:k<5?'done':k===5?'skipped':'',today:k===6,planned:false})),done:5,goal:6,skipped:1,sets:101,volume:12480,prevVolume:11200,streak:2};
+ const hv=UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},view,stats:{records:3,lastRecord:'dernier : Squat'}});
+ assert.match(hv,/Ta semaine/);assert.match(hv,/5 séances faites sur 6 · encore 1/);assert.match(hv,/is-skipped/);assert.match(hv,/is-today/);
+ assert.match(hv,/101/);assert.match(hv,/12,5 t/);assert.match(hv,/\+11 % vs semaine dernière/);assert.match(hv,/2 semaines/);assert.match(hv,/>3</);
+ assert.match(hv,/data-action="v2-recap" data-session="s1"[^>]*>[^]*Commencer/);
+ assert.match(UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},week:{done:7,goal:6}}),/6<small>\/6 \+1<\/small>/,'jamais plus que l’objectif');}
+// Séance : pas de « Terminer » sans série validée.
+assert.match(UI.moreSheet({exercise:null,anyDone:false}),/v2-wrong-session[^]*v2-abandon/);assert.doesNotMatch(UI.moreSheet({exercise:null,anyDone:false}),/v2-finish/);
 // Pas de cycle : jamais d'écran vide.
 assert.match(UI.home({next:null,cycle:null}),/data-action="v2-build"/);
 

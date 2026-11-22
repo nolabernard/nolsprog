@@ -263,19 +263,22 @@ function create(ctx){
    else if(S.sheet?.type==='machine'){const e=w.exercises.find(x=>x.id===S.sheet.ex);if(e){const practiced={};for(const r of S.setLogs)if(r.completed)practiced[r.exercise_key]=(practiced[r.exercise_key]||0)+1;
     const a=answers(),alts=Cat.alternatives(e.exercise_key,{equipment:a.equipment||'gym',avoid:String(a.avoid||'').split(/[,;\n]/).map(x=>x.trim()).filter(Boolean),exclude:w.exercises.map(x=>x.exercise_key),history:practiced});
     html+=UI.machineSheet({exercise:e,alternatives:alts,canLater:items[items.length-1]?.id!==e.id,practiced})}}
-   else if(S.sheet?.type==='more')html+=UI.moreSheet({exercise:items[S.index]});
+   else if(S.sheet?.type==='more')html+=UI.moreSheet({exercise:items[S.index],anyDone:w.exercises.some(e=>e.sets.some(s=>s.completed))});
    else if(S.sheet?.type==='howto')html+=UI.howtoSheet({key:S.sheet.key,userExercises:S.userExercises});
    return html;
   }
   const next=Planner.nextSession(S.cycle,W(),now());
   const active=w?{title:sessionTitle(w),done:w.exercises.reduce((n,e)=>n+e.sets.filter(s=>s.completed).length,0),total:w.exercises.reduce((n,e)=>n+e.sets.length,0)}:null;
   const cardio={target:(S.cycle.cardio||[]).reduce((n,c)=>n+c.minutes*c.per_week,0),minutes:C.cardioWeek(S.cardioLogs,now())};
-  let html=UI.home({next,rhythm:C.rhythm(S.cycle,W(),now()),cardio,hasHistory:W().some(x=>x.cycle_id===S.cycle.id&&x.status==='completed'),cycle:S.cycle,progress:C.cycleProgress(S.cycle,W()),minutes:next?minutes(next.session):null,firstName:ctx.firstName?.()||'',dateText:dateText(),weekLine:weekLine(),record:recentRecord(),deload:C.deload(S.cycle,W()),last:lastSession(),week:weekCount(),cycleStatus:C.cycleStatus(S.cycle,W(),now()),active});
+  let html=UI.home({next,rhythm:C.rhythm(S.cycle,W(),now()),cardio,hasHistory:W().some(x=>x.cycle_id===S.cycle.id&&x.status==='completed'),cycle:S.cycle,progress:C.cycleProgress(S.cycle,W()),minutes:next?minutes(next.session):null,firstName:ctx.firstName?.()||'',dateText:dateText(),weekLine:weekLine(),record:recentRecord(),deload:C.deload(S.cycle,W()),last:lastSession(),week:weekCount(),view:C.weekView(S.cycle,W(),S.setLogs,now()),stats:homeStats(),cycleStatus:C.cycleStatus(S.cycle,W(),now()),active});
   if(!w&&(S.proposal||Rv.due(S.cycle,W(),now())))html=html.replace('<section class="v2-next"',UI.reviewCard({proposal:Boolean(S.proposal)})+'<section class="v2-next"');
   if(S.sheet?.type==='choose')html+=UI.chooser({sessions:S.cycle.sessions,current:next?.session.id});
+  if(S.sheet?.type==='recap'){const rs=S.cycle.sessions.find(x=>x.id===S.sheet.session);if(rs)html+=UI.recapSheet({session:rs,minutes:minutes(rs),userExercises:S.userExercises,remaining:Planner.round(S.cycle,W()).remaining,choosing:S.sheet.choosing,planned:next?.session.id})}
   if(S.sheet?.type==='skip'){const sk=S.cycle.sessions.find(x=>x.id===S.sheet.session);if(sk)html+=UI.skipSheet({session:sk})}
   return html+cardioSheet;
  }
+ // Records battus pendant ce cycle (séries validées et comparables uniquement ; historique tronqué → pas de chiffre).
+ function homeStats(){if(S.truncated)return {records:null};const ws=W().filter(x=>x.cycle_id===S.cycle.id&&x.status==='completed');let n=0;for(const x of ws)n+=H.newRecords(x.id,S.setLogs,W()).length;const r=n?H.latestRecord(S.setLogs,W()):null;return {records:n,lastRecord:r?'dernier : '+C.nameOf(r.key,S.userExercises):null}}
  // Dernière séance terminée (tous cycles), affichée sur l'accueil.
  function lastSession(){const titles={};for(const x of S.cycle?.sessions||[])titles[x.id]=x.title;return H.sessions(W(),S.setLogs,{titles})[0]||null}
  function cardioSheetHTML(){if(S.sheet?.type!=='cardio')return '';const edit=S.sheet.edit?S.cardioLogs.find(c=>c.id===S.sheet.edit)||null:null;return UI.cardioSheet({workoutId:S.sheet.workout||'',edit})}
@@ -333,7 +336,24 @@ function create(ctx){
   switch(action){
    case 'v2-build':S.building=true;render();if(api&&userId){fresh=refresh();await fresh}else{build();persistLocal()}S.building=false;break;
    case 'v2-start':case 'v2-pick-session':startSession(d.session);break;
-   case 'v2-choose':S.sheet={type:'choose'};break;
+   case 'v2-choose':S.sheet={type:'recap',session:Planner.nextSession(S.cycle,W(),now())?.session.id,choosing:true};break;
+   case 'v2-recap':
+    if(current()){S.view='session';S.sheet=null;break}
+    if(Planner.today(W(),now())){S.sheet=null;notice('Ta séance du jour est faite. La suivante t’attend demain.');break}
+    S.sheet={type:'recap',session:d.session};break;
+   case 'v2-recap-choose':S.sheet={type:'recap',session:d.session,choosing:true};break;
+   case 'v2-abandon':{
+    if(!w)return;
+    if(w.exercises.some(e=>e.sets.some(s=>s.completed))&&!await confirm('Les séries déjà validées ne compteront pas : la séance entière est abandonnée.',{title:'Abandonner la séance ?',ok:'Abandonner',cancel:'Continuer la séance'}))return;
+    if(!w.exercises.some(e=>e.sets.some(s=>s.completed))&&!await confirm('Elle ne comptera pas et restera ta prochaine séance.',{title:'Abandonner la séance ?',ok:'Abandonner',cancel:'Continuer la séance'}))return;
+    S.store.abandon();S.view='home';S.rest=null;S.sheet=null;S.index=0;saveUi();scheduleFlush();notice('Séance abandonnée : elle n’est pas comptée.');break;
+   }
+   case 'v2-wrong-session':{
+    // Mauvaise séance lancée : tant qu'aucune série n'est validée, on annule et on revient au choix.
+    if(!w||w.exercises.some(e=>e.sets.some(s=>s.completed)))return;
+    const sid=w.cycle_session_id;S.store.abandon();S.view='home';S.rest=null;S.index=0;saveUi();scheduleFlush();
+    S.sheet={type:'recap',session:sid,choosing:true};break;
+   }
    case 'v2-skip':S.sheet={type:'skip',session:d.session};break;
    case 'v2-skip-confirm':skipSession(d.session,d.reason);break;
    case 'v2-skip-undo':cancelSkip(d.id);break;

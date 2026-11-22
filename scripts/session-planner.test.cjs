@@ -36,24 +36,14 @@ r=P.nextSession(cycle,[at('s0',30,'skipped')],now);assert.equal(r.session.id,'s1
 // Séances abandonnées ou vides (status « empty ») ignorées.
 r=P.nextSession(cycle,[at('s0',1,'abandoned'),at('s0',2,'empty')],now);assert.equal(r.session.id,'s0');
 
-// Garde-fou : jambes travaillées il y a 20 h, la prévue est Bas B → on propose une séance compatible du tour.
+// Plus de garde-fou ni de suggestion automatique : on suit l'ordre du programme, même 20 h après des jambes.
 const legs={sessions:[
  {id:'l1',position:0,title:'Jambes A',muscles:[ex('Jambes')]},
- {id:'l2',position:1,title:'Jambes B',muscles:[ex('Jambes'),ex('Abdominaux','finition')]},
+ {id:'l2',position:1,title:'Jambes B',muscles:[ex('Jambes')]},
  {id:'u1',position:2,title:'Haut A',muscles:[ex('Pectoraux')]}]};
-r=P.nextSession(legs,[at('l1',20)],now);
-assert.equal(r.session.id,'u1','séance compatible proposée');assert.equal(r.reason,'recovery');
-assert.equal(r.planned.id,'l2','la séance prévue reste proposée en option');
-assert.match(r.message,/tu as travaillé les jambes/i);assert.match(r.message,/48 h/);assert.match(r.message,/Haut A/);
-// Haut A faite à la place : Jambes B reste la suivante.
+r=P.nextSession(legs,[at('l1',20)],now);assert.equal(r.session.id,'l2');assert.equal(r.reason,'sequence');assert.equal(r.message,'');
+// Haut A faite à la place (choisie dans le récapitulatif) : Jambes B reste la suivante.
 r=P.nextSession(legs,[at('l1',60),at('u1',30)],now);assert.equal(r.session.id,'l2');
-
-// Au-delà de 48 h : pas de garde-fou.
-r=P.nextSession(legs,[at('l1',50)],now);assert.equal(r.session.id,'l2');assert.equal(r.reason,'sequence');
-
-// Tout ce qui reste est en conflit → la prévue quand même, avec l'explication.
-r=P.nextSession({sessions:legs.sessions.slice(0,2)},[at('l1',20)],now);
-assert.equal(r.session.id,'l2');assert.equal(r.reason,'recovery-all');assert.match(r.message,/les jambes/);
 
 // Une séance par jour : séance faite aujourd'hui → la suivante attend demain, sans bouton de démarrage.
 {const t=new Date(now);const sameDay=new Date(t.getFullYear(),t.getMonth(),t.getDate(),Math.min(t.getHours(),23),0).getTime();
