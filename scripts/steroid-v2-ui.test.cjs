@@ -21,5 +21,10 @@ const sw=fs.readFileSync('sw.js','utf8');assert(sw.includes("addEventListener('p
 assert(html.indexOf('./reminders.js')>0&&html.indexOf('./reminders.js')<html.indexOf('./app-v2.js'),'reminders.js avant app-v2.js');
 assert(!/service_role|vapid_private\s*[:=]/i.test(fs.readFileSync('reminders.js','utf8')+app),'aucun secret côté app');
 assert(app.includes('function recapUI()')&&app.includes("a==='onboard-confirm'")&&app.includes('S.programIntro=true'),'Récapitulatif du questionnaire et présentation du programme');
+// Animation d'ouverture : kettlebell au trait, une fois par session, désactivable (réduire les animations), sans script en ligne.
+assert(html.includes('id="splash"')&&html.indexOf('./splash.js')<html.indexOf('id="app"'),'Animation d’ouverture avant l’app');
+assert(css.includes('@keyframes splash-draw')&&/prefers-reduced-motion:reduce\)\{\.splash-handle/.test(css),'Animation d’ouverture et repli sans mouvement');
+assert(fs.readFileSync('splash.js','utf8').includes("sessionStorage.getItem('nolsprog-splash')"),'Une seule fois par session');
+assert(!/<script>/.test(html),'Pas de script en ligne (CSP)');
 assert(app.includes("'v2Next' in"),'Formulaire du cycle suivant branché');
 for(const c of ['.v2-bullets','.v2-kicker--light','.v2-compare','.v2-diff','.v2-records','.v2-hist','.v2-advice','.v2-seg--2'])assert(css.includes(c),'Style manquant : '+c);
