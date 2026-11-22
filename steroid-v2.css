@@ -269,6 +269,22 @@ button:active{transform:translateY(1px)}
 .v2-howto-pic{display:flex;justify-content:center;color:var(--accent);background:var(--raised);border-radius:18px;padding:12px;margin-bottom:10px}
 .v2-howto-cues{margin:10px 0;padding-left:22px;display:flex;flex-direction:column;gap:8px;line-height:1.4}
 
+/* Animation d'ouverture : la kettlebell se dessine, se soulève, puis le logo apparaît (≈ 1,7 s). */
+.splash{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;background:#F5F0E5;color:#0B4D3B;transition:opacity .35s ease,transform .35s ease;cursor:pointer}
+.splash.is-out{opacity:0;transform:scale(1.04);pointer-events:none}
+.splash-mark{position:relative;display:flex;flex-direction:column;align-items:center}
+.splash-bell{display:block;width:190px;height:190px;margin-bottom:-28px;overflow:visible;animation:splash-lift .5s cubic-bezier(.3,.7,.3,1) .78s both}
+.splash-handle,.splash-body{stroke-dasharray:100;stroke-dashoffset:100}
+.splash-handle{animation:splash-draw .5s cubic-bezier(.6,0,.3,1) .05s forwards}
+.splash-body{animation:splash-draw .62s cubic-bezier(.6,0,.3,1) .2s forwards}
+.splash-shadow{display:block;width:110px;height:10px;margin-top:6px;border-radius:50%;background:#0B4D3B;opacity:.14;animation:splash-shadow .5s cubic-bezier(.3,.7,.3,1) .78s both}
+.splash-word{width:220px;height:auto;opacity:0;animation:splash-word .45s ease-out 1s forwards}
+@keyframes splash-draw{to{stroke-dashoffset:0}}
+@keyframes splash-lift{0%{transform:translateY(0) scale(1,1)}18%{transform:translateY(2px) scale(1.06,.94)}55%{transform:translateY(-16px) scale(.97,1.03)}80%{transform:translateY(-12px) scale(1,1)}100%{transform:translateY(-12px)}}
+@keyframes splash-shadow{0%{transform:scaleX(1);opacity:.14}18%{transform:scaleX(1.08);opacity:.18}55%,100%{transform:scaleX(.7);opacity:.08}}
+@keyframes splash-word{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.splash-handle,.splash-body{stroke-dashoffset:0;animation:none}.splash-bell,.splash-shadow{animation:none}.splash-word{opacity:1;animation:none}}
+
 /* Rappels (lot 7) */
 .v2-daypick{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:10px 0}
 .v2-daypick button{min-height:44px;border:2px solid var(--line);border-radius:12px;background:var(--surface);color:var(--muted);font-weight:800;cursor:pointer}
