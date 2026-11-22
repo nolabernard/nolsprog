@@ -31,4 +31,8 @@ const base=E.buildCycle({...E.defaults,method:'ppl',daysCount:'3',days:[0,2,4],d
 const prio=E.buildCycle({...E.defaults,method:'ppl',daysCount:'3',days:[0,2,4],duration:'75',priority:['Bras']});
 const arms=c=>c.sessions.flatMap(s=>s.exercises).filter(e=>C.byKey(e.key).muscle==='Bras').length;
 assert(arms(prio)>=arms(base),'la priorité Bras ne doit pas réduire le travail des bras');
+// Plus de deux priorités (anciennes réponses) : traité comme « aucune priorité ».
+const none=E.buildCycle({...E.defaults,method:'ppl',daysCount:'3',days:[0,2,4],duration:'75',priority:[]});
+const six=E.buildCycle({...E.defaults,method:'ppl',daysCount:'3',days:[0,2,4],duration:'75',priority:ALL});
+assert.deepEqual(six.sessions.map(s=>s.exercises.map(e=>e.key)),none.sessions.map(s=>s.exercises.map(e=>e.key)));
 console.log('engine-coherence : ok ('+checked+' séances vérifiées)');

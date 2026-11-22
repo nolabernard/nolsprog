@@ -204,6 +204,8 @@ function fitDuration(items,p){
  return items;
 }
 function buildProgram(p,weekIndex=0,{version=1}={}){
+ // Deux priorités au maximum : au-delà (anciennes réponses), tout cocher revient à ne rien prioriser.
+ if(Array.isArray(p.priority)&&p.priority.length>2)p={...p,priority:[]};
  const v2=version>=2;
  if(!Number.isInteger(weekIndex)||weekIndex<0||weekIndex>51)throw Error('Semaine de programmation invalide.');
  const n=Math.max(2,Math.min(6,Number(p.daysCount)||3));
@@ -304,7 +306,7 @@ const steps=[
 {key:'daysCount',label:'Séances souhaitées par semaine',type:'select',options:[['2','2 séances'],['3','3 séances'],['4','4 séances'],['5','5 séances'],['6','6 séances']]},
 {key:'duration',label:'Durée par séance',type:'select',options:[['30','30 min'],['45','45 min'],['60','60 min'],['75','75 min'],['90','90 min']]},
 {key:'equipment',label:'Lieu / équipement',type:'select',options:[['gym','Salle équipée'],['dumbbells','Domicile avec haltères'],['none','Domicile sans matériel']]},
-{key:'priority',label:'Muscles prioritaires (plusieurs choix)',type:'multi',options:['Pectoraux','Dos','Épaules','Bras','Jambes','Abdominaux']}]},
+{key:'priority',label:'Un ou deux muscles à faire progresser (facultatif)',type:'multi',options:['Pectoraux','Dos','Épaules','Bras','Jambes','Abdominaux']}]},
 {title:'Ton organisation',subtitle:'Choisis tes disponibilités et la méthode qui te plaît.',fields:[
 {key:'days',label:'Ton rythme',type:'days',options:['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche']},
 {key:'method',label:'Méthode d’entraînement',type:'methods',options:Object.entries(definitions)},
