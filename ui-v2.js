@@ -265,6 +265,8 @@ function repsLine(preview){
 function programIntro({cycle,methods={}}={}){
  if(!cycle)return '';
  return '<section class="v2-card v2-intro"><p class="v2-next-kicker v2-kicker--light">Ton programme est prêt</p><h2 class="v2-card-title">'+esc(methods[cycle.method]?.name||'Ton cycle')+' · '+cycle.weeks+' semaines</h2><p>'+plural(cycle.sessions.length,'séance différente','séances différentes')+' en boucle, '+plural(cycle.sessions_per_week,'séance','séances')+' par semaine. Voici le détail : tu peux changer un exercice ou le nombre de séries à tout moment.</p><button type="button" class="v2-btn" data-action="intro-start">'+icon('play')+'C’est parti</button></section>';
+}
+
 // ----- Comment faire : pictogramme et consignes par type de mouvement -----
 function moveInfo(key,userExercises=[]){const c=globalThis.SteroidCatalogue?.byKey(key)||userExercises.find(u=>u.key===key)||{};return {pattern:c.pattern,muscle:c.muscle}}
 function howtoButton(key,userExercises=[]){
@@ -309,7 +311,5 @@ function programme({cycle,userExercises=[],picking=null,query='',results=[],crea
  return html+'</section>';
 }
 
-return {cardioLogs,remindersCard,reviewCard,review,nextForm,proposal,cardioSheet,programme,home,chooser,session,machineSheet,moreSheet,idlePrompt,summary,progress,picker,clock,esc};
-return {recapCard,programIntro,remindersCard,reviewCard,review,nextForm,proposal,cardioSheet,programme,home,chooser,session,machineSheet,moreSheet,idlePrompt,summary,progress,picker,clock,esc};
-return {howtoSheet,remindersCard,reviewCard,review,nextForm,proposal,cardioSheet,programme,home,chooser,session,machineSheet,moreSheet,idlePrompt,summary,progress,picker,clock,esc};
+return {cardioLogs,remindersCard,reviewCard,review,nextForm,proposal,cardioSheet,programme,home,chooser,session,machineSheet,moreSheet,idlePrompt,summary,progress,picker,clock,esc,recapCard,programIntro,howtoSheet};
 });
