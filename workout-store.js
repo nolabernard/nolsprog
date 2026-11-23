@@ -106,7 +106,7 @@ function createWorkoutStore({storage,api,userId,now=()=>Date.now(),uuid=defaultU
    enqueue('workouts',workoutRow(w));save();return workoutRow(w);
   },
   // Erreur de manipulation : la séance passée est annulée (elle ne compte plus dans la suite).
-  cancelSkip(row){if(!row||row.status!=='skipped')return null;const r={...row,user_id:userId,status:'abandoned',skip_reason:null,revision:(row.revision||1)+1};enqueue('workouts',r);save();return r},
+  cancelSkip(row){if(!row||row.status!=='skipped')return null;const r=workoutRow({...row,started_at:Date.parse(row.started_at),ended_at:Date.parse(row.ended_at),paused_at:null,paused_seconds:row.paused_seconds||0,duration_seconds:row.duration_seconds??0,status:'abandoned',skip_reason:null,revision:(row.revision||1)+1});enqueue('workouts',r);save();return r},
   // Séance quittée sans aucune série validée : notée abandonnée (ne compte pas, ne fait pas avancer la suite).
   abandon(){
    if(!workout)return null;

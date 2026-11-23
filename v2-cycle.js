@@ -58,9 +58,11 @@ function toRows(cycle,userId){
 }
 
 const stamp=r=>Date.parse(r.created_at||r.updated_at||0)||0;
-function lastPerformance(setLogs){
- const out={},at={};
- for(const r of setLogs||[]){if(!r.completed)continue;const t=stamp(r);if(at[r.exercise_key]!=null&&at[r.exercise_key]>t)continue;at[r.exercise_key]=t;out[r.exercise_key]={weight:r.weight==null?null:Number(r.weight),reps:r.reps==null?null:Number(r.reps)}}
+// Dernière performance par exercice : datée par la séance (les séries copiées de la V1 ont toutes la date de la copie),
+// puis par position et numéro de série. Sans séance connue : date de la série.
+function lastPerformance(setLogs,workouts){
+ const out={},at={},when=new Map((workouts||[]).map(w=>[w.id,Date.parse(w.started_at||w.ended_at)]));
+ for(const r of setLogs||[]){if(!r.completed)continue;const base=when.get(r.workout_id);const t=base!=null&&Number.isFinite(base)?base+(Number(r.position)||0)*1e4+(Number(r.set_number)||0):stamp(r);if(at[r.exercise_key]!=null&&at[r.exercise_key]>t)continue;at[r.exercise_key]=t;out[r.exercise_key]={weight:r.weight==null?null:Number(r.weight),reps:r.reps==null?null:Number(r.reps)}}
  return out;
 }
 
@@ -101,6 +103,8 @@ function cycleProgress(cycle,workouts){
  return Math.min(1,done/total);
 }
 
+// Jour d'une séance = son début (une séance finie après minuit, ou oubliée la nuit, reste celle de la veille).
+const dayAtOf=w=>Date.parse(w.started_at||w.ended_at);
 // Règle unique de comptage : une séance terminée ne compte que si elle contient au moins une série validée
 // ou du cardio noté. Terminée vide (ex. ouverte puis fermée), elle passe au statut « empty » : ni comptée,
 // ni dans la suite, ni dans l'historique. Les séances importées de la V1 comptent toujours. Si l'historique
@@ -127,14 +131,14 @@ function weekView(cycle,workouts,setLogs,now=Date.now()){
  const mine=(workouts||[]).filter(w=>w.cycle_id===cycle.id&&w.ended_at);
  const t=dayIndex(now);
  const days=Array.from({length:7},(_,k)=>{
-  const a=dayAt(k),b=dayAt(k+1),here=mine.filter(w=>{const e=Date.parse(w.ended_at);return e>=a&&e<b});
+  const a=dayAt(k),b=dayAt(k+1),here=mine.filter(w=>{const e=dayAtOf(w);return e>=a&&e<b});
   const state=here.some(w=>w.status==='completed')?'done':here.some(w=>w.status==='skipped')?'skipped':'';
   return {state,today:k===t,planned:planned.includes(k)};
  });
- const done=mine.filter(w=>w.status==='completed'&&Date.parse(w.ended_at)>=start&&Date.parse(w.ended_at)<end).length;
- const skipped=mine.filter(w=>w.status==='skipped'&&Date.parse(w.ended_at)>=start&&Date.parse(w.ended_at)<end).length;
+ const done=mine.filter(w=>w.status==='completed'&&dayAtOf(w)>=start&&dayAtOf(w)<end).length;
+ const skipped=mine.filter(w=>w.status==='skipped'&&dayAtOf(w)>=start&&dayAtOf(w)<end).length;
  // Date de la séance (pas celle de la série : les séries copiées de la V1 portent la date de la copie).
- const counted=new Map((workouts||[]).filter(w=>w.status==='completed'&&w.ended_at).map(w=>[w.id,Date.parse(w.ended_at)]));
+ const counted=new Map((workouts||[]).filter(w=>w.status==='completed'&&w.ended_at).map(w=>[w.id,dayAtOf(w)]));
  let sets=0,volume=0,prevVolume=0;
  for(const r of setLogs||[]){
   if(!r.completed||!counted.has(r.workout_id))continue;const at=counted.get(r.workout_id);
@@ -146,7 +150,7 @@ function weekView(cycle,workouts,setLogs,now=Date.now()){
  for(let k=1;k<60;k++){
   const a=new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()-7*k).getTime(),b=new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()-7*(k-1)).getTime();
   if(b<=cycleStart)break;
-  const n=mine.filter(w=>w.status==='completed'&&Date.parse(w.ended_at)>=a&&Date.parse(w.ended_at)<b).length;
+  const n=mine.filter(w=>w.status==='completed'&&dayAtOf(w)>=a&&dayAtOf(w)<b).length;
   if(n>=goal)streak++;else break;
  }
  return {days,done,goal,skipped,sets,volume:Math.round(volume),prevVolume:Math.round(prevVolume),streak};
@@ -157,7 +161,8 @@ function cycleStatus(cycle,workouts,now=Date.now()){
  const weeks=Math.max(1,Number(cycle.weeks)||6),perWeek=Math.max(1,Number(cycle.sessions_per_week)||(cycle.sessions||[]).length||1),total=weeks*perWeek;
  const done=(workouts||[]).filter(w=>w.cycle_id===cycle.id&&w.status==='completed').length;
  const start=Date.parse(cycle.started_at);
- const week=Number.isFinite(start)?Math.min(weeks,Math.max(1,Math.floor((now-start)/(7*24*3600e3))+1)):1;
+ // Semaines calendaires (lundi → dimanche), arrondi pour les changements d'heure.
+ const week=Number.isFinite(start)?Math.min(weeks,Math.max(1,Math.round((weekStart(now)-weekStart(start))/(7*24*3600e3))+1)):1;
  return {week,weeks,done:Math.min(done,total),total,pct:Math.round(Math.min(1,done/total)*100)};
 }
 // Supabase renvoie au plus 1000 lignes par réponse : lecture par pages.
@@ -176,8 +181,8 @@ function rhythm(cycle,workouts,now){
  const days=Array.isArray(cycle?.preferred_days)&&cycle.preferred_days.length?[...cycle.preferred_days].sort((a,b)=>a-b):[];
  const start=weekStart(now),today=new Date(now).setHours(0,0,0,0);
  const mine=(workouts||[]).filter(w=>w.cycle_id===cycle?.id&&w.status==='completed');
- const doneThisWeek=mine.filter(w=>Date.parse(w.ended_at)>=start).length;
- const doneToday=mine.some(w=>Date.parse(w.ended_at)>=today);
+ const doneThisWeek=mine.filter(w=>dayAtOf(w)>=start).length;
+ const doneToday=(workouts||[]).some(w=>w.cycle_id===cycle?.id&&(w.status==='completed'||w.status==='skipped')&&dayAtOf(w)>=today);
  const goal=cycle?.sessions_per_week||days.length||1;
  if(!days.length)return {mode:'free',days:[],todayPlanned:false,nextDay:null,doneThisWeek,goal};
  const t=dayIndex(now),todayPlanned=days.includes(t)&&!doneToday;
