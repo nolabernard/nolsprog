@@ -39,7 +39,7 @@ assert.match(UI.skipSheet({session:haut}),/data-reason="envie"[^]*Pas envie aujo
 // Indicateurs de l'accueil.
 {const view={days:Array.from({length:7},(_,k)=>({state:k<5?'done':k===5?'skipped':'',today:k===6,planned:false})),done:5,goal:6,skipped:1,sets:101,volume:12480,prevVolume:11200,streak:2};
  const hv=UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},view,stats:{records:3,lastRecord:'dernier : Squat'}});
- assert.match(hv,/Ta semaine/);assert.match(hv,/5 séances faites sur 6 · encore 1/);assert.match(hv,/is-skipped/);assert.match(hv,/is-today/);
+ assert.match(hv,/Ta semaine/);assert.doesNotMatch(hv,/encore 1/,'pas de doublon avec l’anneau');assert.match(hv,/is-skipped/);assert.match(hv,/is-today/);
  assert.match(hv,/101/);assert.match(hv,/12,5 t/);assert.match(hv,/\+11 % vs semaine dernière/);assert.match(hv,/2 semaines/);assert.match(hv,/>3</);
  assert.match(hv,/data-action="v2-recap" data-session="s1"[^>]*>[^]*Commencer/);
  assert.match(UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},week:{done:7,goal:6}}),/6<small>\/6 \+1<\/small>/,'jamais plus que l’objectif');}
@@ -54,7 +54,7 @@ const workout={id:'w',started_at:0,exercises:[
   {id:'a',set_number:1,weight:80,reps:8,completed:true},{id:'b',set_number:2,weight:80,reps:8,completed:false},{id:'c',set_number:3,weight:null,reps:null,completed:false}]},
  {id:'x2',position:1,exercise_key:'u-1',status:'done',plan:{role:'finition',sets:1,reps_min:10,reps_max:15,rest_seconds:60},sets:[{id:'d',set_number:1,weight:null,reps:null,completed:false}]}]};
 let s=UI.session({workout,index:0,elapsed:1122,paused:false,last:{'developpe-couche-barre':{weight:80,reps:8}},userExercises:[{key:'u-1',name:'Mon exo'}]});
-assert.match(s,/Développé couché barre/);assert.match(s,/3 séries · 6 à 8 reps · repos 3 min/);
+assert.match(s,/Développé couché barre/);assert.match(s,/3 séries · 6 à 8 rép. · repos 3 min/);
 assert.match(s,/Dernière fois : 80 kg × 8/);assert.match(s,/18:42/);
 assert.equal((s.match(/data-action="v2-set"/g)||[]).length,3,'un bouton par série');
 assert.match(s,/aria-label="Série 1 validée"/);assert.match(s,/aria-label="Valider la série 2"/);
@@ -156,9 +156,9 @@ const rv={done:14,planned:18,weeks:6,rpe:8.5,strengths:['Développé couché bar
 const rh=UI.review({review:rv});
 assert.match(rh,/14\/18/);assert.match(rh,/Points forts/);assert.match(rh,/&lt;b&gt;x/);assert.match(rh,/100 × 8 → 110 × 8/);assert.match(rh,/garder la méthode/);assert.match(rh,/data-action="v2-review-next"/);
 const nf=UI.nextForm({answers:{daysCount:'4',duration:'45',goal:'muscle'},weeks:7,methods:globalThis.NolsEngine.methods});
-assert.match(nf,/data-v2-next/);assert.match(nf,/<option value="4" selected>/);assert.match(nf,/<option value="7" selected>7 semaines/);assert.match(nf,/Upper \/ Lower/);
+assert.match(nf,/data-v2-next/);assert.match(nf,/<option value="4" selected>/);assert.match(nf,/<option value="7" selected>7 semaines/);assert.match(nf,/Haut \/ bas du corps/);
 const pr=UI.proposal({cycle:{method:'ppl',weeks:6,sessions_per_week:3,sessions:[{code:'A',title:'Push',exercises:[{exercise_key:'hack-squat',sets:3,reps_min:8,reps_max:10,rest_seconds:120}]}]},methods:globalThis.NolsEngine.methods});
-assert.match(pr,/pas encore actif/);assert.match(pr,/Push \/ Pull \/ Legs/);assert.match(pr,/data-action="v2-proposal-accept"/);
+assert.match(pr,/pas encore actif/);assert.match(pr,/Poussée \/ tirage \/ jambes/);assert.match(pr,/data-action="v2-proposal-accept"/);
 assert.match(UI.programme({cycle:{weeks:6,sessions:[]}}),/data-action="v2-review"/);
 for(const html of [rh,nf,pr])assert(noEmoji(html)&&!/onclick=/i.test(html));
 // Lot 7 : carte Rappels.
@@ -183,7 +183,7 @@ assert.doesNotMatch(UI.cardioSheet({}),/v2-cardio-delete/);
   assert.match(rc,/Méthode<\/dt><dd>Full body/);assert.match(rc,/Durée du cycle<\/dt><dd>6 semaines/);assert.match(rc,/Gagner en force/);assert.match(rc,/Répartition des séances/);assert.match(rc,/Full body A/);assert.match(rc,/lundi, mercredi, vendredi/);
   assert.match(rc,/Exercices de base : \d+ à \d+ répétitions/);assert.doesNotMatch(rc,/45 répétitions/,'gainage exclu des fourchettes');
   const pi=UI.programIntro({cycle:{method:'fullbody',weeks:6,sessions_per_week:3,sessions:[{},{},{}]},methods:E.methods});
-  assert.match(pi,/Ton programme est prêt/);assert.match(pi,/Full body · 6 semaines/);assert.match(pi,/3 séances différentes/);assert.match(pi,/data-action="intro-start"/);assert.equal(UI.programIntro({}),'');
+  assert.match(pi,/Ton programme est prêt/);assert.match(pi,/Full body \(corps entier\) · 6 semaines/);assert.match(pi,/3 séances différentes/);assert.match(pi,/data-action="intro-start"/);assert.equal(UI.programIntro({}),'');
   for(const h of [rc,pi])assert(noEmoji(h)&&!/onclick=/i.test(h)); }
 // Comment faire : pictogramme dessiné pour l'app + consignes, par type de mouvement.
 { globalThis.SteroidMoves=require('../exercise-guide.js');const M=globalThis.SteroidMoves;

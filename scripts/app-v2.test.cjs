@@ -90,7 +90,9 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
   assert.match(h5.todayHTML(),/Nouveau record : Développé couché barre : 62,5 kg × 8 \(\+2,5 kg\)/);
   await h5.handle('v2-close-summary');
   assert.match(h5.todayHTML(),/Record récent : Développé couché barre, 62,5 kg × 8/);
-  const lastId=h5.todayHTML().match(/data-action="v2-last-open" data-id="([^"]+)"/)[1];assert.match(h5.todayHTML(),/Dernière séance[^]*Push A/);
+  // Séance du jour déjà affichée en haut : pas de carte « Dernière séance » en double.
+  assert.doesNotMatch(h5.todayHTML(),/data-action="v2-last-open"/);assert.match(h5.todayHTML(),/Séance faite aujourd’hui[^]*Push A/);
+  const lastId=h5.state().workouts.find(w=>w.status==='completed').id;
   await h5.handle('v2-last-open',{id:lastId});assert.match(h5.statsHTML(),/data-action="v2-history-close"/);await h5.handle('v2-progress-tab',{tab:'exercises'});
   let st5=h5.statsHTML();assert.match(st5,/Séance par séance/);assert.match(st5,/62,5 × 8 · 62,5 × 8/);assert.match(st5,/Meilleure série : 62,5 kg × 8/);assert.match(st5,/Prochaine fois/);
   await h5.handle('v2-progress-tab',{tab:'sessions'});st5=h5.statsHTML();
@@ -353,7 +355,7 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  const U4='44444444-4444-4444-8444-444444444444';
  // Mode « quand je veux » : pas de jours conseillés ; mode jours : jours repris du questionnaire.
  const free=V2.create({...ctx,storage:memory(),api:null,userId:null,answers:()=>({goal:'muscle',level:'intermediate',daysCount:'3',days:[0,1,2,3,4,5,6],planMode:'free',equipment:'gym',duration:'60'})});await free.init();
- assert.equal(free.state().cycle.preferred_days,null);assert.match(free.todayHTML(),/0 séance faite sur 3 · encore 3/);
+ assert.equal(free.state().cycle.preferred_days,null);assert.match(free.todayHTML(),/0<small>\/3<\/small>/);
  const fixed=V2.create({...ctx,storage:memory(),api:null,userId:null,answers:()=>({goal:'muscle',level:'intermediate',daysCount:'3',days:[0,2,4],planMode:'days',equipment:'gym',duration:'60'})});await fixed.init();
  assert.deepEqual(fixed.state().cycle.preferred_days,[0,2,4]);assert.match(fixed.todayHTML(),/Tes jours : lundi, mercredi, vendredi/);
  // Cardio noté seul (invité) : bornes vérifiées, compté dans la semaine et dans Progrès.

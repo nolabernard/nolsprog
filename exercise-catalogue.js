@@ -41,9 +41,9 @@ const CATALOGUE=Object.freeze([
  {key:"extension-triceps-au-dessus-de-la-tete-haltere",name:"Extension triceps au-dessus de la tête haltère",pattern:"triceps",muscle:"Bras",role:"finition",equipment:["gym"],aliases:[]},
  {key:"pushdown-triceps-barre",name:"Pushdown triceps barre",pattern:"triceps",muscle:"Bras",role:"finition",equipment:["gym"],aliases:["pushdown barre", "extension triceps barre poulie"]},
  {key:"crunch-machine",name:"Crunch machine",pattern:"core",muscle:"Abdominaux",role:"finition",equipment:["gym"],aliases:[]},
- {key:"gainage",name:"Gainage",pattern:"core",muscle:"Abdominaux",role:"finition",equipment:["any"],aliases:[]},
+ {key:"gainage",name:"Gainage",pattern:"core",muscle:"Abdominaux",role:"finition",equipment:["any"],aliases:[],unit:"s"},
  {key:"crunch",name:"Crunch",pattern:"core",muscle:"Abdominaux",role:"finition",equipment:["any"],aliases:[]},
- {key:"gainage-lateral",name:"Gainage latéral",pattern:"core",muscle:"Abdominaux",role:"finition",equipment:["any"],aliases:[]},
+ {key:"gainage-lateral",name:"Gainage latéral",pattern:"core",muscle:"Abdominaux",role:"finition",equipment:["any"],aliases:[],unit:"s"},
  {key:"goblet-squat",name:"Goblet squat",pattern:"squat",muscle:"Jambes",role:"base",equipment:["dumbbells"],aliases:[]},
  {key:"fentes-arriere-halteres",name:"Fentes arrière haltères",pattern:"squat",muscle:"Jambes",role:"base",equipment:["dumbbells"],aliases:[]},
  {key:"souleve-de-terre-roumain-halteres",name:"Soulevé de terre roumain haltères",pattern:"hinge",muscle:"Jambes",role:"base",equipment:["dumbbells"],aliases:[]},
@@ -91,7 +91,8 @@ function score(query,entry){
  const q=normalize(query);if(!q)return 0;
  const names=[entry.name,...entry.aliases].map(normalize);
  if(names.includes(q))return 1;
- return Math.min(0.99,Math.max(...names.map(n=>dice(q,n)+prefixBonus(q,n))));
+ // Tous les mots de la requête retrouvés (début ou consonnes dans l'ordre, ex. « dvlp ») : résultat garanti.
+ return Math.min(0.99,Math.max(...names.map(n=>{const b=prefixBonus(q,n);return b?Math.max(0.5,dice(q,n)+b):dice(q,n)})));
 }
 const byKeyMap=new Map(CATALOGUE.map(e=>[e.key,e]));
 function byKey(key){return byKeyMap.get(key)||null}

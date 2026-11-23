@@ -313,8 +313,13 @@ function create(ctx){
  }
  function searchResults(){
   const q=S.query.trim();
+  if(q&&!Cat.normalize(q))return []; // ex. un emoji seul : aucun résultat
   const mine=S.userExercises.filter(u=>q&&Cat.normalize(u.name).includes(Cat.normalize(q))).map(u=>({key:u.key,name:u.name,muscle:u.muscle,role:'finition'}));
-  return [...mine,...(q?Cat.search(q).slice(0,8):Cat.CATALOGUE.slice(0,8).map(entry=>({entry})))];
+  if(q)return [...mine,...Cat.search(q).slice(0,8)];
+  // Changer un exercice : d'abord les remplaçants du même mouvement.
+  const from=S.picking?.ce?sessionIn(P(),S.picking.ce).e?.exercise_key:null,alts=from?(Cat.alternatives(from,{limit:6})||[]).map(x=>x.entry||x).filter(x=>x&&x.key):[];
+  const seen=new Set(alts.map(x=>x.key));
+  return [...alts.slice(0,8).map(entry=>({entry})),...Cat.CATALOGUE.filter(x=>!seen.has(x.key)&&x.key!==from).slice(0,Math.max(0,8-alts.length)).map(entry=>({entry}))];
  }
  function programmeHTML(){return UI.programme({reviewAvailable:Boolean(S.cycle)&&Rv.available(S.cycle,W(),now()),cardioOpen:S.cardioOpen,cycleStatus:S.cycle?C.cycleStatus(S.cycle,W(),now()):null,open:[...openSessions],editing:S.edit?Math.max(1,S.edit.ops.length):0,reminders:remState(),cycle:P(),userExercises:S.userExercises,picking:S.picking,query:S.query,results:S.picking?searchResults():[],creating:S.creating})}
 
@@ -535,6 +540,9 @@ function create(ctx){
  async function addCardioPlan({type,minutes,per_week}){
   if(!S.cycle)return false;const ok=checkCardio(type,minutes,per_week);if(!ok)return false;
   const cy=draft(),row={id:uuid(),cycle_id:cy.id,type,minutes:ok.m,per_week:ok.p};
+  // Pas de doublon ni plus de 20 h de cardio par semaine au total.
+  if((cy.cardio||[]).some(c=>c.type===type&&c.minutes===ok.m&&c.per_week===ok.p)){notice('Cet objectif de cardio existe déjà.',true);return false}
+  if((cy.cardio||[]).reduce((t,c)=>t+c.minutes*c.per_week,0)+ok.m*ok.p>1200){notice('Au total, garde moins de 20 h de cardio par semaine.',true);return false}
   cy.cardio=[...(cy.cardio||[]),row];
   later(()=>{if(api&&userId)queueRows({cycle_cardio:[{...row,user_id:userId}]})});
   render();return true;
