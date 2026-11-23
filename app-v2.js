@@ -316,7 +316,7 @@ function create(ctx){
   const mine=S.userExercises.filter(u=>q&&Cat.normalize(u.name).includes(Cat.normalize(q))).map(u=>({key:u.key,name:u.name,muscle:u.muscle,role:'finition'}));
   return [...mine,...(q?Cat.search(q).slice(0,8):Cat.CATALOGUE.slice(0,8).map(entry=>({entry})))];
  }
- function programmeHTML(){return UI.programme({cardioOpen:S.cardioOpen,cycleStatus:S.cycle?C.cycleStatus(S.cycle,W(),now()):null,open:[...openSessions],editing:S.edit?Math.max(1,S.edit.ops.length):0,reminders:remState(),cycle:P(),userExercises:S.userExercises,picking:S.picking,query:S.query,results:S.picking?searchResults():[],creating:S.creating})}
+ function programmeHTML(){return UI.programme({reviewAvailable:Boolean(S.cycle)&&Rv.available(S.cycle,W(),now()),cardioOpen:S.cardioOpen,cycleStatus:S.cycle?C.cycleStatus(S.cycle,W(),now()):null,open:[...openSessions],editing:S.edit?Math.max(1,S.edit.ops.length):0,reminders:remState(),cycle:P(),userExercises:S.userExercises,picking:S.picking,query:S.query,results:S.picking?searchResults():[],creating:S.creating})}
 
  // ----- Programme -----
  function saveCycleExercise(e){later(()=>{if(api&&userId)queueRows({cycle_exercises:[exRow(e)]})})}
@@ -431,7 +431,7 @@ function create(ctx){
    }
    case 'v2-close-summary':S.summary=null;S.view='home';saveUi();break;
    case 'v2-metric':S.metric=d.metric;break;
-   case 'v2-review':if(!S.cycle)return;if(current()){notice('Termine d’abord ta séance en cours.',true);return}S.view='review';S.sheet=null;break;
+   case 'v2-review':if(!S.cycle)return;if(!Rv.available(S.cycle,W(),now())){notice('Le bilan sera disponible pendant la dernière semaine du cycle.');return}if(current()){notice('Termine d’abord ta séance en cours.',true);return}S.view='review';S.sheet=null;break;
    case 'v2-proposal-open':if(!S.proposal)return;S.view='proposal';S.sheet=null;break;
    case 'v2-review-next':if(!S.cycle)return;S.view='next';break;
    case 'v2-review-close':S.view='home';saveUi();break;

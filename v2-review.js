@@ -11,13 +11,16 @@ const plural=(n,one,many)=>n+' '+(n>1?many:one);
 
 function planned(cycle){return (cycle?.weeks||6)*(cycle?.sessions_per_week||1)}
 function mine(cycle,workouts){return (workouts||[]).filter(w=>w.cycle_id===cycle?.id&&w.status==='completed')}
-// Bilan proposé quand les séances prévues sont faites, ou quand la durée du cycle + 2 semaines est dépassée.
+// Début de la semaine (lundi 0 h) qui suit la dernière semaine du cycle.
+function endOf(cycle){const t=Date.parse(cycle?.started_at);if(!Number.isFinite(t))return null;const d=new Date(t);const mon=new Date(d.getFullYear(),d.getMonth(),d.getDate()-((d.getDay()+6)%7));return new Date(mon.getFullYear(),mon.getMonth(),mon.getDate()+7*(cycle.weeks||6)).getTime()}
+// Bilan proposé quand les séances prévues sont faites, ou dès la fin de la dernière semaine du cycle.
 function due(cycle,workouts,now){
  if(!cycle)return false;
  if(mine(cycle,workouts).length>=planned(cycle))return true;
- const t=Date.parse(cycle.started_at);
- return Number.isFinite(t)&&now-t>((cycle.weeks||6)+2)*7*DAY;
+ const e=endOf(cycle);return e!=null&&now>=e;
 }
+// Bilan accessible pendant la dernière semaine (ou dès qu'il est dû) ; avant, il n'aurait pas de sens.
+function available(cycle,workouts,now){const e=endOf(cycle);return due(cycle,workouts,now)||(e!=null&&now>=e-7*DAY)}
 // Méthodes adaptées au nombre de séances (même logique que le générateur).
 function methodsFor(n){n=Number(n)||3;return n<=3?['fullbody','upperlower','ppl']:n===4?['upperlower','fullbody','split']:n===5?['hybrid','ppl','split','upperlower']:['ppl','split','upperlower']}
 
@@ -39,9 +42,9 @@ function review(cycle,workouts,setLogs,userExercises=[],now=Date.now()){
  const subs={};const subSeen=new Set();for(const r of logs){const k=r.workout_id+'|'+r.exercise_key;if(r.completed&&r.substituted_from_key&&!subSeen.has(k)){subSeen.add(k);subs[r.substituted_from_key]=(subs[r.substituted_from_key]||0)+1}}
 
  const strengths=[],improve=[];
- if(regularity>=0.75)strengths.push('Régularité : '+done+' séances sur '+plan+' prévues.');
- else if(regularity>=0.6)strengths.push('Régularité correcte : '+done+' séances sur '+plan+' prévues.');
- else improve.push(done+' séances sur '+plan+' prévues : un rythme plus léger t’aidera à tenir.');
+ if(regularity>=0.75)strengths.push('Régularité : '+plural(done,'séance','séances')+' sur '+plan+' prévues.');
+ else if(regularity>=0.6)strengths.push('Régularité correcte : '+plural(done,'séance','séances')+' sur '+plan+' prévues.');
+ else improve.push(plural(done,'séance','séances')+' sur '+plan+' prévues : un rythme plus léger t’aidera à tenir.');
  const best=[...up].sort((x,y)=>(y.weight??0)-(x.weight??0)||y.reps-x.reps).slice(0,3);
  for(const e of best)strengths.push(nameOf(e.key,userExercises)+' : '+(e.weight?'+'+fr(e.weight)+' kg':'+'+plural(e.reps,'répétition','répétitions'))+' depuis le début du cycle.');
  const flat=evolutions.filter(e=>!e.progress&&e.sessions>=3).slice(0,3);
@@ -51,8 +54,8 @@ function review(cycle,workouts,setLogs,userExercises=[],now=Date.now()){
 
  const snap=cycle.answers_snapshot||{},n=Number(snap.daysCount||cycle.sessions_per_week||3);
  let recommendation;
- if(regularity<0.6&&n>2)recommendation={code:'adjust',title:'Alléger le rythme',text:'Tu as fait '+done+' séances sur '+plan+'. Passe à '+(n-1)+' séances par semaine, même méthode : mieux vaut un programme que tu tiens.',changes:{daysCount:String(n-1)}};
- else if(regularity<0.6)recommendation={code:'adjust',title:'Rythme léger',text:'Tu as fait '+done+' séances sur '+plan+'. Reste sur 2 séances par semaine, quitte à les raccourcir : la régularité compte plus que la durée.',changes:{daysCount:'2'}};
+ if(regularity<0.6&&n>2)recommendation={code:'adjust',title:'Alléger le rythme',text:'Tu as fait '+plural(done,'séance','séances')+' sur '+plan+'. Passe à '+(n-1)+' séances par semaine, même méthode : mieux vaut un programme que tu tiens.',changes:{daysCount:String(n-1)}};
+ else if(regularity<0.6)recommendation={code:'adjust',title:'Rythme léger',text:'Tu as fait '+plural(done,'séance','séances')+' sur '+plan+'. Reste sur 2 séances par semaine, quitte à les raccourcir : la régularité compte plus que la durée.',changes:{daysCount:'2'}};
  else if(evolutions.length>=2&&share<0.3){
   const alt=methodsFor(n).find(m=>m!==cycle.method)||cycle.method;
   recommendation={code:'change',title:'Changer de méthode',text:'Tu as été régulier mais tes charges stagnent. Une nouvelle méthode relance la progression.',changes:{method:alt}};
@@ -72,5 +75,5 @@ function nextAnswers(cycle,changes={},fallback={}){
  return a;
 }
 
-return {due,review,methodsFor,nextAnswers,planned};
+return {due,available,endOf,review,methodsFor,nextAnswers,planned};
 });
