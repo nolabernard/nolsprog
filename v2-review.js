@@ -36,7 +36,7 @@ function review(cycle,workouts,setLogs,userExercises=[],now=Date.now()){
  const up=evolutions.filter(e=>e.progress),share=evolutions.length?up.length/evolutions.length:0;
  const rpes=[];const seen=new Set();for(const r of logs){const k=r.workout_id+'|'+(r.workout_exercise_id||r.exercise_key);if(r.rpe!=null&&!seen.has(k)){seen.add(k);rpes.push(Number(r.rpe))}}
  const rpe=rpes.length?Math.round(rpes.reduce((a,b)=>a+b,0)/rpes.length*10)/10:null;
- const subs={};const subSeen=new Set();for(const r of logs){const k=r.workout_id+'|'+r.exercise_key;if(r.substituted_from_key&&!subSeen.has(k)){subSeen.add(k);subs[r.substituted_from_key]=(subs[r.substituted_from_key]||0)+1}}
+ const subs={};const subSeen=new Set();for(const r of logs){const k=r.workout_id+'|'+r.exercise_key;if(r.completed&&r.substituted_from_key&&!subSeen.has(k)){subSeen.add(k);subs[r.substituted_from_key]=(subs[r.substituted_from_key]||0)+1}}
 
  const strengths=[],improve=[];
  if(regularity>=0.75)strengths.push('Régularité : '+done+' séances sur '+plan+' prévues.');

@@ -138,7 +138,9 @@ function create(ctx){
    const ids=new Set(loaded.workouts.map(w=>w.id));
    // Une séance passée annulée sur ce téléphone garde son annulation tant que le serveur ne l'a pas reçue.
    S.workouts=mergeById(loaded.workouts,S.workouts.filter(w=>!ids.has(w.id)||w.status==='abandoned'));
-   S.setLogs=[...loaded.setLogs,...S.setLogs.filter(r=>!ids.has(r.workout_id))];
+   // Séries locales pas encore reçues par le serveur (même séance déjà connue) : gardées, sinon la séance redeviendrait vide.
+   const skey=r=>r.workout_exercise_id+'|'+r.set_number,have=new Set(loaded.setLogs.map(skey));
+   S.setLogs=[...loaded.setLogs,...S.setLogs.filter(r=>!have.has(skey(r))&&(!ids.has(r.workout_id)||r.workout_exercise_id))];
    S.userExercises=mergeByKey(loaded.userExercises,S.userExercises);
    const cids=new Set((loaded.cardioLogs||[]).map(x=>x.id));S.cardioLogs=[...(loaded.cardioLogs||[]),...S.cardioLogs.filter(x=>!cids.has(x.id))];
    // Nouveau cycle validé sur cet appareil, pas encore envoyé : le serveur renvoie encore l'ancien, on garde le nôtre.
@@ -199,7 +201,7 @@ function create(ctx){
  // ----- Séance -----
  const current=()=>S.store?.current();
  const list=()=>[...(current()?.exercises||[])].sort((a,b)=>a.position-b.position).filter(e=>e.status!=='skipped');
- const last=()=>C.lastPerformance(S.setLogs);
+ const last=()=>C.lastPerformance(S.setLogs,S.workouts);
  const answers=()=>S.cycle?.answers_snapshot&&Object.keys(S.cycle.answers_snapshot).length?S.cycle.answers_snapshot:(ctx.answers?.()||{});
  function startRest(sec,rate=null){S.rest={end:now()+sec*1000,rate};saveUi()}
  // Série à noter (ressenti) : la dernière validée, tant que la séance continue.
@@ -207,7 +209,9 @@ function create(ctx){
  function restLeft(){if(!S.rest)return null;if(S.rest.frozen!=null)return S.rest.frozen;const left=Math.ceil((S.rest.end-now())/1000);return left>0?left:0}
  function idleMinutes(){const w=current();if(!w||w.paused_at||S.view!=='session'||!ui.lastAction)return 0;const d=now()-ui.lastAction;return d>=IDLE_MS?Math.floor(d/60e3):0}
  // Séances de semaine allégée : exclues des conseils de progression (moins de séries volontairement).
- function normalWorkouts(){const ids=new Set(read(K.deload,[]));return ids.size?W().filter(w=>!ids.has(w.id)):W()}
+ // Séances allégées exclues des conseils : notées sur ce téléphone, ou (autre appareil) faites pendant la semaine allégée du cycle.
+ function normalWorkouts(){const ids=new Set(read(K.deload,[]));const st=Date.parse(S.cycle?.started_at);const last=Number.isFinite(st)&&S.cycle?.weeks?C.weekStart(st)+(S.cycle.weeks-1)*7*24*3600e3:Infinity;
+  return W().filter(w=>!ids.has(w.id)&&!(w.cycle_id===S.cycle?.id&&Date.parse(w.started_at||w.ended_at)>=last-3600e3))}
  function sessionTitle(w){return S.cycle?.sessions.find(s=>s.id===w.cycle_session_id)?.title||'Séance'}
  function startSession(id){
   const s=S.cycle.sessions.find(x=>x.id===id);if(!s)return;
@@ -246,10 +250,10 @@ function create(ctx){
  function dateText(){const d=new Date(now());return DAYS[d.getDay()]+' '+d.getDate()+' '+MONTHS[d.getMonth()]}
  function minutes(s){try{return G().NolsEngine.estimatedMinutes(s.exercises.map(e=>({name:C.nameOf(e.exercise_key,S.userExercises),sets:e.sets,rest:e.rest_seconds})))}catch{return null}}
  // Séances faites cette semaine (lundi → dimanche) et objectif : l'anneau de l'accueil.
- function weekCount(){const d=new Date(now()),monday=new Date(d.getFullYear(),d.getMonth(),d.getDate()-((d.getDay()+6)%7)).getTime();return {done:W().filter(w=>w.cycle_id===S.cycle.id&&w.status==='completed'&&Date.parse(w.ended_at)>=monday).length,goal:S.cycle.sessions_per_week||S.cycle.sessions.length}}
+ function weekCount(){const d=new Date(now()),monday=new Date(d.getFullYear(),d.getMonth(),d.getDate()-((d.getDay()+6)%7)).getTime();return {done:W().filter(w=>w.cycle_id===S.cycle.id&&w.status==='completed'&&Date.parse(w.started_at||w.ended_at)>=monday).length,goal:S.cycle.sessions_per_week||S.cycle.sessions.length}}
  function weekLine(){
   const d=new Date(now()),monday=new Date(d.getFullYear(),d.getMonth(),d.getDate()-((d.getDay()+6)%7)).getTime();
-  const done=W().filter(w=>w.cycle_id===S.cycle.id&&w.status==='completed'&&Date.parse(w.ended_at)>=monday).length,goal=S.cycle.sessions_per_week||S.cycle.sessions.length;
+  const done=W().filter(w=>w.cycle_id===S.cycle.id&&w.status==='completed'&&Date.parse(w.started_at||w.ended_at)>=monday).length,goal=S.cycle.sessions_per_week||S.cycle.sessions.length;
   return done>=goal?'Objectif de la semaine atteint : '+done+' séance'+(done>1?'s':'')+'.':done?done+' séance'+(done>1?'s':'')+' cette semaine, encore '+(goal-done)+'.':'Objectif : '+goal+' séance'+(goal>1?'s':'')+' cette semaine.';
  }
  function todayHTML(){

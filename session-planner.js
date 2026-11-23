@@ -11,7 +11,7 @@ const dayKey=ms=>{const d=new Date(ms);return d.getFullYear()+'-'+(d.getMonth()+
 // Séance faite ou passée aujourd'hui (jour du téléphone) : la plus récente.
 function today(workouts,now=Date.now()){
  const k=dayKey(now);
- return (workouts||[]).filter(w=>(w.status==='completed'||w.status==='skipped')&&w.ended_at&&dayKey(Date.parse(w.ended_at))===k).sort((a,b)=>Date.parse(b.ended_at)-Date.parse(a.ended_at))[0]||null;
+ return (workouts||[]).filter(w=>(w.status==='completed'||w.status==='skipped')&&w.ended_at&&dayKey(Date.parse(w.started_at||w.ended_at))===k).sort((a,b)=>Date.parse(b.ended_at)-Date.parse(a.ended_at))[0]||null;
 }
 function nextSession(cycle,workouts,now=Date.now()){
  const sessions=[...(cycle?.sessions||[])].sort((a,b)=>a.position-b.position);
