@@ -1,1 +1,5 @@
 const fs=require('node:fs'),assert=require('node:assert/strict');const app=fs.readFileSync('app.js','utf8'),css=fs.readFileSync('styles.css','utf8');assert(app.includes("const freshUser=await req('/auth/v1/user',{token:token()})"));assert(app.includes('A.session.user=freshUser'));assert(!app.includes('Ajouter mon prénom</button>'));assert(app.includes('--from-tab:'));assert(app.includes('S.previousTab=S.tab'));assert(css.includes('@keyframes steroid-tab-slide'));assert(css.includes('border-radius:27px'));assert(css.includes('prefers-reduced-motion:reduce'));console.log('Supabase identity and floating navigation checks passed');
+// Déconnexion : le contrôleur du compte est lâché, et le questionnaire ne reconstruit jamais le programme d'un autre propriétaire.
+{const app=require('fs').readFileSync(require('path').join(__dirname,'..','app.js'),'utf8');const assert=require('assert');
+ assert.match(app,/clearPrivateCache\(previousUserId\);V2=null;V2owner=null;V2state='off';/);
+ assert.match(app,/mine=V2&&V2owner===owner&&V2\.ready\(\)/);assert.match(app,/nolsprog-v2-rebuild:'\+owner/);}
