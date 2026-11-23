@@ -75,7 +75,7 @@ assert.match(s,/Mon exo/);assert.match(s,/data-action="v2-finish"/);
 
 // Machine prise : Plus tard → remplaçants → Passer.
 let m=UI.machineSheet({exercise:workout.exercises[0],alternatives:[{key:'developpe-couche-halteres',name:'Développé couché haltères',role:'base',score:2}],canLater:true});
-const order=['data-action="v2-later"','data-action="v2-sub"','data-action="v2-skip"'].map(k=>m.indexOf(k));
+const order=['data-action="v2-later"','data-action="v2-sub"','data-action="v2-skip-ex"'].map(k=>m.indexOf(k));
 assert(order.every(i=>i>0)&&order[0]<order[1]&&order[1]<order[2],'ordre Plus tard, remplaçants, Passer');
 assert.match(m,/3 × 6–8, repos 3 min/);assert.match(m,/data-key="developpe-couche-halteres"/);assert.match(m,/Garder ce remplacement/);
 m=UI.machineSheet({exercise:workout.exercises[0],alternatives:[],canLater:false});

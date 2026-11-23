@@ -31,8 +31,8 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  // Pause : le repos est figé, puis repart.
  await c.handle('v2-pause');t+=60e3;assert.equal(c.tick().rest,120);await c.handle('v2-resume');t+=10e3;assert.equal(c.tick().rest,110);
  // Toucher à nouveau annule la validation.
- await c.handle('v2-set',{ex:e1.id,set:'1'});assert.equal(c.state().store.current().exercises[0].sets[0].completed,false);
- await c.handle('v2-set',{ex:e1.id,set:'1'});
+ t+=1e3;await c.handle('v2-set',{ex:e1.id,set:'1'});assert.equal(c.state().store.current().exercises[0].sets[0].completed,false);
+ t+=1e3;await c.handle('v2-set',{ex:e1.id,set:'1'});
  // Toutes les séries faites → exercice suivant affiché automatiquement.
  c.input({ex:e1.id,set:2,field:'reps',value:'7'});await c.handle('v2-set',{ex:e1.id,set:'2'});assert.match(c.todayHTML(),/Dips/);
  // Quitter vers l'accueil sans perdre la séance.
@@ -47,7 +47,7 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  await c.handle('v2-machine',{ex:dips.id});h=c.todayHTML();assert.match(h,/Machine prise \? Pas de souci/);
  const alt=h.match(/data-action="v2-sub" data-ex="[^"]+" data-key="([^"]+)"/);
  if(alt){await c.handle('v2-sub',{ex:dips.id,key:alt[1]});assert.equal(c.state().store.current().exercises.find(x=>x.id===dips.id).substituted_from_key,'dips')}
- else{await c.handle('v2-skip',{ex:dips.id})}
+ else{await c.handle('v2-skip-ex',{ex:dips.id})}
  // Fin de séance : résumé, puis la séance suivante est proposée.
  await c.handle('v2-finish');assert.match(c.todayHTML(),/Séance terminée/);
  await c.handle('v2-close-summary');t+=60e3;assert.match(c.todayHTML(),/Legs/);
@@ -282,6 +282,21 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  const c9=V2.create({...ctx,storage:st8,api:back,userId:U});await c9.init();await c9.whenFresh();
  assert(c9.state().workouts.some(w=>w.cycle_session_id===first.id),'séance non envoyée conservée');
  assert.match(c9.statsHTML(),/série validée/);assert(!c9.todayHTML().includes('data-action="v2-recap" data-session="'+first.id+'"'),'la suite avance');assert.match(c9.todayHTML(),/Séance faite aujourd’hui[^]*Demain : <b>/,'une séance par jour');
+ // Lot 1 : passer un exercice, double appui sur une série, saisies refusées, valider pendant la pause.
+ { const st=memory(),c=V2.create({...ctx,storage:st,api:null,userId:null});await c.init();
+   const sid=c.state().cycle.sessions[0].id;await c.handle('v2-start',{session:sid});
+   const w=c.state().store.current(),e0=w.exercises[0],e1=w.exercises[1];
+   await c.handle('v2-skip-ex',{ex:e1.id});assert.equal(c.state().store.current().exercises.find(x=>x.id===e1.id).status,'skipped','exercice passé');
+   c.input({ex:e0.id,set:1,field:'weight',value:'62,5'});c.input({ex:e0.id,set:1,field:'reps',value:'8'});
+   let s1=c.state().store.current().exercises[0].sets[0];assert.equal(s1.weight,62.5);assert.equal(s1.reps,8);
+   c.input({ex:e0.id,set:1,field:'weight',value:'9999'});assert.equal(c.state().store.current().exercises[0].sets[0].weight,null,'jamais tronqué en 999');
+   c.input({ex:e0.id,set:1,field:'weight',value:'60'});
+   for(const bad of ['0','8.5','2000','abc'])c.input({ex:e0.id,set:2,field:'reps',value:bad}),assert.equal(c.state().store.current().exercises[0].sets[1].reps,null,'refusé : '+bad);
+   await c.handle('v2-pause');assert(c.state().store.current().paused_at);
+   await c.handle('v2-set',{ex:e0.id,set:'1'});await c.handle('v2-set',{ex:e0.id,set:'1'});
+   s1=c.state().store.current().exercises[0].sets[0];assert.equal(s1.completed,true,'double appui : reste validée');
+   assert(!c.state().store.current().paused_at,'valider reprend la séance');
+   assert.match(c.todayHTML()+c.state().view,/session/); }
  // Séance passée : raison notée, envoyée avec la séance, la suite avance ; pas d'autre séance aujourd'hui ; annulation possible.
  {const sent=[],api10={async select(){return []},async upsert(t,rows){sent.push(...rows.map(r=>({t,...r})))},async remove(){}};
   const c10=V2.create({...ctx,storage:memory(),api:api10,userId:U});await c10.init();

@@ -24,10 +24,10 @@
       for(const a of actions)buttons.append(el('button',{type:'submit',value:a.value,class:a.primary?'primary':a.danger?'danger':'secondary',text:a.label}));
       buttons.append(el('button',{type:'button',class:'secondary','data-cancel':true,text:cancelLabel}));
       form.append(buttons);
-      let done=false;
+      let done=false;const opened=Date.now();
       const finish=result=>{if(done)return;done=true;try{dialog.close()}catch{}dialog.remove();resolve(result)};
-      form.addEventListener('submit',e=>{e.preventDefault();const values={};for(const f of fields)values[f.name]=String(form.elements[f.name].value);finish({action:e.submitter?.value||actions[0].value,values})});
-      buttons.querySelector('[data-cancel]').addEventListener('click',()=>finish(null));
+      form.addEventListener('submit',e=>{e.preventDefault();if(Date.now()-opened<350)return;const values={};for(const f of fields)values[f.name]=String(form.elements[f.name].value);finish({action:e.submitter?.value||actions[0].value,values})});
+      buttons.querySelector('[data-cancel]').addEventListener('click',()=>{if(Date.now()-opened>=350)finish(null)});
       dialog.addEventListener('cancel',e=>{e.preventDefault();finish(null)});
       document.body.append(dialog);
       if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');

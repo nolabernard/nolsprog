@@ -157,8 +157,8 @@ function session({workout,index=0,elapsed=0,paused=false,pausedFor=0,rest=null,l
  for(const s of e.sets){
   const n=s.set_number;
   html+='<div class="v2-set'+(s.completed?' is-done':'')+'"><span class="v2-set-num">'+n+'</span>'
-   +'<input class="v2-cell" aria-label="Charge série '+n+' (kg)" data-v2-field="weight" data-ex="'+esc(e.id)+'" data-set="'+n+'" type="number" inputmode="decimal" min="0" step="0.5" placeholder="kg" value="'+(s.weight==null?'':esc(s.weight))+'">'
-   +'<input class="v2-cell" aria-label="Répétitions série '+n+'" data-v2-field="reps" data-ex="'+esc(e.id)+'" data-set="'+n+'" type="number" inputmode="numeric" min="0" placeholder="reps" value="'+(s.reps==null?'':esc(s.reps))+'">'
+   +'<input class="v2-cell" aria-label="Charge série '+n+' (kg)" data-v2-field="weight" data-ex="'+esc(e.id)+'" data-set="'+n+'" type="text" inputmode="decimal" autocomplete="off" maxlength="6" placeholder="kg" value="'+(s.weight==null?'':esc(String(s.weight).replace('.',',')))+'">'
+   +'<input class="v2-cell" aria-label="Répétitions série '+n+'" data-v2-field="reps" data-ex="'+esc(e.id)+'" data-set="'+n+'" type="text" inputmode="numeric" autocomplete="off" maxlength="3" placeholder="rép." value="'+(s.reps==null?'':esc(s.reps))+'">'
    +'<button type="button" class="v2-ok" data-action="v2-set" data-ex="'+esc(e.id)+'" data-set="'+n+'" aria-pressed="'+s.completed+'" aria-label="'+(s.completed?'Série '+n+' validée':'Valider la série '+n)+'">'+icon('check')+'</button></div>';
  }
  html+='</div>';
@@ -182,14 +182,14 @@ function machineSheet({exercise,alternatives=[],canLater=true,practiced={}}={}){
   html+='<p class="v2-sheet-label">Ou le remplacer par</p>'+alternatives.map(a=>'<button type="button" class="v2-opt" data-action="v2-sub" data-ex="'+esc(exercise.id)+'" data-key="'+esc(a.key)+'"><span><b>'+esc(a.name)+'</b><small>Même mouvement'+(practiced[a.key]?' · déjà fait '+plural(practiced[a.key],'fois','fois'):'')+'</small></span><span class="v2-tag">'+(a.role==='base'?'Base':'Finition')+'</span></button>').join('')
    +'<label class="v2-check"><input type="checkbox" id="v2-keep"> Garder ce remplacement dans mon programme</label>';
  }else html+='<p class="v2-note">Aucun remplaçant du même type avec ton matériel. Tu peux le faire plus tard ou le passer.</p>';
- return html+'<button type="button" class="v2-link v2-link--center" data-action="v2-skip" data-ex="'+esc(exercise.id)+'">'+icon('skip','v2-ic v2-ic--sm')+'Passer cet exercice</button></section></div>';
+ return html+'<button type="button" class="v2-link v2-link--center" data-action="v2-skip-ex" data-ex="'+esc(exercise.id)+'">'+icon('skip','v2-ic v2-ic--sm')+'Passer cet exercice</button></section></div>';
 }
 
 function moreSheet({exercise,anyDone=true}={}){
  const rpe=exercise?.rpe;
  return '<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="Options de la séance"><button type="button" class="v2-grab" data-action="v2-close-sheet" aria-label="Fermer (ou fais glisser vers le bas)"><i></i></button><h2>Options</h2>'
   +(exercise?'<p class="v2-sheet-label">Ressenti sur cet exercice (1 facile, 10 maximal)</p><div class="v2-rpe">'+Array.from({length:10},(_,k)=>'<button type="button" class="'+(rpe===k+1?'is-on':'')+'" data-action="v2-rpe" data-ex="'+esc(exercise.id)+'" data-rpe="'+(k+1)+'" aria-pressed="'+(rpe===k+1)+'">'+(k+1)+'</button>').join('')+'</div>':'')
-  +(anyDone?'<button type="button" class="v2-btn" data-action="v2-finish">Terminer la séance</button><p class="v2-muted v2-center">Tu peux terminer sans tout valider : seules les séries validées comptent.</p>'
+  +(anyDone?'<button type="button" class="v2-btn" data-action="v2-finish">Terminer la séance</button><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-abandon">Abandonner la séance</button><p class="v2-muted v2-center">Tu peux terminer sans tout valider : seules les séries validées comptent. Abandonner : rien ne compte.</p>'
    :'<button type="button" class="v2-btn v2-btn--ghost" data-action="v2-wrong-session">Ce n’est pas la bonne séance</button><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-abandon">Abandonner la séance</button><p class="v2-muted v2-center">Aucune série validée : la séance ne compte pas tant que tu n’en valides pas une.</p>')+'</section></div>';
 }
 
