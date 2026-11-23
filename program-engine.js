@@ -161,7 +161,7 @@ function buildCycle(p){
  const method=chooseMethod(input);
  const loop=method==='ppl'&&n<=5?3:method==='upperlower'&&n===3?2:n;
  const collected=[];
- for(let w=0;collected.length<loop&&w<6;w++)for(const d of buildProgram(input,w,{version:2}))if(d.ex.length&&collected.length<loop)collected.push(d);
+ for(let w=0;collected.length<loop&&w<6;w++)for(const d of buildProgram(input,w))if(d.ex.length&&collected.length<loop)collected.push(d);
  const type=t=>t.replace(/ [A-Z]$/,'');
  // Pas deux séances du même type d'affilée au bouclage (ex. Upper/Lower sur 5 jours).
  while(collected.length>2&&ROTATING.includes(type(collected[0].title))&&type(collected[0].title)===type(collected[collected.length-1].title))collected.pop();
@@ -203,10 +203,11 @@ function fitDuration(items,p){
  }
  return items;
 }
-function buildProgram(p,weekIndex=0,{version=1}={}){
+// Moteur unique (V2) : l'ancien moteur V1 a été supprimé le 23/11/2026 (toutes les données V1 sont copiées en V2).
+function buildProgram(p,weekIndex=0){
  // Deux priorités au maximum : au-delà (anciennes réponses), tout cocher revient à ne rien prioriser.
  if(Array.isArray(p.priority)&&p.priority.length>2)p={...p,priority:[]};
- const v2=version>=2;
+ const v2=true;
  if(!Number.isInteger(weekIndex)||weekIndex<0||weekIndex>51)throw Error('Semaine de programmation invalide.');
  const n=Math.max(2,Math.min(6,Number(p.daysCount)||3));
  const days=selectTrainingDays(Array.isArray(p.days)?p.days:[],n);

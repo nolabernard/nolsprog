@@ -10,7 +10,7 @@ echo "== Aucun marqueur de conflit de fusion"
 if git grep -nE "^(<<<<<<<|>>>>>>>) " -- . ":!scripts/test-all.sh" >/dev/null 2>&1; then git grep -nE "^(<<<<<<<|>>>>>>>) " -- . ":!scripts/test-all.sh"; echo "Marqueurs de conflit trouvés."; exit 1; fi
 
 echo "== Fichiers indispensables"
-for f in index.html app.js styles.css manifest.webmanifest; do test -s "$f"; done
+for f in index.html app.js styles.css manifest.webmanifest app-v2.js ui-v2.js steroid-v2.css; do test -s "$f"; done
 
 echo "== Tests scripts/"
 for f in scripts/*.test.cjs scripts/smoke.cjs; do

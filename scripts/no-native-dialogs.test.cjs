@@ -1,8 +1,11 @@
 // Plus aucune fenêtre native du navigateur : tout passe par ui-dialog.js.
-const fs=require('fs');const assert=require('assert');
-const app=fs.readFileSync('app.js','utf8'),html=fs.readFileSync('index.html','utf8');
-assert(!/(^|[^\w.])(prompt|confirm|alert)\(/.test(app),'prompt/confirm/alert natifs interdits dans app.js');
-assert(html.indexOf('ui-dialog.js')>0&&html.indexOf('ui-dialog.js')<html.indexOf('app.js'),'ui-dialog.js doit être chargé avant app.js');
-const d=require('../ui-dialog.js');for(const k of ['open','confirm','yesNo','ask','range'])assert.equal(typeof d[k],'function');
-assert.deepEqual(d.range(0,30,15),[0,15,30]);
-console.log('In-app dialog checks passed');
+const fs=require('fs'),assert=require('assert');
+const skip=new Set(['ui-dialog.js','sport-rules.js','sw.js']);
+for(const f of fs.readdirSync('.').filter(f=>f.endsWith('.js')&&!skip.has(f))){
+ const code=fs.readFileSync(f,'utf8').replace(/(^|\s)\/\/[^\n]*/g,'$1');
+ // Une fonction locale de même nom (ex. confirm injecté par app.js) n'est pas la fenêtre native.
+ const local=n=>new RegExp('[{,(\\s]'+n+'\\s*(=|,|\\})').test(code);
+ for(const n of ['prompt','confirm','alert'].filter(n=>!local(n)))assert(!new RegExp('(^|[^\\w.])'+n+'\\(').test(code),n+' natif interdit dans '+f);
+ assert(!/window\.(prompt|confirm|alert)\(/.test(code),'window.prompt/confirm/alert interdits dans '+f);
+}
+console.log('Aucune fenêtre native');

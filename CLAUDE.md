@@ -23,12 +23,12 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
   restés en attente sur un appareil.
 - Modules purs, exposés en global navigateur et en `module.exports` pour les tests :
   `sport-rules.js` (validation), `sport-guide.js` (onboarding), `program-engine.js` (génération de programme, déterministe ;
-  `buildProgram(p, semaine)` = V1 figée pour les programmes en cours, `{version: 2}` et `buildCycle(p)` = V2).
+  `buildCycle(p)` construit le cycle ; moteur V1 supprimé le 23/11/2026).
 - `exercise-catalogue.js` : catalogue à clés permanentes (`SteroidCatalogue`), rôles base/finition, recherche
   tolérante (`search`, `resolveName`). Une clé publiée ne change jamais et n'est jamais réutilisée.
 - `exercise-guide.js` (`SteroidMoves`) : pictogrammes SVG au trait dessinés pour l'app et consignes d'exécution, par type de
   mouvement (`pattern` du catalogue) ; bouton « Comment faire » pendant la séance. Aucune image externe.
-- `session-planner.js` (`SteroidPlanner.nextSession`) : prochaine séance de la suite + garde-fou 48 h expliqué.
+- `session-planner.js` (`SteroidPlanner.nextSession`) : prochaine séance de la suite (par tours, une séance par jour ; plus de garde-fou 48 h).
 - `workout-store.js` (`SteroidWorkout.createWorkoutStore`) : séance V2 en cours (séries, pause, plus tard,
   remplacement, fin) et file d'envoi ordonnée vers les tables V2 (upsert sur `id`).
 - `v2-cycle.js` (`SteroidCycle`) : cycle actif (construction, chargement Supabase), dernières performances et progrès par clé.
@@ -89,7 +89,7 @@ Conception : `docs/superpowers/specs/2026-11-21-steroid-v2-design.md` (interface
 maquettes sur le canevas « STEROID — refonte UX »). Plans : `docs/superpowers/plans/`.
 - Lot 1 Fondations : fait. Tables V2 créées dans Supabase et données V1 copiées (`select public.v2_copy_legacy()`,
   rejouable ; correspondances des noms dans `public.v2_name_map`).
-- Lot 2 Générateur et cycles : fait (`buildCycle`, moteur `{version: 2}`, tests sur 4 050 combinaisons).
+- Lot 2 Générateur et cycles : fait (`buildCycle`, tests sur 4 050 combinaisons).
 - Lot 3a Logique de séance : fait (modules ci-dessus + `alternatives` du catalogue).
 - Lot 3b Écrans P1 et bascule : fait. Les nouvelles séances s'écrivent dans les tables V2 ; Progrès et Programme lisent la V2.
   Ancien code V1 (écrans, séance guidée, éditeur, archives, import, partage) supprimé le 22/11/2026.
