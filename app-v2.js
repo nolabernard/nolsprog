@@ -125,8 +125,11 @@ function create(ctx){
   if(local){S.workouts=local.workouts||[];S.setLogs=local.setLogs||[];S.truncated=Boolean(local.truncated)||S.setLogs.length>=5000||S.workouts.length>=500;S.userExercises=local.userExercises||[];S.cardioLogs=local.cardioLogs||[]}
   S.cycle=read(K.cycle,null);S.proposal=read(K.proposal,null);
   S.view=S.store.current()?(ui.view==='home'?'home':'session'):'home';S.index=S.store.current()?ui.index||0:0;S.rest=ui.rest||null;
-  if(api&&userId){fresh=refresh();if(!S.cycle)await fresh;else fresh.then(()=>render())}
-  else if(!S.cycle){build();persistLocal()}
+  // Questionnaire terminé avant que ce contrôleur ne démarre : le programme suit les nouvelles réponses.
+  let pending=false;try{pending=storage.getItem('nolsprog-v2-rebuild:'+owner)==='1'}catch{}
+  if(api&&userId){fresh=refresh();if(!S.cycle||pending)await fresh;else fresh.then(()=>render())}
+  else if(!S.cycle&&!pending){build();persistLocal()}
+  if(pending){try{storage.removeItem('nolsprog-v2-rebuild:'+owner)}catch{}if(!S.store.current())await rebuild();else{if(!S.cycle)build();persistLocal()}}
  }
  async function refresh(){
   try{
@@ -139,7 +142,17 @@ function create(ctx){
    S.userExercises=mergeByKey(loaded.userExercises,S.userExercises);
    const cids=new Set((loaded.cardioLogs||[]).map(x=>x.id));S.cardioLogs=[...(loaded.cardioLogs||[]),...S.cardioLogs.filter(x=>!cids.has(x.id))];
    // Nouveau cycle validé sur cet appareil, pas encore envoyé : le serveur renvoie encore l'ancien, on garde le nôtre.
-   const localActive=outbox.some(x=>x.table==='cycles'&&!x.op&&x.row.status==='active'&&x.row.id===S.cycle?.id&&x.row.id!==loaded.cycle?.id);
+   let localActive=outbox.some(x=>x.table==='cycles'&&!x.op&&x.row.status==='active'&&x.row.id===S.cycle?.id&&x.row.id!==loaded.cycle?.id);
+   // Le compte a un autre programme : on ne remplace jamais en silence (ex. programme reconstruit par erreur hors connexion).
+   if(localActive&&loaded.cycle){
+    const names=c=>(c.sessions||[]).map(x=>x.title).join(', ');
+    const keepNew=await confirm('Ce téléphone a un nouveau programme pas encore envoyé ('+names(S.cycle)+'). Ton compte a toujours : '+names(loaded.cycle)+'.',{title:'Quel programme garder ?',ok:'Le nouveau',cancel:'Celui de mon compte'});
+    if(!keepNew){
+     const localId=S.cycle.id,serverId=loaded.cycle.id,sids=new Set((S.cycle.sessions||[]).map(x=>x.id));
+     outbox=outbox.filter(x=>{const r=x.row||{};return !(r.cycle_id===localId||r.id===localId||sids.has(r.cycle_session_id)||(x.table==='cycles'&&r.id===serverId))});write(K.outbox,outbox);
+     localActive=false;
+    }
+   }
    if(loaded.cycle&&!localActive){
     // Cardio prévu modifié sur l'appareil et pas encore envoyé : on le réapplique sur la version du serveur.
     if(S.cycle?.id===loaded.cycle.id){

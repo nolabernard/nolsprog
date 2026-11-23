@@ -255,6 +255,18 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  const st6=memory(),r1=V2.create({...ctx,storage:st6,api:race,userId:U});await r1.init();
  await r1.flushNow();await r1.flushNow();
  assert.equal(r1.state().cycle.id,'srv');assert.equal(r1.pending(),0);assert.match(r1.todayHTML(),/Serveur A/);
+ // Programme reconstruit sur ce téléphone sans être envoyé, alors que le compte a toujours le sien : on demande, et
+ // « Celui de mon compte » écarte le programme local (rien n'est envoyé, le programme du compte reste actif).
+ { const srv=[{id:'srv',status:'active',method:'ppl',weeks:6,sessions_per_week:3,started_at:'2026-11-02T00:00:00Z'}],up=[];
+   const select=async p=>{if(p.startsWith('cycles'))return srv;if(p.startsWith('cycle_sessions'))return [{id:'srv-s',cycle_id:'srv',position:0,code:'A',title:'Serveur A',focus:[]}];if(p.startsWith('cycle_exercises'))return [{id:'srv-e',cycle_session_id:'srv-s',position:0,exercise_key:'hack-squat',role:'base',sets:2,reps_min:8,reps_max:10,rest_seconds:90}];return []};
+   const offline={select,async upsert(){throw Error('Hors ligne')},async remove(){throw Error('Hors ligne')}};
+   const stK=memory(),a1=V2.create({...ctx,storage:stK,api:offline,userId:U,answers:()=>({...globalThis.NolsEngine.defaults,method:'fullbody'})});await a1.init();
+   assert.equal(a1.state().cycle.id,'srv');await a1.rebuild();assert.notEqual(a1.state().cycle.id,'srv');
+   const asked=[],online={select,async upsert(t,rows){up.push(...rows.map(r=>t+':'+(r.id||r.key)))},async remove(){}};
+   const a2=V2.create({...ctx,storage:stK,api:online,userId:U,confirm:async(m,o)=>{asked.push(o.title);return false}});await a2.init();
+   await new Promise(r=>setTimeout(r,20));await a2.flushNow();
+   assert.deepStrictEqual(asked,['Quel programme garder ?']);assert.equal(a2.state().cycle.id,'srv','programme du compte gardé');
+   assert(!up.some(x=>x.startsWith('cycles:')),'aucun cycle envoyé');assert.match(a2.todayHTML(),/Serveur A/); }
  // C2 : retirer un exercice prévu pendant une séance → la séance ne le référence plus.
  const st7=memory(),c7=V2.create({...ctx,storage:st7,api:{async select(){return []},async upsert(){},async remove(){}},userId:U});await c7.init();
  const s7=c7.state().cycle.sessions[0];await c7.handle('v2-start',{session:s7.id});await c7.handle('v2-exit');
@@ -292,6 +304,15 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  await Promise.race([hang.init(),new Promise((_,no)=>setTimeout(()=>no(Error('init bloqué')),500))]);assert(hang.ready());
  // I8 : construction depuis le générateur V2 quand le questionnaire existe ; plan V1 borné aux contraintes sinon.
  const gen=V2.create({...ctx,storage:memory(),api:null,userId:null,answers:()=>({goal:'muscle',level:'intermediate',days:3,equipment:'gym',duration:60})});await gen.init();
+ // Questionnaire invité terminé avec un ancien programme invité sur le téléphone : le programme suit les nouvelles réponses.
+ { const st=memory(),old=V2.create({...ctx,storage:st,api:null,userId:null});await old.init();
+   const stale=old.state().cycle.sessions.map(x=>x.title).join('|');assert(stale.length);
+   st.setItem('nolsprog-v2-rebuild:guest','1');
+   const fresh=V2.create({...ctx,storage:st,api:null,userId:null,answers:()=>({...globalThis.NolsEngine.defaults,daysCount:'3',method:'fullbody'})});await fresh.init();
+   assert.deepStrictEqual(fresh.state().cycle.sessions.map(x=>x.title),['Full body A','Full body B','Full body C']);
+   assert.equal(fresh.state().cycle.method,'fullbody');assert.equal(st.getItem('nolsprog-v2-rebuild:guest'),null,'reconstruit une seule fois');
+   const again=V2.create({...ctx,storage:st,api:null,userId:null,answers:()=>({...globalThis.NolsEngine.defaults,daysCount:'5'})});await again.init();
+   assert.equal(again.state().cycle.id,fresh.state().cycle.id,'sans nouveau questionnaire : programme conservé'); }
  assert.notEqual(gen.state().cycle.engine_version,'v1-legacy');assert.equal(gen.state().cycle.sessions.length,3);
  const wild=globalThis.SteroidCycle.fromLegacyPlan([{title:'X',ex:[{name:'A'.repeat(140),sets:40,reps:'0',rest:9999},{name:'Dips',sets:0,reps:'120 s',rest:60}]}],{uuid});
  for(const e of wild.sessions[0].exercises){assert(e.sets>=1&&e.sets<=20);assert(e.reps_min>=1&&e.reps_max<=100&&e.reps_min<=e.reps_max);assert(e.rest_seconds<=3600)}
@@ -311,7 +332,7 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  assert(!/hasPendingChanges\(A\.session\.user\.id\)/.test(appSrc),'statut de synchro : anyPending partout');
  assert(/a==='logout'[\s\S]{0,200}anyPending\(A\.session\?\.user\?\.id\)/.test(appSrc));
  assert(/clearPrivateCache[^\n]*nolsprog-v2-/.test(appSrc)&&/clearPrivateCache[^\n]*steroid-v2-/.test(appSrc));
- assert(/if\(V2\?\.ready\(\)&&\(!A\.profile\|\|await globalThis\.SteroidDialog\.confirm/.test(appSrc),'pas de question à la première configuration');
+ assert(/if\(!A\.profile\|\|await globalThis\.SteroidDialog\.confirm/.test(appSrc),'pas de question à la première configuration');
 
  // ===== Lot 4 : planning et cardio =====
  const U4='44444444-4444-4444-8444-444444444444';
