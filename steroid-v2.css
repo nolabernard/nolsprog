@@ -380,6 +380,11 @@ button:active{transform:translateY(1px)}
 .v2-recap-list li span{color:var(--muted);white-space:nowrap;font-weight:700}
 .v2-recap-alt{display:flex;flex-direction:column;gap:8px;margin-top:10px}
 .v2-opt.is-current{box-shadow:inset 0 0 0 2px var(--accent)}
+/* Lot 1 : séance fiable */
+.toast{pointer-events:none;top:calc(env(safe-area-inset-top,0px) + 12px);bottom:auto}
+.v2-session{padding-bottom:calc(170px + env(safe-area-inset-bottom,0px))}
+.v2-session h1,.v2-session h2,.v2-prog-name,.v2-prog-name b,.v2-recap-list b,.v2-opt b,.v2-summary b,.v2-last b{overflow-wrap:anywhere;min-width:0}
+.v2-cell{font-variant-numeric:tabular-nums}
 /* Séance passée, une séance par jour */
 .v2-coach-links{display:flex;flex-wrap:wrap;gap:6px 20px}
 .v2-next-after{display:flex;align-items:center;gap:8px;margin:14px 0 0;font-size:16px}

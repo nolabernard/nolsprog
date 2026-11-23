@@ -97,7 +97,7 @@ function create(ctx){
  function exRow(e){return {...e,user_id:userId}}
  // ----- Brouillon du programme : rien n'est appliqué ni envoyé avant « Enregistrer » -----
  // Séances telles qu'elles comptent (règle unique : C.countable). Recalculé seulement quand les données changent.
- let wMemo=null;
+ let wMemo=null,lastSetTap={k:'',t:0};
  function W(){const k=[S.workouts,S.setLogs,S.cardioLogs,S.truncated,S.workouts.length,S.setLogs.length,S.cardioLogs.length];if(wMemo&&wMemo.k.every((x,i)=>x===k[i]))return wMemo.v;const v=C.countable(S.workouts,S.setLogs,S.cardioLogs,{truncated:S.truncated});wMemo={k,v};return v}
  const P=()=>S.edit?.draft||S.cycle;
  const openSessions=new Set();
@@ -376,7 +376,11 @@ function create(ctx){
    case 'v2-set':{
     const e=w?.exercises.find(x=>x.id===d.ex),s=e?.sets.find(x=>x.set_number===Number(d.set));if(!s)return;
     if(!s.completed&&s.reps==null){notice('Indique tes répétitions pour valider la série '+s.set_number+'.',true);return}
+    // Double appui : le 2e appui (< 0,7 s) est ignoré, jamais une dévalidation silencieuse.
+    const tk=e.id+'|'+s.set_number,tn=now();if(lastSetTap.k===tk&&tn-lastSetTap.t<700)return;lastSetTap={k:tk,t:tn};
+    if(w.paused_at)S.store.resume(); // valider une série reprend la séance
     S.store.logSet(e.id,s.set_number,{completed:!s.completed});touch();
+    if(!s.completed){S.rest=null;S.rate=null}
     if(s.completed){S.rate={ex:e.id,set:s.set_number};startRest(e.plan.rest_seconds||90,S.rate);if(e.sets.every(x=>x.completed)){const items=list(),i=items.findIndex(x=>x.id===e.id);if(i>=0&&i<items.length-1)S.index=i+1}}
     saveUi();scheduleFlush();break;
    }
@@ -401,7 +405,7 @@ function create(ctx){
    case 'v2-machine':S.sheet={type:'machine',ex:d.ex};break;
    case 'v2-more':S.sheet={type:'more'};break;
    case 'v2-later':S.store.later(d.ex);S.sheet=null;touch();scheduleFlush();break;
-   case 'v2-skip':S.store.skip(d.ex);S.sheet=null;S.index=Math.min(S.index,Math.max(0,list().length-1));touch();scheduleFlush();break;
+   case 'v2-skip-ex':S.store.skip(d.ex);S.sheet=null;S.index=Math.min(S.index,Math.max(0,list().length-1));touch();scheduleFlush();break;
    case 'v2-sub':{
     const e=w?.exercises.find(x=>x.id===d.ex);if(!e)return;
     const keep=Boolean(d.keep),from=e.substituted_from_key||e.exercise_key;
@@ -533,8 +537,10 @@ function create(ctx){
  }
  function input({ex,set,field,value}){
   if(!current()||!['weight','reps'].includes(field))return;
-  const raw=String(value??'').trim().replace(',','.'),v=raw===''?null:Number(raw);
-  if(v!=null&&(!Number.isFinite(v)||v<0||v>(field==='weight'?3000:1000)))return;
+  // Valeur refusée : jamais tronquée ni gardée en silence. Charge 0–500 kg (virgule acceptée), répétitions entières 1–100.
+  const raw=String(value??'').trim().replace(',','.');let v=raw===''?null:Number(raw);
+  const ok=v==null||(field==='weight'?Number.isFinite(v)&&v>=0&&v<=500:Number.isInteger(v)&&v>=1&&v<=100);
+  if(!ok){v=null;if(!/[.,]$/.test(String(value)))notice(field==='weight'?'Charge : un nombre entre 0 et 500 kg (ex. 62,5).':'Répétitions : un nombre entier entre 1 et 100.',true)}
   try{S.store.logSet(ex,Number(set),{[field]:v});touch();scheduleFlush()}catch{}
  }
  function change({kind,value,ce}){

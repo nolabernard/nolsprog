@@ -51,7 +51,7 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
  await click('logout');assert(state('A.session!==null'),'Déconnexion bloquée tant que le questionnaire n’est pas envoyé');
  networkDown=false;await state('flushProgram()');assert.equal(profile.answers.daysCount,'3','Réponses envoyées au retour du réseau');assert(!store['steroid-pending-program-v1:audit-test-user']);
  // V1 supprimée : plus d'éditeur ni de séance V1 ; le compte se déconnecte et se reconnecte proprement.
- await click('logout');assert.equal(state('A.session'),null);assert.equal(state('A.view'),'welcome');
+ state("lastTap={a:'',t:0}");await click('logout');assert.equal(state('A.session'),null);assert.equal(state('A.view'),'welcome');
  assert(!store['nolsprog-account-audit-test-user'],'Logout must clear account data cache');
  await click('auth-login');await submit({email:'audit@example.invalid',password:'strong-test-123'});assert.equal(state('A.view'),'app');
  assert(!/guidedWorkoutUI|todayUI|statsUI|editUI/.test(appSource),'Ancien écran V1 supprimé');
