@@ -50,7 +50,9 @@ function review(cycle,workouts,setLogs,userExercises=[],now=Date.now()){
  const flat=evolutions.filter(e=>!e.progress&&e.sessions>=3).slice(0,3);
  if(flat.length)improve.push('Pas de progrès mesuré sur '+flat.map(e=>nameOf(e.key,userExercises)).join(', ')+'.');
  for(const [k,n] of Object.entries(subs).sort((a,b)=>b[1]-a[1]).slice(0,2))if(n>=2)improve.push(nameOf(k,userExercises)+' a été remplacé '+n+' fois : on peut le changer dans le prochain cycle.');
- if(rpe!=null&&rpe>=9)improve.push('Séances très dures (ressenti moyen '+fr(rpe)+'/10) : garde 1 à 2 répétitions en réserve.');
+ // Ressenti par série (Facile / Correct / Dur) : part des séries notées « Dur ».
+ const rated=logs.filter(r=>r.completed&&r.rir!=null),hard=rated.length?Math.round(rated.filter(r=>Number(r.rir)===0).length/rated.length*100):null;
+ if(hard!=null&&hard>=40)improve.push(hard+' % de tes séries notées « Dur » : garde 1 à 2 répétitions en réserve.');
 
  const snap=cycle.answers_snapshot||{},n=Number(snap.daysCount||cycle.sessions_per_week||3);
  let recommendation;
@@ -61,7 +63,7 @@ function review(cycle,workouts,setLogs,userExercises=[],now=Date.now()){
   recommendation={code:'change',title:'Changer de méthode',text:'Tu as été régulier mais tes charges stagnent. Une nouvelle méthode relance la progression.',changes:{method:alt}};
  }
  else recommendation={code:'keep',title:'Garder la méthode',text:share>=0.5?'Régulier et en progrès : on garde la même méthode pour un nouveau cycle.':'Bonne régularité : on garde la méthode et on vise la progression sur les exercices qui stagnent.',changes:{}};
- return {done,planned:plan,weeks,regularity,evolutions,strengths,improve,rpe,recommendation};
+ return {done,planned:plan,weeks,regularity,evolutions,strengths,improve,rpe,hard,recommendation};
 }
 
 // Réponses du cycle suivant : photographie du cycle en cours + changements. Le cycle en cours n'est jamais modifié.

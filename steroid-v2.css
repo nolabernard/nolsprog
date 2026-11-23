@@ -385,6 +385,18 @@ button:active{transform:translateY(1px)}
 .v2-session{padding-bottom:calc(170px + env(safe-area-inset-bottom,0px))}
 .v2-session h1,.v2-session h2,.v2-prog-name,.v2-prog-name b,.v2-recap-list b,.v2-opt b,.v2-summary b,.v2-last b{overflow-wrap:anywhere;min-width:0}
 .v2-cell{font-variant-numeric:tabular-nums}
+/* Lot 4 : lisibilité et cibles tactiles */
+.v2-last{border:1px solid var(--line);border-style:solid}
+.choice.selected small,.method.selected small{color:inherit;opacity:.85}
+.v2-move{height:44px}
+.v2-daypick button,.v2-daypick label{min-width:44px;min-height:44px}
+.v2-grab{height:36px}
+.v2-tabbar button span,.tabbar button span{font-size:11px}
+.glyph{display:inline-block;vertical-align:middle}
+.auth-kicker,.is-auth .kicker{color:var(--accent,#0B4D3B)}
+.v2-chart-val{font:700 12px Inter,sans-serif;fill:var(--text)}
+.v2-chart-date{font:600 11px Inter,sans-serif;fill:var(--muted)}
+.pw-toggle{display:block;margin:6px 0 0 auto;min-height:44px;padding:0 12px;border:0;background:none;color:var(--accent,#0B4D3B);font-weight:700;cursor:pointer}
 /* Séance passée, une séance par jour */
 .v2-coach-links{display:flex;flex-wrap:wrap;gap:6px 20px}
 .v2-next-after{display:flex;align-items:center;gap:8px;margin:14px 0 0;font-size:16px}

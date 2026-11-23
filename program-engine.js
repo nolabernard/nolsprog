@@ -16,9 +16,9 @@ dumbbells:[['Goblet squat',3,'8–12',120],['Développé couché au sol haltère
 const titles={push:'Push — Pectoraux, épaules, triceps',pull:'Pull — Dos, biceps',legs:'Legs — Jambes',upper:'Upper — Haut du corps',lower:'Lower — Bas du corps',full:'Full body — Corps entier',chest:'Pectoraux & triceps',back:'Dos & biceps',shoulders:'Épaules & bras',home:'Corps entier à domicile',dumbbells:'Corps entier avec haltères'};
 const definitions={
 auto:{name:'Choix recommandé',description:'STEROID choisit la répartition selon tes jours disponibles et ton expérience.'},
-fullbody:{name:'Full body',description:'Chaque séance travaille l’ensemble du corps. Très efficace avec 2 à 3 séances hebdomadaires.'},
-upperlower:{name:'Upper / Lower',description:'Alternance haut et bas du corps. Permet de travailler chaque groupe musculaire environ deux fois par semaine sur 4 jours.'},
-ppl:{name:'Push / Pull / Legs',description:'Push = poussée, Pull = tirage, Legs = jambes. Adapté à 3 ou 6 séances par semaine.'},
+fullbody:{name:'Full body (corps entier)',description:'Chaque séance travaille l’ensemble du corps. Très efficace avec 2 à 3 séances hebdomadaires.'},
+upperlower:{name:'Haut / bas du corps',description:'Alternance haut et bas du corps. Permet de travailler chaque groupe musculaire environ deux fois par semaine sur 4 jours.'},
+ppl:{name:'Poussée / tirage / jambes (PPL)',description:'Push = poussée, Pull = tirage, Legs = jambes. Adapté à 3 ou 6 séances par semaine.'},
 split:{name:'Split musculaire',description:'Séances centrées sur certains groupes musculaires. Plus adapté aux pratiquants expérimentés et à 4 à 6 séances.'},
 hybrid:{name:'Hybride',description:'Combine Push/Pull/Legs et haut du corps ou séances spécialisées. Utile sur 5 jours.'}
 };

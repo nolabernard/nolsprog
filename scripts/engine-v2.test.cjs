@@ -6,7 +6,7 @@ const C=require('../exercise-catalogue.js');
 const R=require('../sport-rules.js');
 
 // 1. Sans option, la sortie V1 est strictement identique (empreinte figée avant toute modification).
-assert.equal(M.fingerprint(E),'c2f91d9e150fff45b0083a036fef8ba374c139fe95b375af7dd0c931a2744c88','V1 modifié : les programmes en cours changeraient');
+assert.equal(M.fingerprint(E),'8887eb904b8e23d4292d7458641aa6462775cdff26ae57ba914197a061c08724','V1 modifié (seuls les noms affichés des méthodes ont changé le 23/11) : les programmes en cours changeraient');
 
 assert.equal(E.ENGINE_VERSION,'v2.0');
 assert.deepEqual(E.VOLUME,R.VOLUME,'volume identique aux règles sportives');

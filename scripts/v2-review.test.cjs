@@ -34,8 +34,8 @@ assert(r.strengths.some(s=>/18 séances sur 18/.test(s)));
 assert(r.strengths.some(s=>/Développé couché barre : \+12,5 kg/.test(s)),r.strengths.join('|'));
 assert.equal(r.evolutions.find(e=>e.key==='developpe-couche-barre').weight,12.5);
 // Charges identiques mais ressenti très élevé : point à améliorer.
-d=make(18,{progress:false,rpe:10});r=R.review(cycle,d.workouts,d.logs,[],start+40*DAY);
-assert(r.improve.some(s=>/ressenti moyen 10\/10/i.test(s)));assert.equal(r.rpe,10);
+d=make(18,{progress:false,rpe:10});d.logs.forEach(l=>l.rir=0);r=R.review(cycle,d.workouts,d.logs,[],start+40*DAY);
+assert(r.improve.some(s=>/% de tes séries notées « Dur »/.test(s)));assert.equal(r.hard,100);
 // Stagnation générale avec une bonne régularité : changer de méthode, jamais la même.
 assert.equal(r.recommendation.code,'change');assert.notEqual(r.recommendation.changes.method,'fullbody');
 assert(R.methodsFor(3).includes(r.recommendation.changes.method));

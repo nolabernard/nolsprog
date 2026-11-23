@@ -5,6 +5,9 @@
 'use strict';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const Cat=()=>globalThis.SteroidCatalogue;
+// Unité d'un exercice : secondes pour les exercices tenus (gainage), répétitions sinon.
+const timed=key=>globalThis.SteroidCatalogue?.byKey(key)?.unit==='s';
+const unit=key=>timed(key)?' s':' rép.';
 const nameOf=(key,ux=[])=>Cat()?.byKey(key)?.name||ux.find(u=>u.key===key)?.name||'Exercice';
 const kg=v=>v==null?'—':Number(v).toLocaleString('fr-FR',{maximumFractionDigits:2});
 const clock=sec=>{sec=Math.max(0,Math.round(sec||0));const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60,p=n=>String(n).padStart(2,'0');return h?h+':'+p(m)+':'+p(s):p(m)+':'+p(s)};
@@ -66,7 +69,7 @@ function home({next,hasHistory=false,cycle,progress=0,minutes,firstName,dateText
  const s=next.session,count=(s.exercises||[]).length;
  if(active)return '<section class="v2-home">'+head+bar+'<section class="v2-next" aria-label="Séance en cours"><p class="v2-next-kicker">Séance en cours</p><h2 class="v2-next-title">'+esc(active.title)+'</h2><p>'+active.done+' / '+plural(active.total,'série validée','séries validées')+'</p><button type="button" class="v2-btn v2-btn--light v2-btn--big" data-action="v2-back">'+icon('play')+'Reprendre la séance</button></section></section>';
  const wk=view?{done:view.done,goal:view.goal}:week;
- const extras=()=>(view?weekSection(view,cardio):(weekLine||record||rhythm||cardio)?weekCard({weekLine,record,rhythm,cardio}):'')+(view?tiles(view,stats)+(record?'<p class="v2-record-line">'+icon('trophy','v2-ic v2-ic--sm')+esc(record)+'</p>':''):'')+(last?lastCard(last):'');
+ const extras=()=>(view?weekSection(view,cardio):(weekLine||record||rhythm||cardio)?weekCard({weekLine,record,rhythm,cardio}):'')+(view?tiles(view,stats)+(record?'<p class="v2-record-line">'+icon('trophy','v2-ic v2-ic--sm')+esc(record)+'</p>':''):'')+(last&&!(next.reason==='tomorrow'&&next.today&&last.id===next.today.id)?lastCard(last):'');
  if(next.reason==='tomorrow'){
   // Séance du jour faite ou passée : repos, la suivante attend demain. Pas de bouton Démarrer.
   const t=next.today,skipped=t.status==='skipped';
@@ -87,8 +90,9 @@ function home({next,hasHistory=false,cycle,progress=0,minutes,firstName,dateText
 // « Ta semaine » : jours (faite / passée / aujourd'hui), séances faites sur l'objectif, cardio.
 function weekSection(v,cardio){
  const lab={done:'séance faite',skipped:'séance passée','':'pas de séance'};
- const line=v.done>=v.goal?'Objectif atteint : '+plural(v.done,'séance faite','séances faites')+'.':plural(v.done,'séance faite','séances faites')+' sur '+v.goal+' · encore '+(v.goal-v.done)+'.';
- return '<section class="v2-card v2-week"><div class="v2-week-head"><h2>Ta semaine</h2><span>'+esc(line)+'</span></div>'
+ // L'anneau donne déjà « faites / objectif » : ici seulement l'objectif atteint.
+ const line=v.done>=v.goal?'Objectif atteint ('+plural(v.done,'séance','séances')+').':'';
+ return '<section class="v2-card v2-week"><div class="v2-week-head"><h2>Ta semaine</h2>'+(line?'<span>'+esc(line)+'</span>':'')+'</div>'
   +'<ol class="v2-weekdays">'+v.days.map((d,k)=>'<li class="'+[d.state&&'is-'+d.state,d.today&&'is-today',d.planned&&'is-planned'].filter(Boolean).join(' ')+'" aria-label="'+DAYS[k]+' : '+lab[d.state]+(d.today?' (aujourd’hui)':'')+'"><span aria-hidden="true">'+DAY1[k]+'</span>'+(d.state==='done'?icon('check','v2-ic v2-ic--xs'):'')+'</li>').join('')+'</ol>'
   +(v.days.some(d=>d.planned)?'<p class="v2-muted v2-week-plan">Tes jours : '+v.days.map((d,k)=>d.planned?DAYS[k]:null).filter(Boolean).join(', ')+'. Rien n’est bloqué si tu changes de jour.</p>':'')
   +'<p class="v2-week-legend" aria-hidden="true"><i class="is-done"></i>faite<i class="is-skipped"></i>passée<i class="is-today"></i>aujourd’hui</p>'
@@ -149,16 +153,16 @@ function session({workout,index=0,elapsed=0,paused=false,pausedFor=0,rest=null,l
   +'<button type="button" class="v2-iconbtn" data-action="v2-more" aria-label="Plus d’options">'+icon('more')+'</button></header>'
   +'<div class="v2-steps" aria-label="Exercice '+(i+1)+' sur '+list.length+'">'+list.map((x,k)=>'<i class="'+(x.sets.every(s=>s.completed)?'is-done':k===i?'is-current':'')+'"></i>').join('')+'</div>';
  if(paused)html+='<div class="v2-paused" role="status">'+icon('pause','v2-ic v2-ic--sm')+'<span><b>En pause'+(pausedFor>=60?' depuis '+Math.floor(pausedFor/60)+' min':'')+'.</b> Ce temps ne compte pas.</span><button type="button" class="v2-link" data-action="v2-resume">Reprendre</button></div>';
- html+='<div class="v2-ex-head"><p class="v2-ex-count">Exercice '+(i+1)+' sur '+list.length+'</p><div class="v2-ex-name"><h1 class="v2-ex-title">'+esc(nameOf(e.exercise_key,userExercises))+'</h1>'+howtoButton(e.exercise_key,userExercises)+'</div><p class="v2-muted">'+plural(p.sets||e.sets.length,'série','séries')+' · '+reps(p.reps_min,p.reps_max)+' reps · repos '+restText(p.rest_seconds)+'</p>'
+ html+='<div class="v2-ex-head"><p class="v2-ex-count">Exercice '+(i+1)+' sur '+list.length+'</p><div class="v2-ex-name"><h1 class="v2-ex-title">'+esc(nameOf(e.exercise_key,userExercises))+'</h1>'+howtoButton(e.exercise_key,userExercises)+'</div><p class="v2-muted">'+plural(p.sets||e.sets.length,'série','séries')+' · '+reps(p.reps_min,p.reps_max)+unit(e.exercise_key)+' · repos '+restText(p.rest_seconds)+'</p>'
   +(prev?'<span class="v2-chip">Dernière fois : '+(prev.weight==null?'—':kg(prev.weight)+' kg')+' × '+(prev.reps??'—')+'</span>':'')+(advice[e.exercise_key]?'<p class="v2-advice">'+icon('coach','v2-ic v2-ic--sm')+'<span>'+esc(advice[e.exercise_key].text)+'</span></p>':'')+'</div>';
  if(light&&i===0)html+='<p class="v2-light">'+icon('coach','v2-ic v2-ic--sm')+'<span><b>Semaine allégée.</b> Moins de séries, mêmes charges : tu récupères avant le bilan.</span></p>';
  if(warmup&&warmup.ex===e.id)html+='<div class="v2-warmup"><b>Échauffement</b>'+(warmup.sets?'<ol>'+warmup.sets.map(x=>'<li>'+kg(x.weight)+' kg × '+x.reps+'</li>').join('')+'</ol><small>Puis tes séries de travail. Non comptées dans tes séries.</small>':'<small>2 séries légères pour monter en charge : 8 répétitions, puis 4. Non comptées dans tes séries.</small>')+'</div>';
- html+='<div class="v2-sets"><div class="v2-set-labels" aria-hidden="true"><span>Série</span><span>kg</span><span>Reps</span><span></span></div>';
+ html+='<div class="v2-sets"><div class="v2-set-labels" aria-hidden="true"><span>Série</span><span>kg</span><span>'+(timed(e.exercise_key)?'Secondes':'Rép.')+'</span><span></span></div>';
  for(const s of e.sets){
   const n=s.set_number;
   html+='<div class="v2-set'+(s.completed?' is-done':'')+'"><span class="v2-set-num">'+n+'</span>'
    +'<input class="v2-cell" aria-label="Charge série '+n+' (kg)" data-v2-field="weight" data-ex="'+esc(e.id)+'" data-set="'+n+'" type="text" inputmode="decimal" autocomplete="off" maxlength="6" placeholder="kg" value="'+(s.weight==null?'':esc(String(s.weight).replace('.',',')))+'">'
-   +'<input class="v2-cell" aria-label="Répétitions série '+n+'" data-v2-field="reps" data-ex="'+esc(e.id)+'" data-set="'+n+'" type="text" inputmode="numeric" autocomplete="off" maxlength="3" placeholder="rép." value="'+(s.reps==null?'':esc(s.reps))+'">'
+   +'<input class="v2-cell" aria-label="'+(timed(e.exercise_key)?'Secondes':'Répétitions')+' série '+n+'" data-v2-field="reps" data-ex="'+esc(e.id)+'" data-set="'+n+'" type="text" inputmode="numeric" autocomplete="off" maxlength="3" placeholder="'+(timed(e.exercise_key)?'s':'rép.')+'" value="'+(s.reps==null?'':esc(s.reps))+'">'
    +'<button type="button" class="v2-ok" data-action="v2-set" data-ex="'+esc(e.id)+'" data-set="'+n+'" aria-pressed="'+s.completed+'" aria-label="'+(s.completed?'Série '+n+' validée':'Valider la série '+n)+'">'+icon('check')+'</button></div>';
  }
  html+='</div>';
@@ -188,7 +192,7 @@ function machineSheet({exercise,alternatives=[],canLater=true,practiced={}}={}){
 function moreSheet({exercise,anyDone=true}={}){
  const rpe=exercise?.rpe;
  return '<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="Options de la séance"><button type="button" class="v2-grab" data-action="v2-close-sheet" aria-label="Fermer (ou fais glisser vers le bas)"><i></i></button><h2>Options</h2>'
-  +(exercise?'<p class="v2-sheet-label">Ressenti sur cet exercice (1 facile, 10 maximal)</p><div class="v2-rpe">'+Array.from({length:10},(_,k)=>'<button type="button" class="'+(rpe===k+1?'is-on':'')+'" data-action="v2-rpe" data-ex="'+esc(exercise.id)+'" data-rpe="'+(k+1)+'" aria-pressed="'+(rpe===k+1)+'">'+(k+1)+'</button>').join('')+'</div>':'')
+
   +(anyDone?'<button type="button" class="v2-btn" data-action="v2-finish">Terminer la séance</button><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-abandon">Abandonner la séance</button><p class="v2-muted v2-center">Tu peux terminer sans tout valider : seules les séries validées comptent. Abandonner : rien ne compte.</p>'
    :'<button type="button" class="v2-btn v2-btn--ghost" data-action="v2-wrong-session">Ce n’est pas la bonne séance</button><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-abandon">Abandonner la séance</button><p class="v2-muted v2-center">Aucune série validée : la séance ne compte pas tant que tu n’en valides pas une.</p>')+'</section></div>';
 }
@@ -200,8 +204,8 @@ function idlePrompt(minutes){
 function summary({workout,pending=0,local=false,userExercises=[],records=[]}={}){
  const list=ordered(workout),done=list.reduce((n,e)=>n+e.sets.filter(s=>s.completed).length,0);
  const vol=list.reduce((n,e)=>n+e.sets.filter(s=>s.completed&&s.weight!=null&&s.reps!=null).reduce((a,s)=>a+s.weight*s.reps,0),0);
- const min=Math.round((workout.duration_seconds||0)/60);
- return '<section class="v2-summary"><div class="v2-done-mark">'+icon('check')+'</div><h1 class="v2-hello">Séance terminée</h1><dl class="v2-figures v2-figures--dark"><div><b>'+min+' min</b> <span>d’effort</span></div><div><b>'+plural(done,'série validée','séries validées').replace(/^(\d+) /,'$1</b> <span>')+'</span></div><div><b>'+Math.round(vol).toLocaleString('fr-FR')+'</b> <span>kg soulevés</span></div></dl>'
+ const min=Math.round((workout.duration_seconds||0)/60),minTxt=(workout.duration_seconds||0)<60?'< 1':String(min);
+ return '<section class="v2-summary"><div class="v2-done-mark">'+icon('check')+'</div><h1 class="v2-hello">Séance terminée</h1><dl class="v2-figures v2-figures--dark"><div><b>'+minTxt+' min</b> <span>d’effort</span></div><div><b>'+plural(done,'série validée','séries validées').replace(/^(\d+) /,'$1</b> <span>')+'</span></div><div><b>'+Math.round(vol).toLocaleString('fr-FR')+'</b> <span>kg soulevés</span></div></dl>'
   +(records.length?'<ul class="v2-records">'+records.map(r=>'<li>'+icon('trophy','v2-ic v2-ic--sm')+'<span>Nouveau record : '+recordText(r,userExercises)+'</span></li>').join('')+'</ul>':'')+'<ul class="v2-sum-list">'+list.map(e=>{const d=e.sets.filter(s=>s.completed).length;return '<li><span>'+esc(nameOf(e.exercise_key,userExercises))+'</span><small>'+(e.status==='skipped'?'passé':d+'/'+e.sets.length)+'</small></li>'}).join('')+'</ul>'
   +'<button type="button" class="v2-btn v2-btn--ghost" data-action="v2-cardio-open" data-workout="'+esc(workout.id)+'">'+icon('plus')+'Ajouter du cardio</button><p class="v2-sync" role="status">'+(pending?'Enregistrée sur ce téléphone, envoi en attente.':local?'Enregistrée sur ce téléphone.':'Enregistrée.')+'</p><button type="button" class="v2-btn v2-btn--big" data-action="v2-close-summary">Retour à l’accueil</button></section>';
 }
@@ -210,8 +214,18 @@ function chart(points,metric){
  const vals=points.map(p=>p[metric]).filter(v=>v!=null);if(vals.length<1)return '';
  const max=Math.max(...vals)*1.15||1,W=340,H=180,x=i=>24+i*((W-48)/Math.max(1,points.length-1)),y=v=>H-24-(v/max)*(H-48);
  const pts=points.map((p,i)=>p[metric]==null?null:[x(i),y(p[metric])]).filter(Boolean);
- return '<svg class="v2-chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Évolution par séance"><line x1="24" y1="'+(H-24)+'" x2="'+(W-24)+'" y2="'+(H-24)+'"/>'+(pts.length>1?'<polyline points="'+pts.map(p=>p.map(n=>n.toFixed(1)).join(',')).join(' ')+'"/>':'')+pts.map(p=>'<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="4"/>').join('')+'</svg>';
+ return '<svg class="v2-chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Évolution par séance"><line x1="24" y1="'+(H-24)+'" x2="'+(W-24)+'" y2="'+(H-24)+'"/>'+(pts.length>1?'<polyline points="'+pts.map(p=>p.map(n=>n.toFixed(1)).join(',')).join(' ')+'"/>':'')+pts.map(p=>'<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="4"/>').join('')
+  // Valeurs et dates lisibles : première et dernière séance étiquetées.
+  +labelAt(points,metric,x,y,0,'start')+(points.length>1?labelAt(points,metric,x,y,points.length-1,'end'):'')+'</svg>'
+  +(vals.length<2?'<p class="v2-muted v2-center">Encore une séance pour voir ta courbe.</p>':'');
 }
+function labelAt(points,metric,x,y,i,anchor){
+ const p=points[i];if(!p||p[metric]==null)return '';
+ const v=metric==='volume'?fmtKgShort(p[metric]):metric==='weight'?kg(p[metric])+' kg':p[metric]+' rép.';
+ const d=p.date?new Date(p.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}):'';
+ return '<text class="v2-chart-val" x="'+x(i).toFixed(1)+'" y="'+(y(p[metric])-10).toFixed(1)+'" text-anchor="'+anchor+'">'+esc(v)+'</text>'+(d?'<text class="v2-chart-date" x="'+x(i).toFixed(1)+'" y="174" text-anchor="'+anchor+'">'+esc(d)+'</text>':'');
+}
+const fmtKgShort=v=>v>=1000?(v/1000).toLocaleString('fr-FR',{maximumFractionDigits:1})+' t':Math.round(v).toLocaleString('fr-FR')+' kg';
 
 const MON=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
 // Activités cardio récentes : un appui pour modifier ou supprimer.
@@ -222,6 +236,7 @@ function cardioLogs(list){
 function cardioBlock(weeks){
  if(!weeks?.length)return '';
  const total=weeks.reduce((n,w)=>n+w.minutes,0),max=Math.max(1,...weeks.map(w=>w.minutes));
+ if(!total)return ''; // rien à montrer tant qu'aucun cardio n'est noté
  return '<section class="v2-card"><h2 class="v2-card-title">Cardio</h2><p class="v2-muted">'+total+' min sur '+weeks.length+' semaines</p><ul class="v2-bars">'+weeks.map(w=>{const [y,m,d]=w.week.split('-').map(Number);return '<li><span>'+d+' '+MON[m-1]+'</span><i style="--v:'+(w.minutes/max).toFixed(3)+'"></i><b>'+w.minutes+' min</b></li>'}).join('')+'</ul></section>';
 }
 const WD=['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];
@@ -274,7 +289,7 @@ function review({review:r,userExercises=[]}={}){
  const rec=r.recommendation,evo=[...r.evolutions].sort((a,b)=>(b.weight??0)-(a.weight??0)).slice(0,6);
  const one=x=>x.weight==null?x.reps+' reps':kg(x.weight)+' × '+x.reps;
  return '<section class="v2-progress v2-review"><button type="button" class="v2-link v2-back" data-action="v2-review-close">'+icon('left','v2-ic v2-ic--sm')+'Accueil</button><h1 class="v2-hello">Bilan du cycle</h1>'
-  +'<dl class="v2-figures v2-figures--dark"><div><b>'+r.done+'/'+r.planned+'</b> <span>séances faites</span></div><div><b>'+r.weeks+'</b> <span>'+(r.weeks>1?'semaines':'semaine')+'</span></div><div><b>'+(r.rpe==null?'—':kg(r.rpe))+'</b> <span>ressenti moyen</span></div></dl>'
+  +'<dl class="v2-figures v2-figures--dark"><div><b>'+r.done+'/'+r.planned+'</b> <span>séances faites</span></div><div><b>'+r.weeks+'</b> <span>'+(r.weeks>1?'semaines':'semaine')+'</span></div><div><b>'+(r.hard==null?'—':r.hard+' %')+'</b> <span>séries « Dur »</span></div></dl>'
   +listBlock('Points forts',r.strengths)+listBlock('À améliorer',r.improve)
   +(evo.length?'<section class="v2-card"><h2 class="v2-card-title">Évolution par exercice</h2><ul class="v2-compare">'+evo.map(e=>'<li><div><b>'+esc(nameOf(e.key,userExercises))+'</b></div><span>'+one(e.from)+' → '+one(e.to)+'</span>'+(e.weight?'<span class="v2-diff'+(e.weight>0?' is-up':'')+'">'+(e.weight>0?'+':'−')+kg(Math.abs(e.weight))+' kg</span>':e.reps?'<span class="v2-diff'+(e.reps>0?' is-up':'')+'">'+(e.reps>0?'+':'−')+Math.abs(e.reps)+' rép.</span>':'<span class="v2-diff">=</span>')+'</li>').join('')+'</ul></section>':'')
   +'<section class="v2-card v2-advice-card"><h2 class="v2-card-title">'+icon('coach','v2-ic v2-ic--sm')+'Ma recommandation : '+esc(rec.title.toLowerCase())+'</h2><p>'+esc(rec.text)+'</p></section>'
@@ -299,7 +314,7 @@ function nextForm({answers={},weeks=6,methods={},recommendation=null}={}){
 function proposal({cycle,userExercises=[],methods={}}={}){
  return '<section class="v2-progress v2-review"><button type="button" class="v2-link v2-back" data-action="v2-review-next">'+icon('left','v2-ic v2-ic--sm')+'Modifier</button><p class="v2-next-kicker v2-kicker--light">Proposé · pas encore actif</p><h1 class="v2-hello">'+esc(methods[cycle.method]?.name||'Nouveau cycle')+'</h1>'
   +'<p class="v2-muted">'+cycle.weeks+' semaines · '+plural(cycle.sessions_per_week,'séance','séances')+' par semaine · suite de '+plural(cycle.sessions.length,'séance','séances')+' en boucle.</p>'
-  +cycle.sessions.map(s=>'<section class="v2-card v2-prog-session"><h2>'+esc(s.code+' · '+s.title)+'</h2><ol class="v2-prog-list">'+s.exercises.map(e=>'<li><div class="v2-prog-name"><b>'+esc(nameOf(e.exercise_key,userExercises))+'</b><small>'+e.sets+' × '+reps(e.reps_min,e.reps_max)+' reps · repos '+restText(e.rest_seconds)+'</small></div></li>').join('')+'</ol></section>').join('')
+  +cycle.sessions.map(s=>'<section class="v2-card v2-prog-session"><h2>'+esc(s.code+' · '+s.title)+'</h2><ol class="v2-prog-list">'+s.exercises.map(e=>'<li><div class="v2-prog-name"><b>'+esc(nameOf(e.exercise_key,userExercises))+'</b><small>'+e.sets+' × '+reps(e.reps_min,e.reps_max)+unit(e.exercise_key)+' · repos '+restText(e.rest_seconds)+'</small></div></li>').join('')+'</ol></section>').join('')
   +'<button type="button" class="v2-btn v2-btn--big" data-action="v2-proposal-accept">Valider et démarrer ce cycle</button><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-review-close">Plus tard</button><p class="v2-muted">Ton cycle actuel reste actif tant que tu n’as pas validé. Ton historique est conservé.</p></section>';
 }
 
@@ -309,7 +324,7 @@ const hhmm=(h,m)=>String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
 function remindersCard(r){
  if(!r)return '';
  let html='<section class="v2-card v2-prog-session v2-reminders"><h2>Rappels</h2>';
- if(r.blocker)return html+'<p class="v2-muted">'+esc(r.message||'')+'</p></section>';
+ if(r.blocker)return html+'<p class="v2-muted">'+esc(r.message||'')+'</p>'+(r.blocker==='account'?'<button type="button" class="v2-btn v2-btn--ghost" data-action="account">Créer un compte ou me connecter</button>':'')+'</section>';
  html+='<p class="v2-muted">'+(r.enabled?'Activés sur ce téléphone : '+hhmm(r.hour,r.minute)+', '+(r.days.length===7?'tous les jours':r.days.map(d=>DAY_NAMES[d]).join(', '))+'. Pas de rappel un jour où ta séance est déjà faite.':'Une notification à l’heure choisie, les jours choisis. Tu peux les couper quand tu veux.')+'</p>'
   +'<label class="v2-field-label" for="v2-rem-time">Heure</label><select id="v2-rem-time" class="v2-select" data-v2-rem-time>';
  for(let h=6;h<=22;h++)for(const m of [0,30])html+='<option value="'+h+':'+m+'"'+(h===r.hour&&m===r.minute?' selected':'')+'>'+hhmm(h,m)+'</option>';
@@ -360,7 +375,7 @@ function pickerResults({query='',results=[]}={}){
   +(query&&!results.length?'<p class="v2-note">Aucun exercice trouvé.</p>':'');
 }
 function picker({query='',results=[],creating=false}={}){
- let html='<div class="v2-picker"><label class="v2-search">'+icon('search','v2-ic v2-ic--sm')+'<input type="search" data-v2-search placeholder="Chercher un exercice (ex. dvlp couché)" value="'+esc(query)+'" aria-label="Chercher un exercice" autocomplete="off"></label><div class="v2-results" aria-live="polite">'
+ let html='<div class="v2-picker"><label class="v2-search">'+icon('search','v2-ic v2-ic--sm')+'<input type="search" data-v2-search placeholder="Chercher un exercice" value="'+esc(query)+'" aria-label="Chercher un exercice" autocomplete="off"></label><div class="v2-results" aria-live="polite">'
   +pickerResults({query,results})+'</div>';
  html+=creating?'<form class="v2-create" data-v2-create><label class="v2-field-label">Nom<input name="name" required maxlength="100" value="'+esc(query)+'"></label><label class="v2-field-label">Muscle principal<select name="muscle">'+['Pectoraux','Dos','Jambes','Épaules','Bras','Abdominaux'].map(m=>'<option>'+m+'</option>').join('')+'</select></label><label class="v2-field-label">Mouvement<select name="pattern"><option value="push">Pousser</option><option value="pull">Tirer</option><option value="legs">Jambes</option><option value="iso">Isolation</option></select></label><button type="submit" class="v2-btn">Créer mon exercice</button></form>'
   :'<button type="button" class="v2-link" data-action="v2-create">'+icon('plus','v2-ic v2-ic--sm')+'Créer mon exercice</button>';
@@ -376,7 +391,7 @@ function programme({cycle,userExercises=[],picking=null,query='',results=[],crea
   if(!isOpen){html+='</section>';continue}
   html+='<ol class="v2-prog-list" id="v2-prog-'+esc(s.id)+'">';
   s.exercises.forEach((e,k)=>{
-   html+='<li><div class="v2-prog-move"><button type="button" class="v2-move" data-action="v2-move-ex" data-ce="'+esc(e.id)+'" data-dir="-1" aria-label="Monter '+esc(nameOf(e.exercise_key,userExercises))+'"'+(k===0?' disabled':'')+'>'+icon('up','v2-ic v2-ic--sm')+'</button><button type="button" class="v2-move" data-action="v2-move-ex" data-ce="'+esc(e.id)+'" data-dir="1" aria-label="Descendre '+esc(nameOf(e.exercise_key,userExercises))+'"'+(k===s.exercises.length-1?' disabled':'')+'>'+icon('down','v2-ic v2-ic--sm')+'</button></div><div class="v2-prog-name"><b>'+esc(nameOf(e.exercise_key,userExercises))+'</b><small>'+reps(e.reps_min,e.reps_max)+' reps · repos '+restText(e.rest_seconds)+'</small></div>'
+   html+='<li><div class="v2-prog-move"><button type="button" class="v2-move" data-action="v2-move-ex" data-ce="'+esc(e.id)+'" data-dir="-1" aria-label="Monter '+esc(nameOf(e.exercise_key,userExercises))+'"'+(k===0?' disabled':'')+'>'+icon('up','v2-ic v2-ic--sm')+'</button><button type="button" class="v2-move" data-action="v2-move-ex" data-ce="'+esc(e.id)+'" data-dir="1" aria-label="Descendre '+esc(nameOf(e.exercise_key,userExercises))+'"'+(k===s.exercises.length-1?' disabled':'')+'>'+icon('down','v2-ic v2-ic--sm')+'</button></div><div class="v2-prog-name"><b>'+esc(nameOf(e.exercise_key,userExercises))+'</b><small>'+reps(e.reps_min,e.reps_max)+unit(e.exercise_key)+' · repos '+restText(e.rest_seconds)+'</small></div>'
     +'<label class="v2-prog-sets">Séries<select class="v2-select" data-v2-sets="'+esc(e.id)+'">'+[1,2,3,4,5,6].map(n=>'<option '+(n===Number(e.sets)?'selected':'')+'>'+n+'</option>').join('')+'</select></label>'
     +'<div class="v2-prog-actions"><button type="button" class="v2-link" data-action="v2-edit-ex" data-ce="'+esc(e.id)+'">Changer</button><button type="button" class="v2-link v2-link--muted" data-action="v2-remove-ex" data-ce="'+esc(e.id)+'">Retirer</button></div></li>';
   });
