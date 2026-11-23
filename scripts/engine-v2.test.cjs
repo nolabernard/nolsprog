@@ -5,8 +5,7 @@ const E=M.loadEngine();
 const C=require('../exercise-catalogue.js');
 const R=require('../sport-rules.js');
 
-// 1. Sans option, la sortie V1 est strictement identique (empreinte figée avant toute modification).
-assert.equal(M.fingerprint(E),'8887eb904b8e23d4292d7458641aa6462775cdff26ae57ba914197a061c08724','V1 modifié (seuls les noms affichés des méthodes ont changé le 23/11) : les programmes en cours changeraient');
+// 1. Moteur V1 supprimé (23/11/2026) : buildProgram produit toujours la sortie V2.
 
 assert.equal(E.ENGINE_VERSION,'v2.0');
 assert.deepEqual(E.VOLUME,R.VOLUME,'volume identique aux règles sportives');
@@ -15,7 +14,7 @@ const role=name=>C.byKey(C.resolveName(name).key).role;
 let checked=0,volumeChecked=0;
 for(const c of M.combos()){
  const a=M.answers(E,c);
- const plan=E.buildProgram(a,0,{version:2});
+ const plan=E.buildProgram(a,0);
  const days=plan.filter(d=>d.ex.length);
  const vol={};
  for(const d of days){
@@ -37,11 +36,9 @@ assert(checked===4050&&volumeChecked>0);
 
 // 5. Un exercice de base à la barre est traité comme un exercice de base.
 const benchAnswers=M.answers(E,{method:'fullbody',daysCount:'2',level:'advanced',equipment:'gym',goal:'muscle',duration:'90'});
-const bench=E.buildProgram(benchAnswers,0,{version:2})
+const bench=E.buildProgram(benchAnswers,0)
  .flatMap(d=>d.ex).find(e=>e.name==='Développé couché barre');
 assert(bench,'développé couché barre présent');
 assert(bench.sets>=3&&bench.rest>=120,'séries et repos d’un exercice de base');
-const benchV1=E.buildProgram(benchAnswers,0).flatMap(d=>d.ex).find(e=>e.name==='Développé couché barre');
-assert(!benchV1||benchV1.rest<bench.rest,'V1 traitait la barre comme une isolation (repos court)');
 
 console.log('Engine v2 checks passed ('+checked+' combinaisons)');

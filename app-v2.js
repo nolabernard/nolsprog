@@ -8,7 +8,6 @@ const IDLE_MS=20*60e3;
 const isRejection=err=>Number.isInteger(err?.status)&&err.status>=400&&err.status<500&&![401,403,408,429].includes(err.status);
 const DAYS=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'],MONTHS=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 const iso=ms=>new Date(ms).toISOString();
-const clone=v=>JSON.parse(JSON.stringify(v));
 
 function create(ctx){
  const {storage,api,userId,now=()=>Date.now(),uuid=()=>G().crypto.randomUUID(),render=()=>{},notice=()=>{},confirm=async()=>true}=ctx;
@@ -93,7 +92,6 @@ function create(ctx){
  function scheduleFlush(){if(!api)return;clearTimeout(flushTimer);flushTimer=setTimeout(()=>{flushNow()},600)}
  const pending=()=>(api&&userId?outbox.length+(S.store?.pending()||0):0);
 
- function cycleRow(){const {sessions,user_exercises,...c}=S.cycle;return {...c,user_id:userId}}
  function exRow(e){return {...e,user_id:userId}}
  // ----- Brouillon du programme : rien n'est appliqué ni envoyé avant « Enregistrer » -----
  // Séances telles qu'elles comptent (règle unique : C.countable). Recalculé seulement quand les données changent.

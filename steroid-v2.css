@@ -1,5 +1,5 @@
 /* STEROID V2 — design system visuel, sans modification des données ni des règles sportives. */
-:root{
+:root{--accent-deep:#073528;
  color-scheme:light;
  --bg:#F5F0E5;--surface:#FFFCF7;--raised:#E6EFE5;--line:#DCE8DD;
  --text:#1A2923;--muted:#4F6158;--accent:#0B4D3B;--accent-text:#FFFCF7;
@@ -18,7 +18,7 @@ button{color:inherit}
 .header-account-status,.sync-state{color:var(--muted)}
 .eyebrow,.field-label,.section-title small{color:var(--muted);font-family:Inter,sans-serif;letter-spacing:1.2px;font-weight:800}
 .hero-title,.immersive-shell .hero-title{font-family:Archivo,Inter,sans-serif;font-size:clamp(42px,13vw,58px);font-weight:900;line-height:.91;letter-spacing:-1.9px;text-transform:uppercase;color:var(--text);font-stretch:condensed}
-.hero-title em{color:var(--accent);font-style:normal}
+
 .week{grid-template-columns:44px auto 44px;gap:8px}
 .week button,.days button{background:var(--surface);border:1px solid var(--line);color:var(--text);box-shadow:0 4px 12px rgba(7,53,40,.05)}
 .week strong{color:var(--accent);font-weight:850}
@@ -27,10 +27,10 @@ button{color:inherit}
 .days button.active{background:var(--accent);border-color:var(--accent);color:var(--surface);box-shadow:0 8px 18px rgba(11,77,59,.20)}
 .days button.is-today:not(.active){outline:2px solid var(--accent);outline-offset:1px}
 .days small{color:inherit;opacity:.72}
-.hero{position:relative;overflow:hidden;border:0;border-radius:26px;padding:24px 22px;background:linear-gradient(180deg,rgba(7,53,40,.12) 0%,rgba(7,53,40,.92) 100%),url("https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&q=82") center 42%/cover no-repeat;color:var(--surface);box-shadow:0 18px 36px rgba(7,53,40,.20)}
+
 .hero .eyebrow,.hero h2,.hero p,.hero .space small,.hero .space strong{color:var(--surface)}
-.hero h2{font-family:Archivo,Inter,sans-serif;font-size:clamp(28px,8vw,38px);font-weight:900;line-height:.98;text-transform:uppercase;letter-spacing:-.8px}
-.hero p{opacity:.88}
+
+
 .hero .track{background:rgba(255,252,247,.24);height:7px;border-radius:99px}
 .hero .track i{background:#E6EFE5;border-radius:99px}
 .section-title{margin:28px 0 12px}
@@ -61,7 +61,7 @@ button{color:inherit}
 .tabbar button{min-height:56px;border:0;border-radius:17px;background:transparent;color:rgba(255,252,247,.76);font-weight:750}
 .tabbar button.active{background:var(--surface);color:var(--accent);box-shadow:0 4px 12px rgba(0,0,0,.10)}
 .tabbar .tabicon{width:23px;height:23px}
-.statsgrid{gap:10px}
+
 .stat{padding:18px}
 .stat small{color:var(--muted)}
 .stat strong{color:var(--accent);font-family:Archivo,Inter,sans-serif;font-size:32px;font-weight:900}
@@ -74,17 +74,17 @@ button{color:inherit}
 .hint,.legal{color:var(--muted)}
 .toast{background:var(--accent);color:var(--surface);border:1px solid rgba(255,255,255,.15);box-shadow:var(--shadow);border-radius:16px}
 .toast.alert{background:#7F2929;color:#fff}
-.rest-timer{background:var(--surface);color:var(--text);border:1px solid var(--line);box-shadow:0 18px 45px rgba(7,53,40,.22);border-radius:24px}
-.timer-copy small,.timer-copy strong{color:var(--text)}
-.timer-actions button{min-height:44px;border-radius:13px;background:var(--raised);border:1px solid var(--line);color:var(--accent)}
-.timer-actions button:first-child{background:var(--accent);color:var(--surface)}
+
+
+
+
 .account-popover{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
 .account-popover button{color:var(--text)}
-.program-cardio-editor,.cardio-panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;color:var(--text)}
+
 .program-cardio-title strong,.cardio-heading h3{color:var(--text)}
 .program-cardio-title small,.cardio-heading p{color:var(--muted)}
 .cardio-done.is-done{background:var(--accent);color:var(--surface)}
-.empty-chart{padding:22px;color:var(--muted)}
+
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #0B4D3B;outline-offset:3px}
 button:active{transform:translateY(1px)}
 @media(max-width:380px){
@@ -99,8 +99,8 @@ button:active{transform:translateY(1px)}
  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
 
-.hero--cardio{background-image:linear-gradient(180deg,rgba(7,53,40,.08) 0%,rgba(7,53,40,.92) 100%),url("https://images.unsplash.com/photo-1538805060514-97d9cc17730c?auto=format&fit=crop&w=1200&q=82");background-position:center 42%}
-.hero--rest{background-image:linear-gradient(135deg,#073528 0%,#0B4D3B 65%,#4F6158 100%)}
+
+
 .days button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 2px}
 .days .day-icon{display:grid;place-items:center;width:20px;height:20px;color:var(--accent)}
 .days .day-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -112,19 +112,18 @@ button:active{transform:translateY(1px)}
 .avatar-initials{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--raised);color:var(--accent);font-weight:900;font-size:13px}
 .avatar-initials svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
-/* Archives and share sheet — V2 */
-.archive-panel{margin:26px 0;padding:18px;background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow)}
-.archive-panel .section-title{margin:0 0 16px}.archive-count{font-size:12px;color:var(--muted);font-weight:750}
-.archive-month{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:10px;margin:8px 0 14px;text-align:center;text-transform:capitalize}
-.archive-month button{height:42px;border:1px solid var(--line);border-radius:13px;background:var(--raised);color:var(--accent);font-size:24px}
-.archive-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;text-align:center}
-.archive-calendar>span{padding:6px 0;color:var(--muted);font-size:11px;font-weight:800}
-.archive-day{position:relative;display:grid;place-items:center;min-height:42px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--text);font-weight:700}
-.archive-day:disabled{opacity:.48}.archive-day.is-empty{border-color:transparent;background:transparent}.archive-day.has-workout{border-color:var(--accent);background:var(--raised);color:var(--accent)}.archive-day.has-workout small{font-size:9px;line-height:1;color:var(--muted)}.archive-day.is-selected{background:var(--accent);color:var(--surface);border-color:var(--accent)}.archive-day.is-selected small{color:var(--surface)}
-.archive-list{display:grid;gap:9px;margin-top:14px}.archive-entry{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 12px;padding:13px;border:1px solid var(--line);border-radius:14px;background:var(--bg)}.archive-entry>div{display:grid;gap:4px}.archive-entry strong{font-size:14px}.archive-entry small{font-size:11px;color:var(--muted)}.archive-entry>span{align-self:center;color:var(--accent);font-weight:850}.archive-empty{padding:12px;text-align:center;color:var(--muted);font-size:13px}.archive-reset{width:100%;margin-top:12px}
+
+
+
+
+
+
+
+
+
 @media(max-width:380px){.archive-calendar{gap:4px}.archive-day{min-height:38px;border-radius:10px}}
 
-.effort-panel{margin:16px 0;padding:15px;border:1px solid var(--line);border-radius:16px;background:var(--raised)}.effort-panel label{display:block;margin-bottom:8px;color:var(--text);font-size:13px;font-weight:800}.effort-panel .select{margin:0;min-height:48px}.effort-panel small{display:block;margin-top:7px;color:var(--muted);font-size:11px;line-height:1.5}
+.effort-panel .select{margin:0;min-height:48px}
 
 /* Panneaux de dialogue intégrés (ui-dialog.js) */
 .steroid-dialog{border:0;padding:0;background:transparent;width:min(calc(100% - 32px),420px);max-width:none;color:var(--text)}
@@ -139,7 +138,7 @@ button:active{transform:translateY(1px)}
 .steroid-dialog-actions .primary{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
 .steroid-dialog-actions .danger{background:var(--danger);color:#fff;border-color:var(--danger)}
 .steroid-dialog button:focus-visible,.steroid-dialog input:focus-visible,.steroid-dialog select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.line-icon{width:1.15em;height:1.15em;vertical-align:-.2em;flex:none}
+
 .rest .symbol .line-icon{width:34px;height:34px}
 
 /* ===== V2 · écrans P1 « Guidé » (lot 3b) ===== */
