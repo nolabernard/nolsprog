@@ -182,7 +182,7 @@ function rhythm(cycle,workouts,now){
  const start=weekStart(now),today=new Date(now).setHours(0,0,0,0);
  const mine=(workouts||[]).filter(w=>w.cycle_id===cycle?.id&&w.status==='completed');
  const doneThisWeek=mine.filter(w=>dayAtOf(w)>=start).length;
- const doneToday=(workouts||[]).some(w=>w.cycle_id===cycle?.id&&(w.status==='completed'||w.status==='skipped')&&dayAtOf(w)>=today);
+ const doneToday=(workouts||[]).some(w=>w.cycle_id===cycle?.id&&w.status==='completed'&&dayAtOf(w)>=today);
  const goal=cycle?.sessions_per_week||days.length||1;
  if(!days.length)return {mode:'free',days:[],todayPlanned:false,nextDay:null,doneThisWeek,goal};
  const t=dayIndex(now),todayPlanned=days.includes(t)&&!doneToday;
