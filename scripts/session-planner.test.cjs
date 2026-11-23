@@ -55,9 +55,9 @@ r=P.nextSession(legs,[at('l1',60),at('u1',30)],now);assert.equal(r.session.id,'l
  assert.equal(P.today([{...todayDone,status:'empty'}],sameDay+60e3),null);
  // Lendemain : plus de blocage.
  r=P.nextSession(cycle,[todayDone],sameDay+30*H);assert.notEqual(r.reason,'tomorrow');assert.equal(r.session.id,'s1');
- // Séance passée aujourd'hui : repos, la suite avance.
+ // Séance passée aujourd'hui : la suivante reste faisable le jour même.
  const skipped={cycle_session_id:'s1',status:'skipped',skip_reason:'malade',ended_at:new Date(sameDay).toISOString(),id:'w2'};
- r=P.nextSession(cycle,[skipped],sameDay+60e3);assert.equal(r.reason,'tomorrow');assert.equal(r.today.status,'skipped');assert.equal(r.today.reason,'malade');
+ r=P.nextSession(cycle,[skipped],sameDay+60e3);assert.equal(r.reason,'sequence');assert.equal(r.session.id,'s0');assert.equal(r.passed.id,'w2');assert.equal(r.passed.reason,'malade');assert.equal(P.today([skipped],sameDay+60e3),null);
  r=P.nextSession(cycle,[skipped],sameDay+30*H);assert.equal(r.session.id,'s0','Haut A reste à faire');assert.equal(r.reason,'sequence');
  // Séance passée puis annulée : ignorée.
  r=P.nextSession(cycle,[{...skipped,status:'abandoned'}],sameDay+60e3);assert.equal(r.session.id,'s0');assert.equal(r.reason,'sequence');}

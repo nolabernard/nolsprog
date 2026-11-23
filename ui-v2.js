@@ -84,6 +84,7 @@ function home({next,hasHistory=false,cycle,progress=0,minutes,firstName,dateText
   +'<div class="v2-chips">'+(s.focus||[]).map(f=>'<span>'+esc(f)+'</span>').join('')+'</div>'
   +'<dl class="v2-figures"><div><b>'+count+'</b> <span>exercices</span></div><div><b>'+totalSets(s)+'</b> <span>séries</span></div>'+(minutes?'<div><b>≈ '+Number(minutes)+'</b> <span>minutes</span></div>':'')+'</dl>'
   +'<button type="button" class="v2-btn v2-btn--light v2-btn--big" data-action="v2-recap" data-session="'+esc(s.id)+'">'+icon('play')+'Commencer</button></section>';
+ if(next.passed)html+='<div class="v2-coach v2-passed">'+icon('coach','v2-ic v2-coach-ic')+'<div><p>'+esc('« '+next.passed.title+' » passée. Tu peux faire la suivante aujourd’hui.')+'</p><button type="button" class="v2-link" data-action="v2-skip-undo" data-id="'+esc(next.passed.id)+'">Annuler, je me suis trompé</button></div></div>';
  if(deload)html+='<div class="v2-coach">'+icon('coach','v2-ic v2-coach-ic')+'<div><p>Dernière semaine du cycle : semaine allégée. Moins de séries, mêmes charges, pour récupérer avant ton bilan.</p></div></div>';
  return html+extras()+'</section>';
 }

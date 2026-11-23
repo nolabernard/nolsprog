@@ -311,8 +311,9 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
   await c10.handle('v2-skip',{session:s0.id});assert.match(c10.todayHTML(),/Pas de séance aujourd’hui \?[^]*data-reason="malade"/);
   await c10.handle('v2-skip-confirm',{session:s0.id,reason:'malade'});await c10.flushNow();
   await c10.flushNow();const row=sent.find(r=>r.t==='workouts'&&r.status==='skipped');assert(row,'séance passée envoyée');assert.equal(row.skip_reason,'malade');assert.equal(row.cycle_session_id,s0.id);
-  assert.match(c10.todayHTML(),/Séance passée aujourd’hui[^]*Repose-toi/);
-  await c10.handle('v2-start',{session:c10.state().cycle.sessions[1].id});assert.equal(c10.state().store.current(),null,'pas d’autre séance aujourd’hui');
+  // Séance passée : la suivante est proposée le jour même, avec « Annuler ».
+  const s1=c10.state().cycle.sessions[1];
+  assert.match(c10.todayHTML(),new RegExp('Prochaine séance[^]*data-action="v2-recap" data-session="'+s1.id+'"[^]*passée[^]*data-action="v2-skip-undo"'));
   await c10.handle('v2-skip-undo',{id:row.id});await c10.flushNow();
   assert(sent.some(r=>r.t==='workouts'&&r.id===row.id&&r.status==='abandoned'&&r.revision===2),'annulation envoyée');
   assert.match(c10.todayHTML(),new RegExp('data-action="v2-recap" data-session="'+s0.id+'"'),'la séance revient');}
