@@ -41,7 +41,7 @@ function createWorkoutStore({storage,api,userId,now=()=>Date.now(),uuid=defaultU
   logSet(exerciseId,setNumber,{weight,reps,rir,completed}){
    const e=find(exerciseId),s=e.sets.find(x=>x.set_number===setNumber);if(!s)throw Error('Série introuvable.');
    const num=v=>v===''||v==null?null:Number(v);
-   if(weight!==undefined)s.weight=num(weight);if(reps!==undefined)s.reps=num(reps);if(rir!==undefined)s.rir=num(rir);if(completed!==undefined)s.completed=Boolean(completed);
+   if(weight!==undefined)s.weight=num(weight);if(reps!==undefined)s.reps=num(reps);if(rir!==undefined)s.rir=num(rir);if(completed!==undefined){s.completed=Boolean(completed);s.done_at=s.completed?now():null}
    if(s.weight!=null&&(!Number.isFinite(s.weight)||s.weight<0))throw Error('Charge invalide.');
    enqueue('workout_set_logs',setRow(e,s));save();return s;
   },
@@ -92,7 +92,11 @@ function createWorkoutStore({storage,api,userId,now=()=>Date.now(),uuid=defaultU
   finish(){
    if(!workout)return null;
    if(workout.paused_at)this.resume();
-   const t=now();workout.status='completed';workout.ended_at=t;
+   let t=now();
+   // Séance oubliée ouverte la nuit : terminée à l'heure de la dernière série validée (+1 min), donc rattachée à ce jour-là.
+   const lastDone=Math.max(0,...workout.exercises.flatMap(e=>e.sets.map(x=>x.completed&&x.done_at||0)));
+   if(lastDone&&new Date(lastDone).toDateString()!==new Date(t).toDateString())t=Math.min(t,lastDone+60e3);
+   workout.status='completed';workout.ended_at=t;
    workout.duration_seconds=Math.max(0,Math.round((t-workout.started_at)/1000)-workout.paused_seconds);
    touchWorkout();
    for(const e of workout.exercises)for(const s of e.sets)if(s.completed||s.weight!=null||s.reps!=null)enqueue('workout_set_logs',setRow(e,s));

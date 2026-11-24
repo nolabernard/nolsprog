@@ -312,7 +312,6 @@ button:active{transform:translateY(1px)}
 
 /* Barre d'enregistrement du programme : prend la place de la barre de navigation (même endroit, même taille),
    donc elle ne recouvre jamais le contenu ; les messages temporaires s'affichent au-dessus. */
-.shell.is-editing .tabbar{display:none!important}
 .v2-savebar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(8px + env(safe-area-inset-bottom));z-index:30;width:min(410px,calc(100% - 28px));min-height:60px;box-sizing:border-box;display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:6px;padding:6px 6px 6px 14px;border-radius:23px;background:#0B4D3B;color:#F5F0E5;box-shadow:0 10px 28px rgba(7,53,40,.28)}
 .v2-savebar span{display:flex;flex-direction:column;line-height:1.15;font-size:13px}.v2-savebar small{opacity:.8;font-size:11px}
 .v2-savebar .v2-btn{min-height:46px;padding:0 14px;border-radius:17px;font-size:14px}.v2-savebar .v2-btn--ghost{background:transparent;color:#F5F0E5;border-color:rgba(245,240,229,.45)}
@@ -387,7 +386,6 @@ button:active{transform:translateY(1px)}
 /* Lot 4 : lisibilité et cibles tactiles */
 .v2-last{border:1px solid var(--line);border-style:solid}
 .choice.selected small,.method.selected small{color:inherit;opacity:.85}
-.v2-move{height:44px}
 .v2-daypick button,.v2-daypick label{min-width:44px;min-height:44px}
 .v2-grab{height:36px}
 .v2-tabbar button span,.tabbar button span{font-size:11px}
@@ -405,7 +403,7 @@ button:active{transform:translateY(1px)}
 .v2-prog-head:focus-visible{outline:2px solid var(--accent,currentColor);outline-offset:4px;border-radius:8px}
 .v2-prog-list li:has(.v2-prog-move){grid-template-columns:auto 1fr auto}
 .v2-prog-move{display:flex;flex-direction:column;gap:4px;grid-row:span 2}
-.v2-move{display:grid;place-items:center;width:44px;height:36px;border:1px solid var(--line);border-radius:10px;background:none;color:inherit;cursor:pointer}
+.v2-move{display:grid;place-items:center;width:44px;height:44px;border:1px solid var(--line);border-radius:10px;background:none;color:inherit;cursor:pointer}
 .v2-move:disabled{opacity:.3;cursor:default}
 .v2-prog-list li:has(.v2-prog-move) .v2-prog-actions{grid-column:2/-1}
 /* Rappels (lot 7) */
@@ -480,3 +478,10 @@ html,body{overscroll-behavior-y:none}
 button,a,[role="button"],.v2-btn,label{touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 img,svg{-webkit-user-drag:none;-webkit-touch-callout:none}
 input,select,textarea{font-size:max(16px,1em);touch-action:manipulation}
+/* Brouillon du Programme : la barre d'enregistrement se pose au-dessus des onglets, qui restent visibles et utilisables
+   (quitter l'onglet demande Enregistrer / Ne pas enregistrer / Rester). */
+.shell.is-editing .v2-savebar{bottom:calc(max(14px,env(safe-area-inset-bottom)) + 80px)}
+.shell.is-editing{padding-bottom:calc(196px + env(safe-area-inset-bottom))}
+/* Cibles tactiles de 44 px : poignée des menus (sans grossir l’espace visible) et case « Garder ce remplacement ». */
+.v2-grab{height:44px;margin-bottom:-8px}
+.v2-check input{width:22px;height:22px;margin:0}
