@@ -26,6 +26,11 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  await c.handle('v2-set',{ex:e1.id,set:'1'});
  assert.equal(c.state().store.current().exercises[0].sets[0].completed,true);
  assert.equal(c.tick().rest,120);
+ // − / + : série 2 réglée au pouce (2,5 kg, 1 répétition) ; la série 3 suit ; la série 1 validée ne bouge pas.
+ {const sets=()=>c.state().store.current().exercises[0].sets;const w0=sets()[1].weight;
+  await c.handle('v2-step',{ex:e1.id,set:'2',f:'weight',d:'2.5'});assert.equal(sets()[1].weight,w0==null?60:w0+2.5);if(sets()[2])assert.equal(sets()[2].weight,sets()[1].weight);assert.equal(sets()[0].weight,60);
+  await c.handle('v2-step',{ex:e1.id,set:'2',f:'reps',d:'-1'});assert.ok(sets()[1].reps>=1);
+  assert.equal(c.tick().total,120);}
  t+=30e3;assert.equal(c.tick().rest,90);
  await c.handle('v2-rest-plus');assert.equal(c.tick().rest,120);
  // Pause : le repos est figé, puis repart.

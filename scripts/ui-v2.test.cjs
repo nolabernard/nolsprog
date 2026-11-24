@@ -56,10 +56,13 @@ const workout={id:'w',started_at:0,exercises:[
 let s=UI.session({workout,index:0,elapsed:1122,paused:false,last:{'developpe-couche-barre':{weight:80,reps:8}},userExercises:[{key:'u-1',name:'Mon exo'}]});
 assert.match(s,/Développé couché barre/);assert.match(s,/3 séries · 6 à 8 rép. · repos 3 min/);
 assert.match(s,/Dernière fois : 80 kg × 8/);assert.match(s,/18:42/);
-assert.equal((s.match(/data-action="v2-set"/g)||[]).length,3,'un bouton par série');
-assert.match(s,/aria-label="Série 1 validée"/);assert.match(s,/aria-label="Valider la série 2"/);
+// Série en cours en grand (− / + et Valider), séries faites et à venir en lignes compactes.
+assert.equal((s.match(/data-action="v2-set"/g)||[]).length,2,'série faite (modifiable) + série en cours');
+assert.match(s,/aria-label="Série 1 validée/);assert.match(s,/Valider la série 2</);
+assert.equal((s.match(/data-action="v2-step"/g)||[]).length,4,'− / + pour la charge et les répétitions');
+assert.match(s,/data-v2-field="weight" data-ex="x1" data-set="2"[^>]*value="80"/);
+assert.match(s,/v2-set--line is-next"><span class="v2-set-num">3<\/span><span class="v2-set-val">— kg × —/,'à venir : charge non saisie affichée —, jamais 0');
 assert.match(s,/data-action="v2-machine"/);assert.match(s,/Machine prise/);
-assert.match(s,/data-v2-field="weight" data-ex="x1" data-set="3"[^>]*value=""/,'charge non saisie : champ vide, pas 0');
 assert(!/En pause/.test(s));
 assert.match(UI.session({workout,index:0,elapsed:10,paused:true,pausedFor:180}),/En pause depuis 3 min/);
 assert.match(UI.session({workout,index:0,elapsed:10,last:{'developpe-couche-barre':{weight:null,reps:12}}}),/Dernière fois : — × 12/);
@@ -67,8 +70,8 @@ assert(!/ data-field=/.test(s),'champs V2 distincts de l’ancien écran');
 // Séance en cours quittée : l'accueil propose de la reprendre.
 assert.match(UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},active:{title:'Haut A',done:2,total:5}}),/data-action="v2-back">[\s\S]*?Reprendre la séance/);
 // Repos automatique : +30 s et Passer.
-s=UI.session({workout,index:0,elapsed:10,rest:{remaining:95}});
-assert.match(s,/1:35/);assert.match(s,/data-action="v2-rest-plus"/);assert.match(s,/data-action="v2-rest-skip"/);
+s=UI.session({workout,index:0,elapsed:10,rest:{remaining:95,total:180,next:'série 2 · 80 kg × 8'}});
+assert.match(s,/1:35/);assert.match(s,/Ensuite : série 2 · 80 kg × 8/);assert.match(s,/--p:0\.528/);assert.match(s,/data-action="v2-rest-plus"/);assert.match(s,/data-action="v2-rest-skip"/);
 // Dernier exercice : terminer ; exercice perso affiché par son nom.
 s=UI.session({workout,index:1,elapsed:10,userExercises:[{key:'u-1',name:'Mon exo'}]});
 assert.match(s,/Mon exo/);assert.match(s,/data-action="v2-finish"/);
