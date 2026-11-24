@@ -602,3 +602,8 @@ main.v2-enter>*{animation:v2-enter .26s ease-out both}
 .v2-btn:active,.v2-ok:active,.answer-card:active,.v2-opt:active{transform:scale(.97)}
 .v2-btn,.v2-ok,.answer-card,.v2-opt{transition:transform .12s ease,background-color .18s ease,color .18s ease}
 @media (prefers-reduced-motion:reduce){main.v2-enter>*,.v2-current.v2-pop,.v2-ok.v2-tick,.v2-done-mark,.v2-done-mark svg path,.v2-records li,.v2-compare li,.v2-streak{animation:none!important}.v2-btn:active,.v2-ok:active,.answer-card:active,.v2-opt:active{transform:none}}
+/* Pictogrammes v2 : personnage, matériel (gris), membres éloignés atténués ; suivent le thème clair / sombre. */
+.mv-v2 .mv-torso{stroke-width:4.5}.mv-v2 .mv-head{stroke-width:3}.mv-v2 .mv-far{opacity:.45}
+.mv-v2 .mv-floor{stroke:var(--line);stroke-width:2}.mv-v2 .mv-eq{stroke:var(--muted);stroke-width:2}.mv-v2 .mv-eq-thick{stroke:var(--muted);stroke-width:3.5}
+.mv-v2 .mv-eq-fill{fill:var(--muted);stroke:none}.mv-v2 .mv-cable{stroke:var(--muted);stroke-width:1.2;stroke-dasharray:2 2}
+.v2-howto-pic .mv-v2{max-width:100%;height:auto}

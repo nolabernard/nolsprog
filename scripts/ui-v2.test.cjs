@@ -194,9 +194,16 @@ assert.doesNotMatch(UI.cardioSheet({}),/v2-cardio-delete/);
    {assert(M.MOVES[p],'pictogramme manquant : '+p);assert.equal(M.cues(p).length,3);assert.match(M.svg(p),/^<svg[^>]*aria-hidden="true"/);}
   const cat=require('../exercise-catalogue.js');for(const e of cat.CATALOGUE)assert(M.MOVES[e.pattern],'mouvement sans illustration : '+e.key);
   assert.equal(M.label('inconnu'),'Exercice');
-  const s=UI.session({workout});assert.match(s,/data-action="v2-howto"/);assert.match(s,/<svg class="mv-pic"/);
+  const s=UI.session({workout});assert.match(s,/data-action="v2-howto"/);assert.match(s,/<svg class="mv-pic mv-v2"/);
   const h=UI.howtoSheet({key:'hack-squat'});assert.match(h,/Hack squat/);assert.match(h,/Squat \/ presse · Jambes/);assert.match(h,/genoux dans l’axe/);assert.match(h,/data-action="v2-close-sheet"/);
   assert(noEmoji(h)&&!/onclick=|<img|https?:/i.test(h),'aucune image externe'); }
+// Pictogrammes v2 : chaque exercice du catalogue a son dessin, en 2 positions qui diffèrent (sauf gainages, tenus).
+{ const M=globalThis.SteroidMoves,cat=require('../exercise-catalogue.js');
+  for(const e of cat.CATALOGUE){const id=M.picId(e.key,e.pattern);assert(id&&M.PICTOS[id],'sans pictogramme : '+e.key);}
+  for(const [id,p] of Object.entries(M.PICTOS)){const a=p.draw(0),b=p.draw(1);assert(/<polyline/.test(a)&&!/NaN|undefined/.test(a+b+p.draw(.5)),'dessin invalide : '+id);
+   if(!['plank','side-plank'].includes(id))assert.notEqual(a,b,'pas de mouvement : '+id);}
+  assert.match(UI.howtoSheet({key:'hip-thrust'}),/data-mv-key="hip-thrust" data-mv-pattern="hinge"/);
+  assert.equal(M.picId('inconnu','core'),'crunch');assert.equal(M.picId('inconnu',undefined),null);assert.match(M.pic('inconnu','zzz'),/<svg/); }
 // Ressenti en un appui après une série validée.
 { const r=UI.session({workout,rate:{ex:'x1',set:2,rir:null,name:'Hack squat'}});
   assert.match(r,/Série 2 · Hack squat : c’était…/);assert.match(r,/data-action="v2-rir" data-ex="x1" data-set="2" data-rir="3"/);assert.match(r,/Facile[^]*Correct[^]*Dur/);
