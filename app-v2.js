@@ -228,7 +228,7 @@ function create(ctx){
   const row=S.store.skipSession({...s,cycle_id:S.cycle.id},{reason});
   S.workouts=[{...row,title:s.title,local_only:!(api&&userId)},...S.workouts];
   persistLocal();S.sheet=null;scheduleFlush();
-  notice(s.title+' passée. Repos aujourd’hui, la suite reprend demain.');
+  notice(s.title+' passée. La suivante reste possible aujourd’hui.');
  }
  function cancelSkip(id){
   const w=S.workouts.find(x=>x.id===id&&x.status==='skipped');if(!w)return;

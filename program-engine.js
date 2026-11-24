@@ -121,7 +121,7 @@ function fillWeeklyVolume(sessions,p,addExercise){
  const range=VOLUME[p.level]||VOLUME.intermediate,limit=Number(p.duration)||60;
  const muscleOf=e=>byName(e.name)?.muscle;
  const volume=m=>sessions.reduce((n,s)=>n+s.ex.filter(e=>muscleOf(e)===m).reduce((k,e)=>k+e.sets,0),0);
- const fits=s=>estimatedMinutes(s.ex)<=limit*1.05;
+ const fits=s=>estimatedMinutes(s.ex)<=limit; // la durée choisie est un plafond
  for(const muscle of ['Pectoraux','Dos','Jambes']){
   for(let guard=0;guard<60&&volume(muscle)<range[0];guard++){
    let changed=false;
@@ -186,10 +186,26 @@ function estimatedMinutes(items){
  }
  return Math.ceil(minutes);
 }
+// Raccourcit d'un cran (15 s) le plus long repos encore au-dessus de 60 s. Renvoie false s'il n'y a plus rien à raccourcir.
+function shortenRest(items){
+ let best=null;for(const x of items)if(x.rest>60&&(!best||x.rest>best.rest))best=x;
+ if(!best)return false;best.rest=Math.max(60,best.rest-15);return true;
+}
+// Full body : garder tous les patrons ; raccourcir les repos, puis les séries (2 minimum), pour tenir dans la durée choisie.
+function fitFullbody(items,p){
+ const limit=Number(p.duration);if(!Number.isFinite(limit)||limit<=0)return items;
+ while(estimatedMinutes(items)>limit){
+  if(shortenRest(items))continue;
+  let c=-1;for(let i=items.length-1;i>=0;i--)if(items[i].sets>2){c=i;break}
+  if(c>=0){items[c].sets--;continue}
+  break;
+ }
+ return items;
+}
 function fitDuration(items,p){
  const limit=Number(p.duration);
  if(!Number.isFinite(limit)||limit<=0)return items;
- const budget=limit*1.1;
+ const budget=limit; // plafond annoncé à l'utilisateur
  // Preserve at least two sets per movement; remove the least important accessory
  // before shortening the primary movement. Never silently change method.
  while(estimatedMinutes(items)>budget){
@@ -199,6 +215,7 @@ function fitDuration(items,p){
   }
   if(candidate>=0){items[candidate].sets--;continue}
   if(items.length>2){items.pop();continue}
+  if(shortenRest(items))continue;
   break;
  }
  return items;
@@ -270,6 +287,7 @@ function buildProgram(p,weekIndex=0){
    for(const item of items)item.sets=Math.min(item.sets,Number(p.duration)<=45?2:3);
    // Les cinq patrons fondamentaux restent présents ; adapter la récupération à 30 min.
    if(Number(p.duration)<=30){for(const item of items)item.rest=Math.min(item.rest,75)}
+   fitFullbody(items,p);
   }else fitDuration(items,p);
   const types={fullbody:'Full body',upperlower:continuous?(rotationIndex%2?'Lower':'Upper'):(i%2?'Lower':'Upper'),ppl:continuous?['Push','Pull','Legs'][rotationIndex]:['Push','Pull','Legs'][i%3],split:n===2?['Pectoraux + dos','Jambes + épaules'][i]:n===3?['Pectoraux + dos','Jambes','Épaules + bras'][i]:['Pectoraux','Dos','Jambes','Épaules','Upper','Lower'][i%6],hybrid:n===2?['Full body dominante haut','Full body dominante bas'][i]:n===3?['Upper','Lower','Full body'][i]:['Push','Pull','Legs','Upper','Lower','Full body'][i%6]};
   const title=(types[method]||'Séance')+' '+String.fromCharCode(65+Math.floor((sessionOffset+i)/(method==='ppl'?3:method==='upperlower'?2:1))%6);

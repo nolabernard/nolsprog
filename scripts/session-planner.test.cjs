@@ -62,3 +62,11 @@ r=P.nextSession(legs,[at('l1',60),at('u1',30)],now);assert.equal(r.session.id,'l
  // Séance passée puis annulée : ignorée.
  r=P.nextSession(cycle,[{...skipped,status:'abandoned'}],sameDay+60e3);assert.equal(r.session.id,'s0');assert.equal(r.reason,'sequence');}
 console.log('Session planner checks passed');
+
+// Séance passée puis faite plus tard dans le même tour : on reste dans le tour (la séance C n'est pas sautée).
+{const rd=P.round(cycle,[at('s0',300),at('s1',200,'skipped'),at('s1',100)]);
+ assert.deepEqual(rd.remaining.map(x=>x.id),['s2','s3']);}
+// Séance faite puis refaite : nouveau tour.
+{const rd=P.round(cycle,[at('s0',300),at('s0',100)]);
+ assert.deepEqual(rd.remaining.map(x=>x.id),['s1','s2','s3']);}
+console.log('session-planner : passée puis faite ok');
