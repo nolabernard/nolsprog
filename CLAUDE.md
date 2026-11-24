@@ -58,7 +58,8 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
 - Stockage local (clés préfixées `nolsprog-`) : mode invité, cache de compte, séance active.
 - Supabase : tables V2 (`cycles`, `cycle_sessions`, `cycle_exercises`, `cycle_cardio`, `workouts`, `workout_exercises`,
   `workout_set_logs`, `cardio_logs`, `user_exercises`, `push_subscriptions`) + `user_profiles` (réponses du questionnaire),
-  RLS `auth.uid() = user_id`. Tables V1 (`user_programs`, `workout_sets`, `workout_sessions`) : plus écrites par l'app,
+  RLS `auth.uid() = user_id`. Garde-fou `workouts.revision` (trigger) : une mise à jour avec une révision plus ancienne est ignorée.
+  Sauvegarde du 24/11/2026 (avant le lot 5) dans le schéma `backup_20261124` (non exposé). Tables V1 (`user_programs`, `workout_sets`, `workout_sessions`) : plus écrites par l'app,
   sauf données restées en attente sur un appareil ; contenu entièrement copié en V2 (vérifié le 22/11/2026 : 221 séries sur 221).
   Suppression possible plus tard, uniquement sur demande explicite du propriétaire et après sauvegarde. Seule la clé publique `sb_publishable` est autorisée dans le code.
   Jamais de clé `service_role` ni de secret dans le dépôt (il est public).

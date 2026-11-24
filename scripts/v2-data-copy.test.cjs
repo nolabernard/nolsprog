@@ -1,7 +1,7 @@
 // Copie V1 → V2 : uniquement des ajouts, rejouable, réservée à l'administrateur.
 const assert=require('assert');
 const fs=require('fs');
-const file='supabase/migrations/20261121181000_v2_data_copy.sql';
+const file='supabase/migrations/20261121173516_v2_data_copy.sql';
 assert(fs.existsSync(file),'migration de copie absente');
 const low=fs.readFileSync(file,'utf8').toLowerCase();
 assert(low.includes('create or replace function public.v2_copy_legacy()'),'fonction de copie');

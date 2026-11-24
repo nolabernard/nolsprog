@@ -1,0 +1,14 @@
+create table public.user_programs (user_id uuid primary key references auth.users(id) on delete cascade, plan jsonb not null, start_date date not null default current_date, updated_at timestamptz not null default now());
+create table public.workout_sets (id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade, week_number integer not null check(week_number between 1 and 104), day_index integer not null check(day_index between 0 and 6), exercise_id text not null, set_number integer not null check(set_number between 1 and 20), weight numeric(8,2) check(weight >= 0), reps integer check(reps between 0 and 1000), completed boolean not null default false, updated_at timestamptz not null default now(), unique(user_id,week_number,day_index,exercise_id,set_number));
+create index workout_sets_user_week on public.workout_sets(user_id,week_number);
+alter table public.user_programs enable row level security;
+alter table public.workout_sets enable row level security;
+create policy "read own program" on public.user_programs for select to authenticated using ((select auth.uid())=user_id);
+create policy "insert own program" on public.user_programs for insert to authenticated with check ((select auth.uid())=user_id);
+create policy "update own program" on public.user_programs for update to authenticated using ((select auth.uid())=user_id) with check ((select auth.uid())=user_id);
+create policy "read own sets" on public.workout_sets for select to authenticated using ((select auth.uid())=user_id);
+create policy "insert own sets" on public.workout_sets for insert to authenticated with check ((select auth.uid())=user_id);
+create policy "update own sets" on public.workout_sets for update to authenticated using ((select auth.uid())=user_id) with check ((select auth.uid())=user_id);
+create policy "delete own sets" on public.workout_sets for delete to authenticated using ((select auth.uid())=user_id);
+grant select,insert,update on public.user_programs to authenticated;
+grant select,insert,update,delete on public.workout_sets to authenticated;
