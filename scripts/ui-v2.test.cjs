@@ -213,3 +213,12 @@ assert.doesNotMatch(UI.programme({cycle:{weeks:6,sessions:[]}}),/v2-savebar/);
 assert.match(UI.chooser({sessions:[haut]}),/<button type="button" class="v2-grab" data-action="v2-close-sheet" aria-label="Fermer/);
 assert.doesNotMatch(UI.idlePrompt?UI.idlePrompt({}):'',/v2-grab/,'la question « en pause ? » attend une réponse');
 console.log('ui-v2 : ok');
+// Fin de séance : comparaison avec la dernière fois, semaines d'affilée, partage ; Progrès : carte Régularité.
+{const sw={id:'w9',duration_seconds:1800,exercises:[{id:'e',position:0,exercise_key:'developpe-couche-barre',status:'done',plan:{},sets:[{set_number:1,weight:85,reps:8,completed:true}]}]};
+ const h=UI.summary({workout:sw,compare:[{key:'developpe-couche-barre',kind:'kg',diff:5},{key:'developpe-couche-barre',kind:'reps',diff:-2}],streak:3});
+ assert.match(h,/\+5 kg/);assert.match(h,/−2 rép\./);assert.match(h,/3e semaine d’affilée/);assert.match(h,/data-action="share-summary"/);
+ assert(!/semaine d’affilée/.test(UI.summary({workout:sw,streak:1})),'pas de série affichée à 1 semaine');
+ const p=UI.progress({regularity:{streak:2,year:2026,month:10,days:[3,5,24],today:24,total:3},progress:{byKey:{},totals:{sets:0,volume:0}}});
+ assert.match(p,/2 semaines d’affilée/);assert.match(p,/3 séances en novembre/);assert.match(p,/class="is-done is-today"[^>]*>24</);
+ assert(!/v2-regular/.test(UI.progress({regularity:{streak:0,days:[],total:0},progress:{byKey:{},totals:{sets:0,volume:0}}})),'pas de carte sans séance');}
+console.log('ui-v2 : fin de séance et régularité ok');

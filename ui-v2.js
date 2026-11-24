@@ -17,7 +17,7 @@ const plural=(n,one,many)=>n+' '+(n>1?many:one);
 const P={play:'<path d="M8 5v14l11-7z"/>',pause:'<path d="M8 5v14M16 5v14"/>',check:'<path d="m5 12 5 5L20 7"/>',swap:'<path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
  close:'<path d="M6 6l12 12M18 6 6 18"/>',more:'<circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/>',left:'<path d="m15 18-6-6 6-6"/>',right:'<path d="m9 18 6-6-6-6"/>',up:'<path d="m6 15 6-6 6 6"/>',down:'<path d="m6 9 6 6 6-6"/>',
  later:'<path d="M12 8v4l3 2"/><path d="M3.05 11a9 9 0 1 1 .5 4"/><path d="M3 4v7h7"/>',skip:'<path d="m5 4 10 8-10 8z"/><path d="M19 5v14"/>',coach:'<path d="M12 3a7 7 0 0 0-4 12.7V19h8v-3.3A7 7 0 0 0 12 3z"/><path d="M10 22h4"/>',
- search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',plus:'<path d="M12 5v14M5 12h14"/>',minus:'<path d="M5 12h14"/>',sound:'<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/>',mute:'<path d="M4 9v6h4l5 4V5L8 9z"/><path d="m17 9 5 6M22 9l-5 6"/>',trophy:'<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>'};
+ search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',plus:'<path d="M12 5v14M5 12h14"/>',flame:'<path d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3-1-3 0-6 1-9z"/>',share:'<path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6h14v-6"/>',minus:'<path d="M5 12h14"/>',sound:'<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/>',mute:'<path d="M4 9v6h4l5 4V5L8 9z"/><path d="m17 9 5 6M22 9l-5 6"/>',trophy:'<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>'};
 const icon=(n,cls='v2-ic')=>'<svg class="'+cls+'" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+P[n]+'</svg>';
 const ordered=w=>[...(w?.exercises||[])].sort((a,b)=>a.position-b.position);
 const totalSets=s=>(s?.exercises||[]).reduce((n,e)=>n+(Number(e.sets)||0),0);
@@ -215,12 +215,15 @@ function idlePrompt(minutes){
  return '<div class="v2-sheet-wrap"><section class="v2-sheet" role="alertdialog" aria-modal="true" aria-label="Tu étais en pause ?"><h2>Tu étais en pause ?</h2><p class="v2-muted">Aucune action depuis '+(minutes>=720?'hier':minutes>=120?Math.round(minutes/60)+' h':Number(minutes)+' min')+'.</p><button type="button" class="v2-btn" data-action="v2-idle-yes">Oui, ne pas compter ce temps</button><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-idle-no">Non, je m’entraînais</button></section></div>';
 }
 
-function summary({workout,pending=0,local=false,userExercises=[],records=[]}={}){
+function summary({workout,pending=0,local=false,userExercises=[],records=[],compare=[],streak=0}={}){
  const list=ordered(workout),done=list.reduce((n,e)=>n+e.sets.filter(s=>s.completed).length,0);
  const vol=list.reduce((n,e)=>n+e.sets.filter(s=>s.completed&&s.weight!=null&&s.reps!=null).reduce((a,s)=>a+s.weight*s.reps,0),0);
  const min=Math.round((workout.duration_seconds||0)/60),minTxt=(workout.duration_seconds||0)<60?'< 1':String(min);
  return '<section class="v2-summary"><div class="v2-done-mark">'+icon('check')+'</div><h1 class="v2-hello">Séance terminée</h1><dl class="v2-figures v2-figures--dark"><div><b>'+minTxt+' min</b> <span>d’effort</span></div><div><b>'+plural(done,'série validée','séries validées').replace(/^(\d+) /,'$1</b> <span>')+'</span></div><div><b>'+Math.round(vol).toLocaleString('fr-FR')+'</b> <span>kg soulevés</span></div></dl>'
-  +(records.length?'<ul class="v2-records">'+records.map(r=>'<li>'+icon('trophy','v2-ic v2-ic--sm')+'<span>Nouveau record : '+recordText(r,userExercises)+'</span></li>').join('')+'</ul>':'')+'<ul class="v2-sum-list">'+list.map(e=>{const d=e.sets.filter(s=>s.completed).length;return '<li><span>'+esc(nameOf(e.exercise_key,userExercises))+'</span><small>'+(e.status==='skipped'?'passé':d+'/'+e.sets.length)+'</small></li>'}).join('')+'</ul>'
+  +(records.length?'<ul class="v2-records">'+records.map(r=>'<li>'+icon('trophy','v2-ic v2-ic--sm')+'<span>Nouveau record : '+recordText(r,userExercises)+'</span></li>').join('')+'</ul>':'')
+  +(streak>=2?'<p class="v2-streak">'+icon('flame','v2-ic v2-ic--sm')+'<span><b>'+streak+(streak>1?'e':'re')+' semaine d’affilée</b> avec au moins une séance.</span></p>':'')
+  +(compare.length?'<h2 class="v2-card-title">Par rapport à la dernière fois</h2><ul class="v2-compare">'+compare.map(c=>'<li class="'+(c.diff>0?'is-up':'is-down')+'"><span>'+esc(nameOf(c.key,userExercises))+'</span><b>'+(c.diff>0?'+':'−')+(c.kind==='kg'?kg(Math.abs(c.diff))+' kg':plural(Math.abs(c.diff),'rép.','rép.'))+'</b></li>').join('')+'</ul>':'')
+  +'<button type="button" class="v2-btn v2-btn--ghost" data-action="share-summary">'+icon('share')+'Partager ma séance</button><ul class="v2-sum-list">'+list.map(e=>{const d=e.sets.filter(s=>s.completed).length;return '<li><span>'+esc(nameOf(e.exercise_key,userExercises))+'</span><small>'+(e.status==='skipped'?'passé':d+'/'+e.sets.length)+'</small></li>'}).join('')+'</ul>'
   +'<button type="button" class="v2-btn v2-btn--ghost" data-action="v2-cardio-open" data-workout="'+esc(workout.id)+'">'+icon('plus')+'Ajouter du cardio</button><p class="v2-sync" role="status">'+(pending?'Enregistrée sur ce téléphone, envoi en attente.':local?'Enregistrée sur ce téléphone.':'Enregistrée.')+'</p><button type="button" class="v2-btn v2-btn--big" data-action="v2-close-summary">Retour à l’accueil</button></section>';
 }
 
@@ -277,9 +280,19 @@ function sessionsHTML(list,open,userExercises,records){
  if(!list.length)return '<p class="v2-card v2-empty">Tes séances terminées apparaîtront ici.</p>';
  return '<ul class="v2-hist">'+list.slice(0,60).map(x=>'<li><button type="button" class="v2-opt" data-action="v2-history-open" data-id="'+esc(x.id)+'"><span><b>'+esc(x.title)+'</b><small>'+esc(dayText(x.date))+' · '+[durTxt(x),plural(x.sets,'série','séries')].filter(Boolean).join(' · ')+(x.cardio.length?' · cardio':'')+'</small></span>'+icon('right','v2-ic v2-ic--sm')+'</button></li>').join('')+'</ul>';
 }
-function progress({progress,selected,metric='weight',userExercises=[],cardio=null,tab='exercises',history=null,advice=null,sessions=[],open=null,records=[],truncated=false,cardioList=[]}={}){
+// Régularité : semaines d'affilée et calendrier du mois (jours entraînés pleins, aujourd'hui entouré).
+const MONTH_NAMES=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+function regularityCard(r){
+ if(!r||!r.total)return '';
+ const first=(new Date(r.year,r.month,1).getDay()+6)%7,n=new Date(r.year,r.month+1,0).getDate(),done=new Set(r.days);
+ let cells='';for(let i=0;i<first;i++)cells+='<i></i>';
+ for(let d=1;d<=n;d++)cells+='<i class="'+(done.has(d)?'is-done':'')+(d===r.today?' is-today':'')+'" aria-label="'+d+' '+MONTH_NAMES[r.month]+(done.has(d)?', séance faite':'')+'">'+d+'</i>';
+ return '<section class="v2-card v2-regular"><div class="v2-regular-head"><span class="v2-streak-big">'+icon('flame')+'<b>'+r.streak+'</b></span><span><b>'+(r.streak>1?r.streak+' semaines d’affilée':r.streak===1?'1 semaine':'Nouvelle série à lancer')+'</b><small>'+plural(r.days.length,'séance','séances')+' en '+MONTH_NAMES[r.month]+'</small></span></div>'
+  +'<div class="v2-cal" role="img" aria-label="Calendrier de '+MONTH_NAMES[r.month]+' : '+plural(r.days.length,'jour entraîné','jours entraînés')+'"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span>'+cells+'</div></section>';
+}
+function progress({regularity=null,progress,selected,metric='weight',userExercises=[],cardio=null,tab='exercises',history=null,advice=null,sessions=[],open=null,records=[],truncated=false,cardioList=[]}={}){
  const keys=Object.keys(progress?.byKey||{}).sort((a,b)=>nameOf(a,userExercises).localeCompare(nameOf(b,userExercises),'fr'));
- let html='<section class="v2-progress"><h1 class="v2-hello">Tes progrès</h1>'+tabs(tab);
+ let html='<section class="v2-progress"><h1 class="v2-hello">Tes progrès</h1>'+regularityCard(regularity)+tabs(tab);
  if(tab==='sessions')return html+sessionsHTML(sessions,open,userExercises,records)+(open?'':cardioLogs(cardioList))+'</section>';
  html+='<dl class="v2-figures v2-figures--card"><div><b>'+(progress?.totals.sets||0)+'</b> <span>'+((progress?.totals.sets||0)>1?'séries validées':'série validée')+'</span></div><div><b>'+Math.round(progress?.totals.volume||0).toLocaleString('fr-FR')+'</b> <span>kg de volume</span></div></dl>';
  if(!keys.length)return html+'<p class="v2-card v2-empty">Ton graphique apparaîtra après tes premières séries validées.</p>'+cardioBlock(cardio)+'</section>';
