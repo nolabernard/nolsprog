@@ -340,10 +340,16 @@ function recapCard({answers={},preview=null,methods={}}={}){
  const E=globalThis.NolsEngine,lab=(k,v)=>((E?.steps||[]).flatMap(s=>s.fields).find(f=>f.key===k)?.options||[]).find(o=>String(o[0])===String(v))?.[1]||v;
  const days=['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];
  const freq=answers.planMode==='free'?plural(Number(answers.daysCount)||preview?.sessionsPerWeek||3,'séance','séances')+' par semaine, les jours que tu veux':plural(Number(answers.daysCount)||3,'séance','séances')+' par semaine'+(Array.isArray(preview?.preferredDays)&&preview.preferredDays.length?' ('+preview.preferredDays.map(d=>days[d]).join(', ')+')':'');
- const rows=[['Méthode',preview?methods[preview.method]?.name||preview.method:lab('method',answers.method)],['Fréquence',freq],['Durée du cycle',(preview?.weeks||6)+' semaines'],['Objectif',lab('goal',answers.goal)],['Durée par séance',lab('duration',answers.duration)],['Matériel',lab('equipment',answers.equipment)]];
+ const rows=[['Méthode',preview?methods[preview.method]?.name||preview.method:lab('method',answers.method)],['Fréquence',freq],['Durée du cycle',(preview?.weeks||6)+' semaines'],['Objectif',lab('goal',answers.goal)],['Durée par séance',durationText(answers,preview,lab)],['Matériel',lab('equipment',answers.equipment)]];
  return '<dl class="v2-recap">'+rows.filter(r=>r[1]).map(([k,v])=>'<div><dt>'+esc(k)+'</dt><dd>'+esc(v)+'</dd></div>').join('')+'</dl>'
   +(preview?.sessions?.length?'<h2 class="v2-card-title">Répartition des séances</h2><ol class="v2-recap-sessions">'+preview.sessions.map(s=>'<li><b>'+esc(s.title)+'</b><small>'+esc([(s.focus||[]).join(', '),plural(s.exercises.length,'exercice','exercices')].filter(Boolean).join(' · '))+'</small></li>').join('')+'</ol>'
    +'<p class="v2-muted">Les séances s’enchaînent dans cet ordre, quel que soit le jour.'+repsLine(preview)+' Quand tu atteins le haut de la fourchette, je te conseille d’augmenter la charge.</p>':'');
+}
+// Durée choisie = plafond ; durée estimée des séances générées (échauffement compris), pour expliquer l'écart.
+function durationText(answers,preview,lab){
+ const base=lab('duration',answers.duration),est=globalThis.NolsEngine?.estimatedMinutes,m=(preview?.sessions||[]).map(s=>est?est(s.exercises||[]):0).filter(Boolean);
+ if(!m.length)return base;const lo=Math.min(...m),hi=Math.max(...m);
+ return base+' au maximum · séances estimées à '+(lo===hi?'≈ '+lo:lo+' à '+hi)+' min, échauffement compris';
 }
 // Fourchettes de répétitions réellement générées, par rôle (base / finition) ; le gainage, compté en secondes, est exclu.
 function repsLine(preview){

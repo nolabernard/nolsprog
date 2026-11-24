@@ -9,7 +9,7 @@ permissions:
   id-token: write
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   # Construction et mise en ligne séparées (recommandé par actions/deploy-pages) :
   # dans un seul job, l'archive n'était plus trouvée au moment de la mise en ligne.

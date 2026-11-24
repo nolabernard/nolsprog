@@ -467,3 +467,4 @@ button:active{transform:translateY(1px)}
 .v2-bars b{text-align:right}
 .plan-mode .choice small{font-weight:600;color:inherit;opacity:.85}
 .v2-cardio-plan>*{min-width:0;width:100%;box-sizing:border-box}
+.fit-onboard .choice.selected small,.fit-onboard .method.selected small{color:inherit;opacity:.9}

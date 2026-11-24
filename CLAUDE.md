@@ -43,11 +43,13 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
   `app.js` lui délègue Aujourd'hui, Progrès et Programme (`v2Main`) ; s'il ne démarre pas : écran « Réessayer » (`v2Unavailable`).
 - `ui-dialog.js` : panneaux de dialogue de l'app (`SteroidDialog.open/confirm/yesNo/ask`).
   Interdit : `prompt`, `confirm`, `alert` natifs (vérifié par les tests).
+- `splash.js` : animation d'ouverture (une fois par onglet, un tapotement la passe, simple fondu si `prefers-reduced-motion`).
 - `app-updates.js` : détection de nouvelle version (`version.json` généré au déploiement).
 - `sw.js` : mode hors ligne (réseau d'abord, cache en secours ; jamais Supabase ni `version.json`).
   Enregistré seulement en production. Changer `CACHE` si la stratégie de cache change.
 - Styles : `styles.css` (historique, lourd) + `steroid-v2.css` (identité V2, chargé après).
   Référence visuelle : `DESIGN-SYSTEM-V2.md`. Toute nouvelle règle va dans `steroid-v2.css`.
+- `supabase/migrations/` : historique SQL de la base (fichiers horodatés, appliqués seulement sur accord du propriétaire).
 - `supabase/email-templates/` : e-mails de confirmation et de récupération.
 - Tests : `scripts/*.test.cjs`, `scripts/smoke.cjs`, `tests/*.test.cjs` (node:test).
   Un nouveau test placé dans ces dossiers est lancé automatiquement.
@@ -86,7 +88,7 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
 
 ## Avancement V2 (cahier des charges : `docs/cahier-des-charges-v2.md`)
 Conception : `docs/superpowers/specs/2026-11-21-steroid-v2-design.md` (interface retenue : proposition P1 « Guidé »,
-maquettes sur le canevas « STEROID — refonte UX »). Plans : `docs/superpowers/plans/`.
+maquettes sur le canevas « STEROID — refonte UX »). Plans : `docs/superpowers/plans/` (lots 1 à 7 tous réalisés, gardés pour l'historique).
 - Lot 1 Fondations : fait. Tables V2 créées dans Supabase et données V1 copiées (`select public.v2_copy_legacy()`,
   rejouable ; correspondances des noms dans `public.v2_name_map`).
 - Lot 2 Générateur et cycles : fait (`buildCycle`, tests sur 4 050 combinaisons).
