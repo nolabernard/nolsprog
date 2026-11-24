@@ -111,16 +111,18 @@ function tiles(v,stats={}){
  return '<section class="v2-tiles" aria-label="Tes indicateurs">'+t.map(([a,b,c])=>'<div class="v2-tile"><span>'+esc(a)+'</span><b>'+esc(b)+'</b><small>'+esc(c)+'</small></div>').join('')+'</section>';
 }
 // Dernière séance effectuée : un appui ouvre son détail dans Progrès.
-function lastCard(last){return '<button type="button" class="v2-card v2-last" data-action="v2-last-open" data-id="'+esc(last.id)+'"><span class="v2-last-kicker">Dernière séance</span><b>'+esc(last.title)+'</b><small>'+esc([dayText(last.date),last.minutes!=null?last.minutes+' min':null,plural(last.sets,'série','séries')].filter(Boolean).join(' · '))+'</small>'+icon('right','v2-ic v2-ic--sm')+'</button>'}
+// Durée d'une séance : « < 1 min » sous une minute, comme sur l'écran de fin.
+function durTxt(x){return x.minutes==null?null:(x.seconds!=null&&x.seconds<60?'< 1':x.minutes)+' min'}
+function lastCard(last){return '<button type="button" class="v2-card v2-last" data-action="v2-last-open" data-id="'+esc(last.id)+'"><span class="v2-last-kicker">Dernière séance</span><b>'+esc(last.title)+'</b><small>'+esc([dayText(last.date),durTxt(last),plural(last.sets,'série','séries')].filter(Boolean).join(' · '))+'</small>'+icon('right','v2-ic v2-ic--sm')+'</button>'}
 function weekCard({weekLine,record,rhythm,cardio}){return '<section class="v2-card v2-week">'+(weekLine?'<p class="v2-week-line">'+esc(weekLine)+'</p>':'')+rhythmHTML(rhythm)+cardioHTML(cardio)+(record?'<p class="v2-muted">'+icon('trophy','v2-ic v2-ic--sm')+esc(record)+'</p>':'')+'</section>'}
-const SKIP_COACH={malade:'Repose-toi et hydrate-toi. On reprend demain si tu te sens mieux, sinon passe encore : aucune séance à rattraper.',
+const SKIP_COACH={malade:'Repose-toi et hydrate-toi. Reprends quand tu te sens mieux, sinon passe encore : aucune séance à rattraper.',
  douleur:'Ne force pas sur une douleur. Si elle dure ou s’aggrave, demande l’avis d’un professionnel de santé. Aucune séance à rattraper.',
- temps:'Pas de souci : la suite reprend demain là où tu en es, sans rattrapage.',
- envie:'Ça arrive. Repose-toi aujourd’hui : ta séance t’attend demain, sans rattrapage.',
- autre:'Séance passée : la suite reprend demain, sans rattrapage.'};
+ temps:'Pas de souci : la suite avance, sans rattrapage. La séance suivante reste possible aujourd’hui.',
+ envie:'Ça arrive. La suite avance sans rattrapage ; la séance suivante reste possible aujourd’hui si tu changes d’avis.',
+ autre:'Séance passée : la suite avance, sans rattrapage. La suivante reste possible aujourd’hui.'};
 const SKIP_REASONS=[['malade','Je suis malade'],['douleur','J’ai une douleur ou une blessure'],['temps','Pas le temps aujourd’hui'],['envie','Pas envie aujourd’hui'],['autre','Autre raison']];
 function skipSheet({session}={}){
- return '<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="Passer la séance"><button type="button" class="v2-grab" data-action="v2-close-sheet" aria-label="Fermer (ou fais glisser vers le bas)"><i></i></button><h2>Pas de séance aujourd’hui ?</h2><p class="v2-muted">'+esc(session.title)+' sera notée comme passée : ta suite avance à la séance suivante, sans rattrapage. Pas d’autre séance aujourd’hui.</p>'
+ return '<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="Passer la séance"><button type="button" class="v2-grab" data-action="v2-close-sheet" aria-label="Fermer (ou fais glisser vers le bas)"><i></i></button><h2>Pas de séance aujourd’hui ?</h2><p class="v2-muted">'+esc(session.title)+' sera notée comme passée : ta suite avance à la séance suivante, sans rattrapage. La suivante reste possible aujourd’hui.</p>'
   +SKIP_REASONS.map(([v,t])=>'<button type="button" class="v2-opt" data-action="v2-skip-confirm" data-session="'+esc(session.id)+'" data-reason="'+v+'"><span><b>'+t+'</b></span></button>').join('')
   +'<button type="button" class="v2-btn v2-btn--ghost" data-action="v2-recap" data-session="'+esc(session.id)+'">Finalement, je la fais</button></section></div>';
 }
@@ -256,13 +258,13 @@ function sessionsHTML(list,open,userExercises,records){
  const s=open&&list.find(x=>x.id===open);
  if(s){
   return '<button type="button" class="v2-link v2-back" data-action="v2-history-close">'+icon('left','v2-ic v2-ic--sm')+'Toutes les séances</button>'
-   +'<section class="v2-card"><p class="v2-muted">'+esc(dayText(s.date))+'</p><h2 class="v2-card-title">'+esc(s.title)+'</h2><p class="v2-muted">'+[s.minutes!=null?s.minutes+' min':null,plural(s.sets,'série validée','séries validées'),Math.round(s.volume).toLocaleString('fr-FR')+' kg'].filter(Boolean).join(' · ')+'</p>'
+   +'<section class="v2-card"><p class="v2-muted">'+esc(dayText(s.date))+'</p><h2 class="v2-card-title">'+esc(s.title)+'</h2><p class="v2-muted">'+[durTxt(s),plural(s.sets,'série validée','séries validées'),Math.round(s.volume).toLocaleString('fr-FR')+' kg'].filter(Boolean).join(' · ')+'</p>'
    +(records?.length?'<ul class="v2-records">'+records.map(r=>'<li>'+icon('trophy','v2-ic v2-ic--sm')+'<span>Record : '+recordText(r,userExercises)+'</span></li>').join('')+'</ul>':'')+'</section>'
    +(s.exercises.length?'<ul class="v2-sum-list">'+s.exercises.map(e=>'<li class="v2-hist-ex"><span><b>'+esc(nameOf(e.key,userExercises))+'</b>'+(e.from?'<small>à la place de '+esc(nameOf(e.from,userExercises))+'</small>':'')+'</span><small>'+e.sets.map(setText).join(' · ')+'</small></li>').join('')+'</ul>':'<p class="v2-card v2-empty">Aucune série validée dans cette séance.</p>')
    +(s.cardio.length?'<p class="v2-muted">Cardio : '+s.cardio.map(c=>esc(cardioName(c.type))+' '+c.minutes+' min').join(', ')+'</p>':'');
  }
  if(!list.length)return '<p class="v2-card v2-empty">Tes séances terminées apparaîtront ici.</p>';
- return '<ul class="v2-hist">'+list.slice(0,60).map(x=>'<li><button type="button" class="v2-opt" data-action="v2-history-open" data-id="'+esc(x.id)+'"><span><b>'+esc(x.title)+'</b><small>'+esc(dayText(x.date))+' · '+[x.minutes!=null?x.minutes+' min':null,plural(x.sets,'série','séries')].filter(Boolean).join(' · ')+(x.cardio.length?' · cardio':'')+'</small></span>'+icon('right','v2-ic v2-ic--sm')+'</button></li>').join('')+'</ul>';
+ return '<ul class="v2-hist">'+list.slice(0,60).map(x=>'<li><button type="button" class="v2-opt" data-action="v2-history-open" data-id="'+esc(x.id)+'"><span><b>'+esc(x.title)+'</b><small>'+esc(dayText(x.date))+' · '+[durTxt(x),plural(x.sets,'série','séries')].filter(Boolean).join(' · ')+(x.cardio.length?' · cardio':'')+'</small></span>'+icon('right','v2-ic v2-ic--sm')+'</button></li>').join('')+'</ul>';
 }
 function progress({progress,selected,metric='weight',userExercises=[],cardio=null,tab='exercises',history=null,advice=null,sessions=[],open=null,records=[],truncated=false,cardioList=[]}={}){
  const keys=Object.keys(progress?.byKey||{}).sort((a,b)=>nameOf(a,userExercises).localeCompare(nameOf(b,userExercises),'fr'));

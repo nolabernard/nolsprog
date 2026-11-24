@@ -39,7 +39,7 @@ function sessions(workouts,setLogs,{titles={},cardioLogs=[]}={}){
  const list=done(workouts),by=grouped(setLogs,new Set(list.map(w=>w.id)));
  return list.reverse().map(w=>{
   const exercises=listOf(by.get(w.id)).map(clean),sets=exercises.flatMap(e=>e.sets);
-  return {id:w.id,date:dateOf(w),title:w.title||titles[w.cycle_session_id]||'Séance',minutes:w.duration_seconds!=null?Math.round(w.duration_seconds/60):null,
+  return {id:w.id,date:dateOf(w),title:w.title||titles[w.cycle_session_id]||'Séance',minutes:w.duration_seconds!=null?Math.round(w.duration_seconds/60):null,seconds:w.duration_seconds??null,
    sets:sets.length,volume:volume(sets),exercises,cardio:(cardioLogs||[]).filter(c=>c.workout_id===w.id).map(c=>({type:c.type,minutes:Number(c.minutes)}))};
  });
 }

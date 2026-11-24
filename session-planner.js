@@ -35,11 +35,14 @@ function round(cycleOrSessions,workouts){
  const sessions=[...(Array.isArray(cycleOrSessions)?cycleOrSessions:cycleOrSessions?.sessions||[])].sort((a,b)=>a.position-b.position);
  const ids=new Set(sessions.map(x=>x.id));
  const handled=(workouts||[]).filter(w=>(w.status==='completed'||w.status==='skipped')&&w.ended_at&&ids.has(w.cycle_session_id)).sort((a,b)=>Date.parse(a.ended_at)-Date.parse(b.ended_at));
- let current=new Set();
+ let current=new Set(),passed=new Set();
  for(const w of handled){
-  if(current.has(w.cycle_session_id))current=new Set(); // séance refaite : nouveau tour
-  current.add(w.cycle_session_id);
-  if(current.size===ids.size)current=new Set(); // tour complet
+  if(current.has(w.cycle_session_id)){
+   if(w.status==='completed'&&passed.has(w.cycle_session_id)){passed.delete(w.cycle_session_id);continue} // séance passée puis faite : même tour
+   current=new Set();passed=new Set(); // séance refaite : nouveau tour
+  }
+  current.add(w.cycle_session_id);if(w.status==='skipped')passed.add(w.cycle_session_id);
+  if(current.size===ids.size){current=new Set();passed=new Set()} // tour complet
  }
  return {handled:[...current],remaining:sessions.filter(x=>!current.has(x.id)),total:sessions.length};
 }
