@@ -242,16 +242,33 @@ function create(ctx){
   persistLocal();scheduleFlush();
  }
  function finishSession(){
+  const before=last(); // dernière performance avant cette séance, pour la comparaison
   const done=S.store.finish();if(!done)return;
+  // Comparaison avec la dernière fois : meilleure série validée (charge, sinon répétitions), par exercice.
+  S.summaryCmp=done.exercises.map(e=>{const ok=e.sets.filter(x=>x.completed);const p=before[e.exercise_key];if(!ok.length||!p)return null;
+   const top=ok.reduce((a,b)=>(b.weight??-1)>(a.weight??-1)||((b.weight??-1)===(a.weight??-1)&&(b.reps??0)>(a.reps??0))?b:a);
+   if(top.weight!=null&&p.weight!=null&&top.weight!==p.weight)return {key:e.exercise_key,kind:'kg',diff:Math.round((top.weight-p.weight)*100)/100};
+   if(top.reps!=null&&p.reps!=null&&top.reps!==p.reps&&(top.weight??null)===(p.weight??null))return {key:e.exercise_key,kind:'reps',diff:top.reps-p.reps};
+   return null}).filter(Boolean);
   const row={id:done.id,cycle_id:done.cycle_id,cycle_session_id:done.cycle_session_id,title:sessionTitle(done),status:'completed',started_at:iso(done.started_at),ended_at:iso(done.ended_at),duration_seconds:done.duration_seconds,local_only:!(api&&userId)};
   S.workouts=[row,...S.workouts.filter(w=>w.id!==row.id)];
   for(const e of done.exercises)for(const s of e.sets)if(s.completed)S.setLogs.unshift({workout_exercise_id:e.id,exercise_key:e.exercise_key,set_number:s.set_number,weight:s.weight,reps:s.reps,rir:s.rir??null,position:e.position,substituted_from_key:e.substituted_from_key||null,rpe:e.rpe??null,completed:true,created_at:row.ended_at,workout_id:done.id,local_only:!(api&&userId)});
-  persistLocal();S.summary=done;S.view='summary';S.rest=null;S.sheet=null;saveUi();scheduleFlush();
+  persistLocal();S.summary=done;S.summaryStreak=regularity().streak;S.view='summary';S.rest=null;S.sheet=null;saveUi();scheduleFlush();
  }
 
  // ----- Rendu -----
  function dateText(){const d=new Date(now());return DAYS[d.getDay()]+' '+d.getDate()+' '+MONTHS[d.getMonth()]}
  function minutes(s){try{return G().NolsEngine.estimatedMinutes(s.exercises.map(e=>({name:C.nameOf(e.exercise_key,S.userExercises),sets:e.sets,rest:e.rest_seconds})))}catch{return null}}
+ // Régularité : semaines d'affilée avec au moins une séance (la semaine en cours ne casse pas la série), jours du mois entraînés.
+ function regularity(){
+  const mon=t=>{const d=new Date(t);return new Date(d.getFullYear(),d.getMonth(),d.getDate()-((d.getDay()+6)%7)).getTime()};
+  const done=W().filter(w=>w.status==='completed').map(w=>Date.parse(w.started_at||w.ended_at)).filter(Number.isFinite);
+  const weeks=new Set(done.map(mon));let wk=mon(now()),streak=0;
+  if(!weeks.has(wk))wk=mon(wk-3*864e5);
+  while(weeks.has(wk)){streak++;wk=mon(wk-3*864e5)}
+  const d=new Date(now()),y=d.getFullYear(),m=d.getMonth(),days=new Set(done.filter(t=>{const x=new Date(t);return x.getFullYear()===y&&x.getMonth()===m}).map(t=>new Date(t).getDate()));
+  return {streak,year:y,month:m,days:[...days].sort((a,b)=>a-b),today:d.getDate(),total:done.length};
+ }
  // Séances faites cette semaine (lundi → dimanche) et objectif : l'anneau de l'accueil.
  function weekCount(){const d=new Date(now()),monday=new Date(d.getFullYear(),d.getMonth(),d.getDate()-((d.getDay()+6)%7)).getTime();return {done:W().filter(w=>w.cycle_id===S.cycle.id&&w.status==='completed'&&Date.parse(w.started_at||w.ended_at)>=monday).length,goal:S.cycle.sessions_per_week||S.cycle.sessions.length}}
  function weekLine(){
@@ -262,7 +279,7 @@ function create(ctx){
  function todayHTML(){
   if(!S.cycle)return UI.home({next:null,cycle:null,building:S.building,retry:loadFailed});
   const cardioSheet=cardioSheetHTML();
-  if(S.view==='summary'&&S.summary)return UI.summary({records:H.newRecords(S.summary.id,S.setLogs,W(),{truncated:S.truncated}),workout:S.summary,pending:pending(),local:!(api&&userId),userExercises:S.userExercises})+cardioSheet;
+  if(S.view==='summary'&&S.summary)return UI.summary({compare:S.summaryCmp||[],streak:S.summaryStreak||0,records:H.newRecords(S.summary.id,S.setLogs,W(),{truncated:S.truncated}),workout:S.summary,pending:pending(),local:!(api&&userId),userExercises:S.userExercises})+cardioSheet;
   if(S.view==='review')return UI.review({review:Rv.review(S.cycle,W(),S.setLogs,S.userExercises,now()),userExercises:S.userExercises});
   if(S.view==='next')return UI.nextForm({answers:S.nextAnswers||nextDefaults(),weeks:S.nextWeeks||S.cycle.weeks||6,methods:G().NolsEngine.methods,recommendation:reviewNow().recommendation});
   if(S.view==='proposal'&&S.proposal)return UI.proposal({cycle:S.proposal,userExercises:S.userExercises,methods:G().NolsEngine.methods});
@@ -310,7 +327,7 @@ function create(ctx){
   const key=keys.includes(S.selected)?S.selected:keys.sort((a,b)=>C.nameOf(a,S.userExercises).localeCompare(C.nameOf(b,S.userExercises),'fr'))[0];
   const titles={};for(const x of S.cycle?.sessions||[])titles[x.id]=x.title;
   const plan=(S.cycle?.sessions||[]).flatMap(x=>x.exercises).find(e=>e.exercise_key===key);
-  return UI.progress({progress:prog,selected:S.selected,metric:S.metric,userExercises:S.userExercises,cardio:C.cardioProgress(S.cardioLogs,now()),
+  return UI.progress({regularity:regularity(),progress:prog,selected:S.selected,metric:S.metric,userExercises:S.userExercises,cardio:C.cardioProgress(S.cardioLogs,now()),
    cardioList:S.tab==='sessions'?[...S.cardioLogs].sort((a,b)=>String(b.done_on).localeCompare(String(a.done_on))):[],tab:S.tab,history:key?H.exercise(key,S.setLogs,W()):null,advice:key&&plan?H.advice(plan,S.setLogs,normalWorkouts(),key):null,
    sessions:S.tab==='sessions'?H.sessions(W(),S.setLogs,{titles,cardioLogs:S.cardioLogs}):[],open:S.open,records:S.open?H.newRecords(S.open,S.setLogs,W(),{truncated:S.truncated}):[],truncated:S.truncated});
  }

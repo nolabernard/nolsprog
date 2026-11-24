@@ -510,3 +510,21 @@ input,select,textarea{font-size:max(16px,1em);touch-action:manipulation}
 @media (prefers-reduced-motion:reduce){.v2-ring .v2-ring-on{transition:none}}
 .v2-cell.v2-big{font-size:24px;letter-spacing:-.02em;padding:0}
 .v2-rest-txt small{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.2}
+/* Fin de séance : régularité, comparaison avec la dernière fois, partage. */
+.v2-streak{display:flex;gap:10px;align-items:center;margin:0;padding:12px 14px;border-radius:16px;background:rgba(184,243,107,.18);color:var(--text)}
+.v2-compare{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.v2-compare li{display:flex;justify-content:space-between;gap:10px;padding:10px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
+.v2-compare b{font-family:Archivo,Inter,sans-serif;font-weight:900;font-variant-numeric:tabular-nums}
+.v2-compare .is-up b{color:var(--accent)}.v2-compare .is-down b{color:var(--muted)}
+/* Progrès : carte Régularité (semaines d'affilée + calendrier du mois). */
+.v2-regular{display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
+.v2-regular-head{display:flex;gap:12px;align-items:center}.v2-regular-head small{display:block;color:var(--muted);font-size:13px}
+.v2-streak-big{display:flex;align-items:center;gap:4px;padding:8px 12px;border-radius:14px;background:var(--accent);color:#B8F36B}.v2-streak-big b{font-family:Archivo,Inter,sans-serif;font-weight:900;font-size:22px;color:#FFFCF7}
+.v2-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:12px}
+.v2-cal span{font-weight:800;color:var(--muted);padding-bottom:2px}
+.v2-cal i{font-style:normal;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+.v2-cal i.is-done{background:var(--accent);color:#FFFCF7;font-weight:800}
+.v2-cal i.is-today{box-shadow:inset 0 0 0 2px var(--accent);color:var(--text);font-weight:800}
+.v2-cal i.is-done.is-today{box-shadow:inset 0 0 0 2px #B8F36B}
+.v2-cal i{aspect-ratio:auto;height:32px}
+.v2-cal i.is-done.is-today{color:#FFFCF7}
