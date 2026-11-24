@@ -296,7 +296,7 @@ function create(ctx){
    // Échauffement : premier exercice de base de la séance, tant qu'aucune série n'est validée.
    const firstBase=items.find(x=>x.plan?.role==='base');let warm=null;
    if(firstBase&&items[S.index]?.id===firstBase.id&&!firstBase.sets.some(x=>x.completed)){const ref=firstBase.sets.find(x=>x.weight!=null)?.weight??last()[firstBase.exercise_key]?.weight;warm={ex:firstBase.id,sets:C.warmup(ref)}}
-   let html=UI.session({light,warmup:warm,rate:rateInfo(w),advice,workout:w,index:S.index,elapsed:S.store.elapsedSeconds(),paused:S.store.isPaused(),pausedFor:w.paused_at?Math.round((now()-w.paused_at)/1000):0,rest:left?{remaining:left,total:S.rest?.total||left,next:restNext(w)}:null,last:last(),userExercises:S.userExercises,pending:pending()});
+   let html=UI.session({tip:S.tip&&w.exercises.some(e=>e.id===S.tip.ex&&e.sets.some(x=>x.set_number===S.tip.set&&!x.completed))?S.tip:null,light,warmup:warm,rate:rateInfo(w),advice,workout:w,index:S.index,elapsed:S.store.elapsedSeconds(),paused:S.store.isPaused(),pausedFor:w.paused_at?Math.round((now()-w.paused_at)/1000):0,rest:left?{remaining:left,total:S.rest?.total||left,next:restNext(w)}:null,last:last(),userExercises:S.userExercises,pending:pending()});
    const idle=idleMinutes();
    if(idle)html+=UI.idlePrompt(idle);
    else if(S.sheet?.type==='machine'){const e=w.exercises.find(x=>x.id===S.sheet.ex);if(e){const practiced={};for(const r of S.setLogs)if(r.completed)practiced[r.exercise_key]=(practiced[r.exercise_key]||0)+1;
@@ -417,6 +417,13 @@ function create(ctx){
     if(s.completed){S.rate={ex:e.id,set:s.set_number};startRest(e.plan.rest_seconds||90,S.rate);if(e.sets.every(x=>x.completed)){const items=list(),i=items.findIndex(x=>x.id===e.id);if(i>=0&&i<items.length-1)S.index=i+1}}
     saveUi();scheduleFlush();break;
    }
+   case 'v2-tip-apply':{
+    // Applique la charge conseillée à la série suivante (et aux suivantes non validées qui avaient la même charge).
+    const t=S.tip,e=t&&w?.exercises.find(x=>x.id===t.ex),s=e?.sets.find(x=>x.set_number===t.set);S.tip=null;if(!s||s.completed)break;
+    const old=s.weight;for(const x of e.sets)if(!x.completed&&x.set_number>=t.set&&(x.set_number===t.set||x.weight===old))S.store.logSet(e.id,x.set_number,{weight:t.weight});
+    touch();scheduleFlush();break;
+   }
+   case 'v2-tip-close':S.tip=null;break;
    case 'v2-step':{
     // − / + : charge par 2,5 kg (0 à 500), répétitions par 1 (1 à 100), secondes par 5. Les séries suivantes non validées suivent.
     const e=w?.exercises.find(x=>x.id===d.ex),s=e?.sets.find(x=>x.set_number===Number(d.set));if(!s||s.completed)return;
@@ -435,9 +442,11 @@ function create(ctx){
     const rir=Number(d.rir);S.store.logSet(e.id,s.set_number,{rir});touch();scheduleFlush();
     // Conseil immédiat pour la série suivante (jamais appliqué tout seul) : marge → plus lourd ; échec sous la fourchette → plus léger.
     const next=e.sets.find(x=>!x.completed&&x.set_number>s.set_number);
+    // Le conseil s'affiche dans la carte de la série suivante (pas en message éphémère) avec « Appliquer ».
+    S.tip=null;
     if(next&&s.weight!=null){
-     if(rir>=3)notice('Belle marge : essaie '+(Number((s.weight+H.increment(s.weight)).toFixed(2))).toLocaleString('fr-FR')+' kg sur la série suivante.');
-     else if(rir===0&&s.reps<(e.plan.reps_min||0))notice('Trop lourd : baisse un peu la charge pour rester dans la fourchette.');
+     if(rir>=3)S.tip={ex:e.id,set:next.set_number,kind:'up',weight:Number((s.weight+H.increment(s.weight)).toFixed(2))};
+     else if(rir===0&&s.reps<(e.plan.reps_min||0))S.tip={ex:e.id,set:next.set_number,kind:'down',weight:Math.max(0,Number((s.weight-H.increment(s.weight)).toFixed(2)))};
     }
     S.rate=null;if(S.rest)S.rest.rate=null;saveUi();break}
    case 'v2-pause':if(S.rest){const l=restLeft();S.rest=l?{frozen:l}:null}S.store.pause();touch();scheduleFlush();break;
