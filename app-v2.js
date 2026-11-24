@@ -259,6 +259,8 @@ function create(ctx){
  // ----- Rendu -----
  function dateText(){const d=new Date(now());return DAYS[d.getDay()]+' '+d.getDate()+' '+MONTHS[d.getMonth()]}
  function minutes(s){try{return G().NolsEngine.estimatedMinutes(s.exercises.map(e=>({name:C.nameOf(e.exercise_key,S.userExercises),sets:e.sets,rest:e.rest_seconds})))}catch{return null}}
+ // Alerte de fin de repos : comptes seulement, et rappels activés sur cet appareil (abonnement aux notifications).
+ function restAlertState(){if(!(api&&userId))return null;const r=Rem?.state?.();if(!r?.enabled||!r?.endpoint)return 'off-device';let on=true;try{on=storage.getItem('nolsprog-rest-alert')!=='off'}catch{}return on?'on':'off'}
  // Régularité : semaines d'affilée avec au moins une séance (la semaine en cours ne casse pas la série), jours du mois entraînés.
  function regularity(){
   const mon=t=>{const d=new Date(t);return new Date(d.getFullYear(),d.getMonth(),d.getDate()-((d.getDay()+6)%7)).getTime()};
@@ -300,7 +302,7 @@ function create(ctx){
    else if(S.sheet?.type==='machine'){const e=w.exercises.find(x=>x.id===S.sheet.ex);if(e){const practiced={};for(const r of S.setLogs)if(r.completed)practiced[r.exercise_key]=(practiced[r.exercise_key]||0)+1;
     const a=answers(),alts=Cat.alternatives(e.exercise_key,{equipment:a.equipment||'gym',avoid:String(a.avoid||'').split(/[,;\n]/).map(x=>x.trim()).filter(Boolean),exclude:w.exercises.map(x=>x.exercise_key),history:practiced});
     html+=UI.machineSheet({exercise:e,alternatives:alts,canLater:items[items.length-1]?.id!==e.id,practiced})}}
-   else if(S.sheet?.type==='more')html+=UI.moreSheet({exercise:items[S.index],anyDone:w.exercises.some(e=>e.sets.some(s=>s.completed))});
+   else if(S.sheet?.type==='more')html+=UI.moreSheet({restAlert:restAlertState(),exercise:items[S.index],anyDone:w.exercises.some(e=>e.sets.some(s=>s.completed))});
    else if(S.sheet?.type==='howto')html+=UI.howtoSheet({key:S.sheet.key,userExercises:S.userExercises});
    return html;
   }

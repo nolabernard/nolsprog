@@ -48,7 +48,7 @@ async function networkFirst(request){
 // Rappels (lot 7) : notification reçue de la fonction send-reminders.
 self.addEventListener('push',event=>{
   let d={};try{d=event.data?event.data.json():{}}catch{d={body:event.data?.text()}}
-  event.waitUntil(self.registration.showNotification(d.title||'STEROID',{body:d.body||'Ta prochaine séance t’attend.',icon:'./icon-192.png',badge:'./icon-192.png',tag:'steroid-reminder',data:{url:d.url||'./'}}));
+  event.waitUntil(self.registration.showNotification(d.title||'STEROID',{body:d.body||'Ta prochaine séance t’attend.',icon:'./icon-192.png',badge:'./icon-192.png',tag:d.tag||'steroid-reminder',renotify:true,data:{url:d.url||'./'}}));
 });
 self.addEventListener('notificationclick',event=>{
   event.notification.close();

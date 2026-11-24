@@ -2,6 +2,8 @@
 // GET  ?vapid=1                 → clé publique d'envoi (créée au premier appel, gardée dans public.push_config).
 // POST + x-cron-secret          → appel programmé toutes les 15 min : envoie les rappels dus.
 // POST + Authorization: Bearer  → { action: 'save', sub } / { action: 'remove', endpoint } / { test: true } pour l'utilisateur connecté.
+//                                  { action: 'rest', endpoint, at, next } / { action: 'rest-cancel', endpoint } : alerte de fin de repos
+//                                  (envoyée quand l'app passe en arrière-plan pendant un repos, annulée à son retour).
 // Aucun secret dans le dépôt : la clé de service est fournie par Supabase, les autres valeurs vivent dans la base.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -32,9 +34,9 @@ async function vapid() {
 type Sub = { id: string; user_id: string; endpoint: string; p256dh: string; auth: string; enabled: boolean; hour: number; minute: number; days: number[]; timezone: string; last_sent_on: string | null };
 const MESSAGE = { title: "STEROID", body: "C’est l’heure de ta séance. Ta prochaine séance t’attend.", url: "/nolsprog/" };
 
-async function send(sub: Sub, payload = MESSAGE) {
+async function send(sub: Sub, payload: Record<string, unknown> = MESSAGE, ttl = 3600) {
   try {
-    await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify(payload), { TTL: 3600 });
+    await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify(payload), { TTL: ttl });
     return "sent";
   } catch (e) {
     const code = (e as { statusCode?: number }).statusCode;
@@ -82,6 +84,31 @@ async function runSchedule() {
   return result;
 }
 
+// ----- Alerte de fin de repos -----
+// Une seule alerte en attente par appareil : clé « rest:<id> » dans push_config (jeton|heure). Annuler = effacer la clé.
+// L'attente se fait par tranches de 100 s (limite de durée d'une fonction) : au-delà, la fonction se relance elle-même.
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+async function restWait(id: string, token: string, at: number, next: string) {
+  const left = at - Date.now();
+  if (left > 110e3) {
+    await sleep(100e3);
+    const secret = await config("cron_secret");
+    await fetch(Deno.env.get("SUPABASE_URL") + "/functions/v1/send-reminders", { method: "POST", headers: { "Content-Type": "application/json", "x-cron-secret": secret || "" }, body: JSON.stringify({ action: "rest-relay", id, token, at, next }) });
+    return;
+  }
+  if (left > 0) await sleep(left);
+  if ((await config("rest:" + id)) !== token + "|" + at) return; // annulée ou remplacée
+  await db.from("push_config").delete().eq("key", "rest:" + id);
+  const { data: sub } = await db.from("push_subscriptions").select("*").eq("id", id).maybeSingle();
+  if (!sub) return;
+  await vapid();
+  await send(sub as Sub, { title: "Repos terminé", body: next ? "Ensuite : " + next : "À toi pour la série suivante.", url: "/nolsprog/", tag: "steroid-rest" }, 90); // inutile si elle arrive en retard
+}
+function background(p: Promise<unknown>) {
+  const rt = (globalThis as unknown as { EdgeRuntime?: { waitUntil(p: Promise<unknown>): void } }).EdgeRuntime;
+  if (rt?.waitUntil) rt.waitUntil(p.catch(e => console.error("alerte repos", e))); else p.catch(e => console.error("alerte repos", e));
+}
+
 // Comparaison en temps constant du secret d'appel programmé.
 function same(a: string, b: string) { if (a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; }
 // Seuls les services de notification des navigateurs sont acceptés comme destinataires.
@@ -110,6 +137,8 @@ Deno.serve(async (req) => {
     const secret = req.headers.get("x-cron-secret");
     if (secret) {
       if (!same(secret, (await config("cron_secret")) || "")) return json({ error: "Refusé." }, 401);
+      const cb = await req.json().catch(() => ({}));
+      if (cb.action === "rest-relay") { background(restWait(String(cb.id), String(cb.token), Number(cb.at), String(cb.next || "").slice(0, 80))); return json({ ok: true }); }
       return json(await runSchedule());
     }
     const token = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
@@ -123,6 +152,17 @@ Deno.serve(async (req) => {
       const { data, error } = await db.from("push_subscriptions").upsert({ ...row, user_id: u.user.id, last_sent_on: null }, { onConflict: "endpoint" }).select("id").single();
       if (error) throw error;
       return json({ id: data.id });
+    }
+    if (body.action === "rest" || body.action === "rest-cancel") {
+      const { data: own } = await db.from("push_subscriptions").select("id").eq("endpoint", String(body.endpoint || "")).eq("user_id", u.user.id).maybeSingle();
+      if (!own) return json({ error: "Rappels non activés sur cet appareil." }, 404);
+      if (body.action === "rest-cancel") { await db.from("push_config").delete().eq("key", "rest:" + own.id); return json({ ok: true }); }
+      const at = Math.round(Number(body.at)), left = at - Date.now();
+      if (!Number.isFinite(at) || left < 3e3 || left > 15 * 60e3) return json({ error: "Repos invalide." }, 400);
+      const token = crypto.randomUUID();
+      await db.from("push_config").upsert({ key: "rest:" + own.id, value: token + "|" + at }, { onConflict: "key" });
+      background(restWait(own.id, token, at, String(body.next || "").slice(0, 80)));
+      return json({ ok: true });
     }
     if (body.action === "remove") {
       await db.from("push_subscriptions").delete().eq("endpoint", String(body.endpoint || "")).eq("user_id", u.user.id);
