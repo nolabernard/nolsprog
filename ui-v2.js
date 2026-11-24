@@ -146,7 +146,7 @@ function chooser({sessions=[],current}={}){
 }
 
 const RATES=[[3,'Facile','3 reps ou + en réserve'],[2,'Correct','1 ou 2 en réserve'],[0,'Dur','plus rien en réserve']];
-function session({workout,index=0,elapsed=0,paused=false,pausedFor=0,rest=null,last={},advice={},userExercises=[],pending=0,rate=null,light=false,warmup=null}={}){
+function session({tip=null,workout,index=0,elapsed=0,paused=false,pausedFor=0,rest=null,last={},advice={},userExercises=[],pending=0,rate=null,light=false,warmup=null}={}){
  const list=ordered(workout).filter(e=>e.status!=='skipped');
  const i=Math.max(0,Math.min(index,list.length-1)),e=list[i];
  if(!e)return '<section class="v2-session"><p>Aucun exercice dans cette séance.</p><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-abandon">Abandonner la séance</button></section>';
@@ -169,7 +169,9 @@ function session({workout,index=0,elapsed=0,paused=false,pausedFor=0,rest=null,l
  for(const s of e.sets){
   const n=s.set_number;
   if(s===cur){
+   const tp=tip&&tip.ex===e.id&&tip.set===n?tip:null;
    html+='<div class="v2-current" aria-label="Série '+n+' sur '+e.sets.length+'"><p class="v2-current-title">Série '+n+' <small>sur '+e.sets.length+'</small></p>'
+    +(tp?'<div class="v2-tip v2-tip--'+tp.kind+'" role="status" aria-label="'+(tp.kind==='up'?'Belle marge sur la série précédente':'Série précédente trop lourde')+' : essaie '+kg(tp.weight)+' kilos">'+icon(tp.kind==='up'?'up':'down','v2-ic v2-ic--sm')+'<span>Essaie <b>'+kg(tp.weight)+' kg</b></span><button type="button" class="v2-tip-apply" data-action="v2-tip-apply">Appliquer</button></div>':'')
     +'<div class="v2-steppers"><div class="v2-stepper"><span>kg</span><div>'+step(s,'weight',-wStep,'Retirer '+String(wStep).replace('.',',')+' kg')+cell(s,'weight','Charge (kg)','—','decimal',6)+step(s,'weight',wStep,'Ajouter '+String(wStep).replace('.',',')+' kg')+'</div></div>'
     +'<div class="v2-stepper"><span>'+(tm?'secondes':'répétitions')+'</span><div>'+step(s,'reps',-rStep,tm?'Retirer 5 secondes':'Retirer une répétition')+cell(s,'reps',tm?'Secondes':'Répétitions','—','numeric',3)+step(s,'reps',rStep,tm?'Ajouter 5 secondes':'Ajouter une répétition')+'</div></div></div>'
     +'<button type="button" class="v2-btn v2-btn--big v2-validate" data-action="v2-set" data-ex="'+esc(e.id)+'" data-set="'+n+'" aria-pressed="false">'+icon('check')+'Valider la série '+n+'</button></div>';
@@ -358,7 +360,7 @@ function remindersCard(r){
   +'<label class="v2-field-label" for="v2-rem-time">Heure</label><select id="v2-rem-time" class="v2-select" data-v2-rem-time>';
  for(let h=6;h<=22;h++)for(const m of [0,30])html+='<option value="'+h+':'+m+'"'+(h===r.hour&&m===r.minute?' selected':'')+'>'+hhmm(h,m)+'</option>';
  html+='</select><div class="v2-daypick" role="group" aria-label="Jours">'+DAY_LETTERS.map((l,d)=>'<button type="button" data-action="v2-rem-day" data-day="'+d+'" aria-pressed="'+r.days.includes(d)+'" aria-label="'+DAY_NAMES[d]+'">'+l+'</button>').join('')+'</div>';
- html+=r.enabled?'<div class="v2-row"><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-rem-test">Envoyer un essai</button><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-rem-off">Désactiver</button></div>'
+ html+=r.enabled?'<div class="v2-row"><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-rem-test">Tester</button><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-rem-off">Désactiver</button></div>'
   :'<button type="button" class="v2-btn" data-action="v2-rem-on"'+(r.busy?' disabled':'')+'>Activer les rappels</button>';
  return html+'</section>';
 }

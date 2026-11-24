@@ -26,6 +26,10 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  await c.handle('v2-set',{ex:e1.id,set:'1'});
  assert.equal(c.state().store.current().exercises[0].sets[0].completed,true);
  assert.equal(c.tick().rest,120);
+ // Ressenti « Facile » (marge) : conseil dans la carte de la série suivante, « Appliquer » règle la charge, plus de message éphémère.
+ {const ex=c.state().store.current().exercises[0];await c.handle('v2-rir',{ex:e1.id,set:'1',rir:'3'});
+  assert.equal(c.state().tip?.kind,'up');assert.match(c.todayHTML(),/v2-tip--up/);const w2=c.state().tip.weight;
+  await c.handle('v2-tip-apply',{});assert.equal(c.state().store.current().exercises[0].sets[1].weight,w2);assert.equal(c.state().tip,null);}
  // − / + : série 2 réglée au pouce (2,5 kg, 1 répétition) ; la série 3 suit ; la série 1 validée ne bouge pas.
  {const sets=()=>c.state().store.current().exercises[0].sets;const w0=sets()[1].weight;
   await c.handle('v2-step',{ex:e1.id,set:'2',f:'weight',d:'2.5'});assert.equal(sets()[1].weight,w0==null?60:w0+2.5);if(sets()[2])assert.equal(sets()[2].weight,sets()[1].weight);assert.equal(sets()[0].weight,60);
