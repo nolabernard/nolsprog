@@ -314,6 +314,6 @@ const steps=[
 {key:'avoid',label:'Exercices à éviter (facultatif)',type:'text',placeholder:'Ex. tractions, dips, squat barre'},
 {key:'limitations',label:'Douleur ou limitation à prendre en compte ?',type:'select',options:[['no','Non'],['yes','Oui, je vérifierai avec un professionnel les mouvements adaptés']]}]}
 ];
-const defaults={sex:'',age:'',height:'',weight:'',job:'mixed',activity:'medium',sleep:'7-8',goal:'muscle',level:'intermediate',currentSessions:'2',daysCount:'3',duration:'60',equipment:'gym',priority:[],days:[0,1,2,3,4,5],method:'auto',avoid:'',limitations:'no'};
+const defaults={sex:'',age:'',height:'',weight:'',job:'mixed',activity:'medium',sleep:'7-8',goal:'muscle',level:'intermediate',currentSessions:'2',daysCount:'3',duration:'60',equipment:'gym',priority:[],days:[0,2,4],method:'auto',avoid:'',limitations:'no'};
 
-globalThis.NolsEngine={ENGINE_VERSION,VOLUME,buildCycle,parseReps,methods,chooseMethod,buildProgram,steps,defaults,estimatedMinutes,exerciseCatalogue:catalogue.map(x=>({name:x.name,pattern:x.pattern,muscle:x.muscle,compound:x.compound}))};
+globalThis.NolsEngine={ENGINE_VERSION,DEFAULT_DAYS,VOLUME,buildCycle,parseReps,methods,chooseMethod,buildProgram,steps,defaults,estimatedMinutes,exerciseCatalogue:catalogue.map(x=>({name:x.name,pattern:x.pattern,muscle:x.muscle,compound:x.compound}))};

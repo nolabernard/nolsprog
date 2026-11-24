@@ -19,7 +19,7 @@ assert(!favicon.includes('<rect'),'Favicon must not have background square');
 assert(svg.includes('<path'),'PWA icon must be vector artwork');
 assert(app.includes('class="brand mobile-wordmark"'),'Mobile header must use one legible branded wordmark');
 assert(app.includes('class="fit-wordmark official-wordmark"'),'Welcome must use official wordmark image');
-assert(app.includes('class="answer-brand-icon"'),'Questionnaire uses vector icons');
+assert(!app.includes('class="answer-brand-icon"'),'Questionnaire : pas de pictogramme répété sur chaque réponse');
 assert(html.includes('href="./favicon.svg"'),'Favicon points to dedicated O');
 assert(css.includes('.fit-answers{gap:10px}'),'Questionnaire spacing is compact');
 console.log('Visual identity and crisp logo tests passed.');

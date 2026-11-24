@@ -123,5 +123,5 @@ function alternatives(key,{equipment='gym',avoid=[],exclude=[],history={},limit=
   .sort((a,b)=>(history[b.key]||0)-(history[a.key]||0)||muscleScore(b)-muscleScore(a)||equipScore(b)-equipScore(a)||a.name.localeCompare(b.name))
   .slice(0,limit);
 }
-return {CATALOGUE,normalize,byKey,search,resolveName,alternatives,MIN_SCORE};
+return {CATALOGUE,normalize,byKey,search,resolveName,alternatives};
 });
