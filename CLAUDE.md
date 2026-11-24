@@ -26,8 +26,10 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
   `buildCycle(p)` construit le cycle ; moteur V1 supprimé le 23/11/2026).
 - `exercise-catalogue.js` : catalogue à clés permanentes (`SteroidCatalogue`), rôles base/finition, recherche
   tolérante (`search`, `resolveName`). Une clé publiée ne change jamais et n'est jamais réutilisée.
-- `exercise-guide.js` (`SteroidMoves`) : pictogrammes SVG au trait dessinés pour l'app et consignes d'exécution, par type de
-  mouvement (`pattern` du catalogue) ; bouton « Comment faire » pendant la séance. Aucune image externe.
+- `exercise-guide.js` (`SteroidMoves`) : consignes par type de mouvement (`pattern`) et pictogrammes v2 : un dessin par mouvement
+  (`PICTOS`, correspondance `BY_KEY` exercice → dessin), même personnage décrit par des angles d'articulations, 2 positions
+  (`inner(key,pattern,k)`, k de 0 à 1) animées dans « Comment faire ». Tout nouvel exercice du catalogue doit avoir son entrée dans `BY_KEY`.
+  Aucune image externe.
 - `session-planner.js` (`SteroidPlanner.nextSession`) : prochaine séance de la suite (par tours, une séance par jour ; plus de garde-fou 48 h).
 - `workout-store.js` (`SteroidWorkout.createWorkoutStore`) : séance V2 en cours (séries, pause, plus tard,
   remplacement, fin) et file d'envoi ordonnée vers les tables V2 (upsert sur `id`).

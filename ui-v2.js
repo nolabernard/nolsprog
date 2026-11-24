@@ -394,12 +394,12 @@ function programIntro({cycle,methods={}}={}){
 function moveInfo(key,userExercises=[]){const c=globalThis.SteroidCatalogue?.byKey(key)||userExercises.find(u=>u.key===key)||{};return {pattern:c.pattern,muscle:c.muscle}}
 function howtoButton(key,userExercises=[]){
  const M=globalThis.SteroidMoves;if(!M)return '';const {pattern}=moveInfo(key,userExercises);
- return '<button type="button" class="v2-howto-btn" data-action="v2-howto" aria-label="Comment faire : '+esc(nameOf(key,userExercises))+'">'+M.svg(pattern,{size:56})+'<span>Comment faire</span></button>';
+ return '<button type="button" class="v2-howto-btn" data-action="v2-howto" aria-label="Comment faire : '+esc(nameOf(key,userExercises))+'">'+(M.pic?M.pic(key,pattern,{size:56}):M.svg(pattern,{size:56}))+'<span>Comment faire</span></button>';
 }
 function howtoSheet({key,userExercises=[]}={}){
  const M=globalThis.SteroidMoves;if(!M||!key)return '';const {pattern,muscle}=moveInfo(key,userExercises),m=M.move(pattern);
  return '<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet v2-howto" role="dialog" aria-modal="true" aria-label="Comment faire"><button type="button" class="v2-grab" data-action="v2-close-sheet" aria-label="Fermer (ou fais glisser vers le bas)"><i></i></button>'
-  +'<div class="v2-howto-pic">'+M.svg(pattern,{size:180})+'</div><h2>'+esc(nameOf(key,userExercises))+'</h2><p class="v2-muted">'+esc(m.label)+(muscle?' · '+esc(muscle):'')+'</p>'
+  +'<div class="v2-howto-pic">'+(M.pic?M.pic(key,pattern,{size:200,anim:true}):M.svg(pattern,{size:180}))+'</div><h2>'+esc(nameOf(key,userExercises))+'</h2><p class="v2-muted">'+esc(m.label)+(muscle?' · '+esc(muscle):'')+'</p>'
   +'<ol class="v2-howto-cues">'+m.cues.map(c=>'<li>'+esc(c)+'</li>').join('')+'</ol>'
   +'<p class="v2-muted">Une douleur pendant l’exercice : arrête et demande conseil à un professionnel.</p><button type="button" class="v2-btn" data-action="v2-close-sheet">Compris</button></section></div>';
 }
