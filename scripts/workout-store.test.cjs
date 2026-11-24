@@ -120,3 +120,13 @@ const session={id:'cs-1',cycle_id:'cy-1',exercises:[
  assert.equal(await off.flush(),false);assert.equal(off.pending(),before);
  console.log('Workout store rejection handling passed');
 })().catch(e=>{console.error(e);process.exit(1)});
+
+// Séance oubliée ouverte la nuit : rattachée au jour de la dernière série validée.
+(()=>{let t2=Date.parse('2026-11-23T18:00:00Z');const st=W.createWorkoutStore({storage:memory(),api:null,userId:'u',now:()=>t2,uuid});
+ const w2=st.start(session);t2+=20*60e3;st.logSet(w2.exercises[0].id,1,{weight:60,reps:10,completed:true});
+ const lastSet=t2;t2=Date.parse('2026-11-24T08:00:00Z');const d=st.finish();
+ assert.equal(d.ended_at,lastSet+60e3);assert.equal(d.duration_seconds,21*60);
+ // Le même jour : heure réelle de fin.
+ let t3=Date.parse('2026-11-23T10:00:00Z');const s3=W.createWorkoutStore({storage:memory(),api:null,userId:'u',now:()=>t3,uuid});
+ const w3=s3.start(session);s3.logSet(w3.exercises[0].id,1,{weight:60,reps:10,completed:true});t3+=90*60e3;assert.equal(s3.finish().ended_at,t3);
+ console.log('workout-store : séance oubliée rattachée à son jour ok');})();
