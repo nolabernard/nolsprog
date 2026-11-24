@@ -202,10 +202,12 @@ function machineSheet({exercise,alternatives=[],canLater=true,practiced={}}={}){
  return html+'<button type="button" class="v2-link v2-link--center" data-action="v2-skip-ex" data-ex="'+esc(exercise.id)+'">'+icon('skip','v2-ic v2-ic--sm')+'Passer cet exercice</button></section></div>';
 }
 
-function moreSheet({exercise,anyDone=true}={}){
+function moreSheet({exercise,anyDone=true,restAlert=null}={}){
  const rpe=exercise?.rpe;
  return '<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="Options de la séance"><button type="button" class="v2-grab" data-action="v2-close-sheet" aria-label="Fermer (ou fais glisser vers le bas)"><i></i></button><h2>Options</h2>'
   +(()=>{let on=true;try{on=globalThis.localStorage?.getItem('nolsprog-sound')!=='off'}catch{}return '<button type="button" class="v2-btn v2-btn--ghost" data-action="sound-toggle" aria-pressed="'+on+'">'+icon(on?'sound':'mute')+(on?'Bips du repos : activés':'Bips du repos : coupés')+'</button>'})()
+  // Alerte téléphone verrouillé : null = invité ; 'off-device' = rappels non activés sur cet appareil.
+  +(restAlert==='off-device'?'<p class="v2-muted v2-center">Alerte de fin de repos téléphone verrouillé : active les rappels dans Programme sur cet appareil.</p>':restAlert==null?'':'<button type="button" class="v2-btn v2-btn--ghost" data-action="rest-alert-toggle" aria-pressed="'+(restAlert==='on')+'">'+icon('clock')+(restAlert==='on'?'Alerte écran verrouillé : activée':'Alerte écran verrouillé : coupée')+'</button>')
 
   +(anyDone?'<button type="button" class="v2-btn" data-action="v2-finish">Terminer la séance</button><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-abandon">Abandonner la séance</button><p class="v2-muted v2-center">Tu peux terminer sans tout valider : seules les séries validées comptent. Abandonner : rien ne compte.</p>'
    :'<button type="button" class="v2-btn v2-btn--ghost" data-action="v2-wrong-session">Ce n’est pas la bonne séance</button><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-abandon">Abandonner la séance</button><p class="v2-muted v2-center">Aucune série validée : la séance ne compte pas tant que tu n’en valides pas une.</p>')+'</section></div>';

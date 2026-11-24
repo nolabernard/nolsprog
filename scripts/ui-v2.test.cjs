@@ -222,3 +222,10 @@ console.log('ui-v2 : ok');
  assert.match(p,/2 semaines d’affilée/);assert.match(p,/3 séances en novembre/);assert.match(p,/class="is-done is-today"[^>]*>24</);
  assert(!/v2-regular/.test(UI.progress({regularity:{streak:0,days:[],total:0},progress:{byKey:{},totals:{sets:0,volume:0}}})),'pas de carte sans séance');}
 console.log('ui-v2 : fin de séance et régularité ok');
+// Options : alerte de fin de repos téléphone verrouillé (compte + rappels activés sur l'appareil).
+{const ex={id:'e',sets:[],plan:{}};
+ assert(!/rest-alert-toggle|Alerte de fin de repos/.test(UI.moreSheet({exercise:ex})),'invité : rien');
+ assert.match(UI.moreSheet({exercise:ex,restAlert:'off-device'}),/active les rappels dans Programme/);
+ assert.match(UI.moreSheet({exercise:ex,restAlert:'on'}),/data-action="rest-alert-toggle" aria-pressed="true"/);
+ assert.match(UI.moreSheet({exercise:ex,restAlert:'off'}),/Alerte écran verrouillé : coupée/);}
+console.log('ui-v2 : alerte de fin de repos ok');
