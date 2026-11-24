@@ -54,24 +54,26 @@ const workout={id:'w',started_at:0,exercises:[
   {id:'a',set_number:1,weight:80,reps:8,completed:true},{id:'b',set_number:2,weight:80,reps:8,completed:false},{id:'c',set_number:3,weight:null,reps:null,completed:false}]},
  {id:'x2',position:1,exercise_key:'u-1',status:'done',plan:{role:'finition',sets:1,reps_min:10,reps_max:15,rest_seconds:60},sets:[{id:'d',set_number:1,weight:null,reps:null,completed:false}]}]};
 let s=UI.session({workout,index:0,elapsed:1122,paused:false,last:{'developpe-couche-barre':{weight:80,reps:8}},userExercises:[{key:'u-1',name:'Mon exo'}]});
-assert.match(s,/Développé couché barre/);assert.match(s,/3 séries · 6 à 8 rép. · repos 3 min/);
-assert.match(s,/Dernière fois : 80 kg × 8/);assert.match(s,/18:42/);
+assert.match(s,/Développé couché barre/);assert.match(s,/Exercice 1 sur 2 · 6 à 8 rép\. · /);
+assert.match(s,/Dernière fois <b>80 × 8<\/b>/);assert.match(s,/18:42/);
 // Série en cours en grand (− / + et Valider), séries faites et à venir en lignes compactes.
 assert.equal((s.match(/data-action="v2-set"/g)||[]).length,2,'série faite (modifiable) + série en cours');
-assert.match(s,/aria-label="Série 1 validée/);assert.match(s,/Valider la série 2</);
+assert.match(s,/class="v2-dot is-done"[^>]*aria-label="Série 1 validée/);assert.match(s,/Valider la série 2</);assert.match(s,/class="v2-dot" aria-hidden="true">3</);
 assert.equal((s.match(/data-action="v2-step"/g)||[]).length,4,'− / + pour la charge et les répétitions');
 assert.match(s,/data-v2-field="weight" data-ex="x1" data-set="2"[^>]*value="80"/);
-assert.match(s,/v2-set--line is-next"><span class="v2-set-num">3<\/span><span class="v2-set-val">— kg × —/,'à venir : charge non saisie affichée —, jamais 0');
+assert(!/[^0-9,]0 kg/.test(s),'charge non saisie : jamais 0 kg');
 assert.match(s,/data-action="v2-machine"/);assert.match(s,/Machine prise/);
 assert(!/En pause/.test(s));
 assert.match(UI.session({workout,index:0,elapsed:10,paused:true,pausedFor:180}),/En pause depuis 3 min/);
-assert.match(UI.session({workout,index:0,elapsed:10,last:{'developpe-couche-barre':{weight:null,reps:12}}}),/Dernière fois : — × 12/);
+assert.match(UI.session({workout,index:0,elapsed:10,last:{'developpe-couche-barre':{weight:null,reps:12}}}),/Dernière fois <b>— × 12<\/b>/);
 assert(!/ data-field=/.test(s),'champs V2 distincts de l’ancien écran');
 // Séance en cours quittée : l'accueil propose de la reprendre.
 assert.match(UI.home({next:{session:haut,planned:haut,reason:'sequence'},cycle:{sessions:[haut]},active:{title:'Haut A',done:2,total:5}}),/data-action="v2-back">[\s\S]*?Reprendre la séance/);
 // Repos automatique : +30 s et Passer.
-s=UI.session({workout,index:0,elapsed:10,rest:{remaining:95,total:180,next:'série 2 · 80 kg × 8'}});
-assert.match(s,/1:35/);assert.match(s,/Ensuite : série 2 · 80 kg × 8/);assert.match(s,/--p:0\.528/);assert.match(s,/data-action="v2-rest-plus"/);assert.match(s,/data-action="v2-rest-skip"/);
+s=UI.session({workout,index:0,elapsed:10,rest:{remaining:95,total:180,next:{label:'Série 2',value:'80 kg × 8',edit:true},nextText:'série 2 · 80 kg × 8'}});
+assert.match(s,/1:35/);assert.match(s,/v2-rest-full/);assert.match(s,/Ensuite · Série 2<\/span><b>80 kg × 8/);assert.match(s,/data-next="série 2 · 80 kg × 8"/);
+// Repos réduit : barre au-dessus du pied, toucher pour agrandir.
+{const m=UI.session({workout,index:0,rest:{remaining:95,total:180,min:true}});assert.match(m,/v2-rest-bar" data-action="v2-rest-max"/);assert(!/v2-rest-full/.test(m));}assert.match(s,/--p:0\.528/);assert.match(s,/data-action="v2-rest-plus"/);assert.match(s,/data-action="v2-rest-skip"/);
 // Dernier exercice : terminer ; exercice perso affiché par son nom.
 s=UI.session({workout,index:1,elapsed:10,userExercises:[{key:'u-1',name:'Mon exo'}]});
 assert.match(s,/Mon exo/);assert.match(s,/data-action="v2-finish"/);
@@ -109,7 +111,7 @@ const pd=UI.progress({tab:'sessions',sessions:list,open:'w2',records:[{key:'hack
 assert.match(pd,/data-action="v2-history-close"/);assert.match(pd,/à la place de Presse à cuisses/);assert.match(pd,/Vélo 15 min/);assert.match(pd,/Record : Hack squat : 82,5 kg × 6 \(\+2,5 kg\)/);
 assert.match(UI.progress({tab:'sessions',sessions:[]}),/apparaîtront ici/);
 // Séance : conseil sous « Dernière fois ». Fin de séance : nouveaux records.
-assert.match(UI.session({workout,advice:{[workout.exercises[0].exercise_key]:{text:'Tente 85 kg, si la technique reste propre.'}}}),/class="v2-advice"[^]*Tente 85 kg/);
+assert.match(UI.session({workout,advice:{[workout.exercises[0].exercise_key]:{text:'Tente 85 kg, si la technique reste propre.'}}}),/class="v2-advice2"[^]*Tente 85 kg/);
 assert.match(UI.summary({workout:{...workout,duration_seconds:60},records:[{key:'hack-squat',kind:'reps',weight:80,reps:10,delta:2}]}),/Nouveau record : Hack squat : 80 kg × 10 \(\+2 répétitions\)/);
 for(const html of [p2,ps,pd])assert(noEmoji(html)&&!/onclick=/i.test(html));
 assert.match(UI.progress({progress:{totals:{sets:0,volume:0},byKey:{}}}),/premières séries validées/);
@@ -206,8 +208,10 @@ assert.doesNotMatch(UI.cardioSheet({}),/v2-cardio-delete/);
   assert.equal(M.picId('inconnu','core'),'crunch');assert.equal(M.picId('inconnu',undefined),null);assert.match(M.pic('inconnu','zzz'),/<svg/); }
 // Ressenti en un appui après une série validée.
 { const r=UI.session({workout,rate:{ex:'x1',set:2,rir:null,name:'Hack squat'}});
-  assert.match(r,/Série 2 · Hack squat : c’était…/);assert.match(r,/data-action="v2-rir" data-ex="x1" data-set="2" data-rir="3"/);assert.match(r,/Facile[^]*Correct[^]*Dur/);
-  assert.match(UI.session({workout,rate:{ex:'x1',set:1,rir:2}}),/data-rir="2" aria-pressed="true"/);assert.doesNotMatch(UI.session({workout}),/v2-rate/); }
+  assert.match(r,/La série 2 était…/);assert.match(r,/data-action="v2-rir" data-ex="x1" data-set="2" data-rir="3"/);assert.match(r,/Facile[^]*Correct[^]*Dur/);
+  assert.match(UI.session({workout,rate:{ex:'x1',set:1,rir:2}}),/data-rir="2" aria-pressed="true"/);assert.doesNotMatch(UI.session({workout}),/v2-rate/);
+  // Repos plein écran : le ressenti y est, pas dans la carte.
+  const rf=UI.session({workout,rate:{ex:'x1',set:1},rest:{remaining:60,total:90}});assert.match(rf,/v2-rate-full/);assert(!/v2-rate2/.test(rf)); }
 // Semaine allégée et échauffement.
 { const l=UI.session({workout,light:true,warmup:{ex:workout.exercises[0].id,sets:[{weight:50,reps:8},{weight:75,reps:4}]}});
   assert.match(l,/Semaine allégée/);assert.match(l,/Échauffement[^]*50 kg × 8[^]*75 kg × 4/);

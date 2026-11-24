@@ -201,12 +201,13 @@ function create(ctx){
  const list=()=>[...(current()?.exercises||[])].sort((a,b)=>a.position-b.position).filter(e=>e.status!=='skipped');
  const last=()=>C.lastPerformance(S.setLogs,S.workouts);
  const answers=()=>S.cycle?.answers_snapshot&&Object.keys(S.cycle.answers_snapshot).length?S.cycle.answers_snapshot:(ctx.answers?.()||{});
- function startRest(sec,rate=null){S.rest={end:now()+sec*1000,total:sec,rate};saveUi()}
+ function startRest(sec,rate=null){S.rest={end:now()+sec*1000,total:sec,rate,min:false};saveUi()}
  // Ce qui suit le repos : la prochaine série de l'exercice, sinon l'exercice suivant.
  function restNext(w){const items=list(),cur=items[S.index];if(!cur)return null;const s=cur.sets.find(x=>!x.completed);
   const fr=v=>v==null?'—':Number(v).toLocaleString('fr-FR');
-  if(s)return 'série '+s.set_number+' · '+fr(s.weight)+' kg × '+(s.reps??'—');
-  const nx=items.slice(S.index+1).find(x=>x.sets.some(z=>!z.completed));return nx?C.nameOf(nx.exercise_key,S.userExercises):'fin de la séance'}
+  if(s)return {label:'Série '+s.set_number,value:fr(s.weight)+' kg × '+(s.reps??'—'),edit:true};
+  const nx=items.slice(S.index+1).find(x=>x.sets.some(z=>!z.completed));return nx?{label:'Exercice suivant',value:C.nameOf(nx.exercise_key,S.userExercises)}:{label:'Fin',value:'Dernière série faite'}}
+ const nextText=n=>n?(n.edit?n.label.toLowerCase()+' · '+n.value:n.value):'';
  // Série à noter (ressenti) : la dernière validée, tant que la séance continue.
  function rateInfo(w){const r=S.rest?.rate||S.rate;if(!r||!w)return null;const e=w.exercises.find(x=>x.id===r.ex),s=e?.sets.find(x=>x.set_number===r.set);if(!s?.completed)return null;return {ex:e.id,set:s.set_number,rir:s.rir,name:C.nameOf(e.exercise_key,S.userExercises)}}
  function restLeft(){if(!S.rest)return null;if(S.rest.frozen!=null)return S.rest.frozen;const left=Math.ceil((S.rest.end-now())/1000);return left>0?left:0}
@@ -296,7 +297,7 @@ function create(ctx){
    // Échauffement : premier exercice de base de la séance, tant qu'aucune série n'est validée.
    const firstBase=items.find(x=>x.plan?.role==='base');let warm=null;
    if(firstBase&&items[S.index]?.id===firstBase.id&&!firstBase.sets.some(x=>x.completed)){const ref=firstBase.sets.find(x=>x.weight!=null)?.weight??last()[firstBase.exercise_key]?.weight;warm={ex:firstBase.id,sets:C.warmup(ref)}}
-   let html=UI.session({tip:S.tip&&w.exercises.some(e=>e.id===S.tip.ex&&e.sets.some(x=>x.set_number===S.tip.set&&!x.completed))?S.tip:null,light,warmup:warm,rate:rateInfo(w),advice,workout:w,index:S.index,elapsed:S.store.elapsedSeconds(),paused:S.store.isPaused(),pausedFor:w.paused_at?Math.round((now()-w.paused_at)/1000):0,rest:left?{remaining:left,total:S.rest?.total||left,next:restNext(w)}:null,last:last(),userExercises:S.userExercises,pending:pending()});
+   let html=UI.session({tip:S.tip&&w.exercises.some(e=>e.id===S.tip.ex&&e.sets.some(x=>x.set_number===S.tip.set&&!x.completed))?S.tip:null,light,warmup:warm,rate:rateInfo(w),advice,workout:w,index:S.index,elapsed:S.store.elapsedSeconds(),paused:S.store.isPaused(),pausedFor:w.paused_at?Math.round((now()-w.paused_at)/1000):0,rest:left?(()=>{const n=restNext(w);return {remaining:left,total:S.rest?.total||left,next:n,nextText:nextText(n),min:Boolean(S.rest?.min)}})():null,last:last(),userExercises:S.userExercises,pending:pending()});
    const idle=idleMinutes();
    if(idle)html+=UI.idlePrompt(idle);
    else if(S.sheet?.type==='machine'){const e=w.exercises.find(x=>x.id===S.sheet.ex);if(e){const practiced={};for(const r of S.setLogs)if(r.completed)practiced[r.exercise_key]=(practiced[r.exercise_key]||0)+1;
@@ -424,6 +425,8 @@ function create(ctx){
     touch();scheduleFlush();break;
    }
    case 'v2-tip-close':S.tip=null;break;
+   case 'v2-rest-min':if(S.rest)S.rest.min=true;saveUi();break;
+   case 'v2-rest-max':if(S.rest)S.rest.min=false;saveUi();break;
    case 'v2-step':{
     // − / + : charge par 2,5 kg (0 à 500), répétitions par 1 (1 à 100), secondes par 5. Les séries suivantes non validées suivent.
     const e=w?.exercises.find(x=>x.id===d.ex),s=e?.sets.find(x=>x.set_number===Number(d.set));if(!s||s.completed)return;

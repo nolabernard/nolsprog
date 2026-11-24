@@ -80,16 +80,16 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
   { const e=h5.state().store.current().exercises[0];
     for(const n of [1,2]){h5.input({ex:e.id,set:n,field:'weight',value:'60'});h5.input({ex:e.id,set:n,field:'reps',value:'8'})}
     await h5.handle('v2-set',{ex:e.id,set:'1'});
-    assert.match(h5.todayHTML(),/Série 1 · Développé couché barre : c’était…/);
+    assert.match(h5.todayHTML(),/La série 1 était…/);
     await h5.handle('v2-rir',{ex:e.id,set:'1',rir:'2'});
-    assert.equal(h5.state().store.current().exercises[0].sets[0].rir,2);assert.doesNotMatch(h5.todayHTML(),/c’était…/);
+    assert.equal(h5.state().store.current().exercises[0].sets[0].rir,2);assert.doesNotMatch(h5.todayHTML(),/était…/);
     await h5.handle('v2-set',{ex:e.id,set:'2'});await h5.handle('v2-rir',{ex:e.id,set:'2',rir:'2'});
     await h5.handle('v2-finish'); }
   assert(h5.state().setLogs.some(r=>r.rir===2),'ressenti conservé dans l’historique');
   assert.doesNotMatch(h5.todayHTML(),/Nouveau record/,'pas de record à la première séance');
   await h5.handle('v2-close-summary');t+=3*24*3600e3;
   await h5.handle('v2-start',{session:h5.state().cycle.sessions[0].id});
-  assert.match(h5.todayHTML(),/class="v2-advice"[^]*tente 62,5 kg/,'conseil fondé sur la séance précédente');
+  assert.match(h5.todayHTML(),/class="v2-advice2"[^]*tente 62,5 kg/,'conseil fondé sur la séance précédente');
   assert.match(h5.todayHTML(),/value="60"/,'les cases restent préremplies avec la dernière performance');
   await h5.handle('v2-howto');assert.match(h5.todayHTML(),/Poussée horizontale · Pectoraux/);assert.match(h5.todayHTML(),/Omoplates serrées/);await h5.handle('v2-close-sheet');assert.doesNotMatch(h5.todayHTML(),/Omoplates serrées/);
   await h5.handle('v2-exit');

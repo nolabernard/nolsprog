@@ -264,7 +264,7 @@ function stampSheets(){const t=Date.now();for(const el of root.querySelectorAll(
 let enterKey='',enterSet='',doneSets=new Set();
 function animateScreen(){try{const main=root.querySelector('main');if(!main)return;const first=main.firstElementChild;
  const key=[A.view,S.tab,first?.className||'',root.querySelector('.v2-ex-title')?.textContent||'',root.querySelector('.v2-hello')?.textContent||''].join('|');
- if(key!==enterKey){enterKey=key;main.classList.add('v2-enter')}
+ if(key!==enterKey){enterKey=key;main.classList.add('v2-enter');scrollToSectionTop()} // nouvel écran : toujours en haut (Commencer, onglet, exercice)
  const cur=root.querySelector('.v2-current'),ck=cur?(root.querySelector('.v2-ex-title')?.textContent||'')+(cur.getAttribute('aria-label')||''):'';
  if(cur&&ck!==enterSet)cur.classList.add('v2-pop');enterSet=ck;
  const now=new Set([...root.querySelectorAll('.v2-set.is-done .v2-ok')].map(b=>b.dataset.ex+'|'+b.dataset.set));
@@ -321,7 +321,7 @@ document.addEventListener?.('visibilitychange',()=>{
  const ep=A.session&&!A.demo&&deviceEndpoint();if(!ep||!restAlertOn())return;
  if(document.visibilityState==='hidden'){
   if(!V2?.inSession())return;const t=V2.tick();if(!(t.rest>5))return;
-  const next=root.querySelector('.v2-rest-txt small')?.textContent?.replace(/^Ensuite : /,'')||'';
+  const next=root.querySelector('.v2-rest')?.dataset?.next||'';
   restAlertSent=true;req('/functions/v1/send-reminders',{method:'POST',token:token(),keepalive:true,body:{action:'rest',endpoint:ep,at:Date.now()+t.rest*1000,next}}).catch(()=>{});
  }else if(restAlertSent){restAlertSent=false;req('/functions/v1/send-reminders',{method:'POST',token:token(),keepalive:true,body:{action:'rest-cancel',endpoint:ep}}).catch(()=>{})}
 });
@@ -375,7 +375,7 @@ async function shareSummary(){
 setInterval(()=>{
  keepAwake(Boolean(V2?.inSession())&&A.view==='app');
  if(!V2?.inSession()||S.tab!=='today'||A.view!=='app')return;
- const t=V2.tick(),chrono=root.querySelector('.v2-chrono span'),rest=root.querySelector('.v2-rest b');
+ const t=V2.tick(),chrono=root.querySelector('.v2-chrono span'),rest=root.querySelector('.v2-rest .v2-rest-time');
  if(t.done){try{navigator.vibrate?.(200)}catch{}beep(1320,.4);lastBeep=null;render();return}
  if(t.rest!=null&&t.rest<=3&&t.rest>=1&&t.rest!==lastBeep){lastBeep=t.rest;beep(880,.12)}
  {const re=root.querySelector('.v2-rest');if(re&&t.total&&t.rest!=null)re.style.setProperty('--p',Math.max(0,Math.min(1,t.rest/t.total)).toFixed(3))}
