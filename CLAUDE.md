@@ -43,6 +43,9 @@ https://nolabernard.github.io/nolsprog/ — comptes et synchronisation via Supab
 - `ui-v2.js` (`SteroidUI`) : écrans V2 en HTML pur (accueil, séance P1, machine prise, fin, progrès, programme, choix d'exercice).
 - `app-v2.js` (`SteroidAppV2.create`) : contrôleur V2 (stockage, envoi, actions `data-action="v2-…"`), testé sous Node.
   `app.js` lui délègue Aujourd'hui, Progrès et Programme (`v2Main`) ; s'il ne démarre pas : écran « Réessayer » (`v2Unavailable`).
+- `v2-demo.js` (`SteroidDemo`) : mode démo (Réglages ou accueil « Voir la démo ») ; historique fictif fabriqué en faisant jouer de vraies
+  séances au contrôleur V2 (horloge simulée, ~3 semaines), stockage isolé préfixe `nolsprog-demo|`, api nulle (rien n'est envoyé),
+  effacé en quittant. En démo, les Réglages masquent le compte et les données réelles.
 - `ui-dialog.js` : panneaux de dialogue de l'app (`SteroidDialog.open/confirm/yesNo/ask`).
   Interdit : `prompt`, `confirm`, `alert` natifs (vérifié par les tests).
 - `splash.js` : animation d'ouverture (une fois par onglet, un tapotement la passe, simple fondu si `prefers-reduced-motion`).
