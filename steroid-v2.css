@@ -528,3 +528,77 @@ input,select,textarea{font-size:max(16px,1em);touch-action:manipulation}
 .v2-cal i.is-done.is-today{box-shadow:inset 0 0 0 2px #B8F36B}
 .v2-cal i{aspect-ratio:auto;height:32px}
 .v2-cal i.is-done.is-today{color:#FFFCF7}
+/* Thème sombre : suit le réglage du téléphone. Fond quasi noir, surfaces vert très sombre, accent citron pour l'action. */
+@media (prefers-color-scheme:dark){
+ :root,.shell,.shell:not(.immersive-shell),.immersive-shell,.immersive-shell.is-welcome,.immersive-shell.is-onboard,.immersive-shell.is-auth,.fit-entry,.fit-onboard{color-scheme:dark;--bg:#0E1412!important;--surface:#17201C!important;--raised:#22302A!important;--line:#2E3D36!important;--text:#EEF2EC!important;--muted:#A3B2AA!important;--accent:#B8F36B!important;--accent-text:#0E1412!important;--danger:#FF9B9B!important;--shadow:0 14px 34px rgba(0,0,0,.45)!important}
+ html,body{background:var(--bg)!important;color:var(--text)!important}
+}
+@media (prefers-color-scheme:dark){
+ /* Fonds : l'ancien fichier de styles impose des fonds clairs ; on les ramène aux surfaces sombres. */
+ .shell,.shell.immersive-shell,.shell.is-v2-session,.fit-entry,.fit-onboard,.v2-recap-screen,header.topbar,.app-topbar{background:var(--bg)!important;color:var(--text)!important}
+ .v2-card,.v2-current,.v2-cyclebar,.v2-rate,.v2-tile,.v2-figures--card,.v2-figures--dark,.v2-recap,.v2-sheet,.v2-sum-list,.v2-select,.account-popover,.answer-card,.fit-back,.fit-outline,.v2-howto-btn,.v2-iconbtn,.icon-btn,.tabbar,.v2-compare li,dialog.steroid-dialog{background:var(--surface)!important;color:var(--text)!important;border-color:var(--line)!important}
+ .v2-btn--ghost,.v2-step,.v2-seg,.v2-cyclebar-track,.v2-set-num,.v2-sum-list li,.v2-cal i.is-skipped{background:var(--raised)!important;border-color:var(--raised)!important}
+ .v2-cell,.v2-cell.v2-big,input,select,textarea{background:var(--bg)!important;color:var(--text)!important;border-color:var(--line)!important}
+ /* Textes : noir et vert foncé deviennent clair et citron. */
+ .shell h1,.shell h2,.shell h3,.shell p,.shell dd,.shell dt,.shell em,.shell b,.shell label,.shell li,.shell span,.answer-label,.fit-kicker,.fit-overline,.fit-step-count,.fit-coach-line,.v2-set-val,.v2-current-title{color:inherit}
+ .shell{color:var(--text)!important}
+ .v2-btn--ghost,.v2-step,.v2-link,.fit-back,.fit-outline,.fit-quiet,.v2-set-num,.brand.mobile-wordmark,.header-account-status,.v2-recap-kicker,.v2-next-kicker,.v2-chip,.v2-advice,.v2-ok{color:var(--accent)!important}
+ .v2-muted,.v2-cal i,.v2-cal span,.v2-regular-head small,.v2-stepper>span,.v2-current-title small{color:var(--muted)!important}
+ /* Choix sélectionnés et coches : citron, texte sombre. */
+ .answer-card.selected,.fit-onboard .choice.selected,.fit-onboard .method.selected,.choice.selected,.v2-set.is-done .v2-ok,.v2-set.is-done .v2-set-num,.v2-seg [aria-pressed="true"],.v2-seg .is-active,.tabbar .active,.tabbar [aria-current="page"]{background:var(--accent)!important;color:var(--accent-text)!important;border-color:var(--accent)!important}
+ .answer-card.selected *,.choice.selected *{color:var(--accent-text)!important}
+ .v2-current{border-color:var(--accent)!important}
+ .v2-cal i.is-done{background:var(--accent)!important;color:var(--accent-text)!important}
+ .v2-cal i.is-today{box-shadow:inset 0 0 0 2px var(--accent)}
+ /* Panneaux verts (prochaine séance, repos) : restent verts, plus profonds. */
+ .v2-rest{background:#0B4D3B!important}
+ .brand img,.official-wordmark,.fit-wordmark{filter:brightness(0) invert(.93) sepia(.2)}
+}
+@media (prefers-color-scheme:dark){
+ /* Accueil et questionnaire : textes clairs. */
+ .fit-entry h1,.fit-entry p,.fit-entry span,.fit-onboard h1,.fit-onboard h2,.fit-onboard p,.fit-onboard label,.fit-onboard .field-label,.fit-kicker,.fit-step-count,.fit-overline,.fit-coach-line,.coherence-body *{color:var(--text)!important}
+ .fit-entry p,.fit-onboard p,.fit-onboard small{color:var(--muted)!important}
+ .fit-step-progress span:not(.active){background:var(--line)!important}
+ /* Logo : le mot STEROID passe en clair. */
+ .brand:after,.official-wordmark,.fit-wordmark{filter:brightness(0) invert(1) opacity(.92)}
+ /* Prochaine séance : la grande carte reste vert profond, texte clair, bouton citron. */
+ .v2-next{background:#0B4D3B!important;color:#F5F0E5!important;box-shadow:0 18px 40px rgba(0,0,0,.45)!important}
+ .v2-next *{color:inherit}
+ .v2-next .v2-btn--light,.v2-next .v2-btn{background:var(--accent)!important;color:var(--accent-text)!important;border-color:var(--accent)!important}
+ .v2-next .v2-chip,.v2-next .v2-tags span{background:rgba(255,252,247,.12)!important;color:#F5F0E5!important}
+ /* Onglets et bouton compte. */
+ .tabbar button,.tabbar a{color:var(--muted)!important}
+ .tabbar .active,.tabbar [aria-current="page"]{background:#0B4D3B!important;color:#F5F0E5!important}
+ .account-menu-trigger,.icon-btn{background:var(--surface)!important;color:var(--text)!important;border-color:var(--line)!important}
+}
+@media (prefers-color-scheme:dark){
+ .splash{background:var(--bg)!important}
+ .tabbar .tab-label{color:var(--muted)!important}.tabbar .active .tab-label{color:#F5F0E5!important}
+ .avatar-initials{background:var(--surface)!important;color:var(--accent)!important}
+}
+@media (prefers-color-scheme:dark){
+ .fit-entry h1 em{color:var(--accent)!important}
+ img.fit-wordmark.official-wordmark{filter:brightness(0) invert(1) opacity(.92)!important}
+ .shell .topbar .header-actions button.icon-btn.account-menu-trigger,.shell .topbar .header-actions button.icon-btn.account-menu-trigger.is-signed{background:var(--surface)!important;border-color:var(--line)!important;color:var(--accent)!important;box-shadow:none!important}
+ .shell .avatar-initials{background:none!important}
+}
+/* Installation guidée (une fois). */
+.v2-install{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;border:1px dashed var(--accent)}
+.v2-install p{margin:0;line-height:1.45}.v2-install .v2-ic{vertical-align:-3px}
+.v2-install .v2-link{align-self:flex-start;min-height:44px}
+/* Petites animations (coupées si « réduire les animations »). */
+@keyframes v2-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes v2-pop{0%{transform:scale(.97);opacity:.4}60%{transform:scale(1.01);opacity:1}100%{transform:none}}
+@keyframes v2-tick{0%{transform:scale(.7)}55%{transform:scale(1.15)}100%{transform:none}}
+@keyframes v2-draw{from{stroke-dashoffset:30}to{stroke-dashoffset:0}}
+@keyframes v2-shine{0%{transform:scale(.9);opacity:0}60%{transform:scale(1.04);opacity:1}100%{transform:none}}
+main.v2-enter>*{animation:v2-enter .26s ease-out both}
+.v2-current.v2-pop{animation:v2-pop .3s ease-out both}
+.v2-ok.v2-tick{animation:v2-tick .35s cubic-bezier(.3,1.6,.5,1) both}
+.v2-done-mark svg path{stroke-dasharray:30;animation:v2-draw .5s .15s ease-out both}
+.v2-done-mark{animation:v2-tick .45s cubic-bezier(.3,1.6,.5,1) both}
+.v2-records li,.v2-compare li.is-up,.v2-streak{animation:v2-shine .45s ease-out both}
+.v2-records li:nth-child(2),.v2-compare li:nth-child(2){animation-delay:.08s}.v2-records li:nth-child(3),.v2-compare li:nth-child(3){animation-delay:.16s}
+.v2-btn:active,.v2-ok:active,.answer-card:active,.v2-opt:active{transform:scale(.97)}
+.v2-btn,.v2-ok,.answer-card,.v2-opt{transition:transform .12s ease,background-color .18s ease,color .18s ease}
+@media (prefers-reduced-motion:reduce){main.v2-enter>*,.v2-current.v2-pop,.v2-ok.v2-tick,.v2-done-mark,.v2-done-mark svg path,.v2-records li,.v2-compare li,.v2-streak{animation:none!important}.v2-btn:active,.v2-ok:active,.answer-card:active,.v2-opt:active{transform:none}}
