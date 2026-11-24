@@ -1,7 +1,7 @@
 // Schéma V2 : tables additives, protégées par RLS, sans toucher aux tables V1.
 const assert=require('assert');
 const fs=require('fs');
-const file='supabase/migrations/20261121180000_v2_schema.sql';
+const file='supabase/migrations/20261121173448_v2_schema.sql';
 assert(fs.existsSync(file),'migration de schéma absente');
 const sql=fs.readFileSync(file,'utf8'),low=sql.toLowerCase();
 const tables=['cycles','cycle_sessions','cycle_exercises','cycle_cardio','workouts','workout_exercises','workout_set_logs','cardio_logs','user_exercises'];
