@@ -201,7 +201,12 @@ function create(ctx){
  const list=()=>[...(current()?.exercises||[])].sort((a,b)=>a.position-b.position).filter(e=>e.status!=='skipped');
  const last=()=>C.lastPerformance(S.setLogs,S.workouts);
  const answers=()=>S.cycle?.answers_snapshot&&Object.keys(S.cycle.answers_snapshot).length?S.cycle.answers_snapshot:(ctx.answers?.()||{});
- function startRest(sec,rate=null){S.rest={end:now()+sec*1000,rate};saveUi()}
+ function startRest(sec,rate=null){S.rest={end:now()+sec*1000,total:sec,rate};saveUi()}
+ // Ce qui suit le repos : la prochaine série de l'exercice, sinon l'exercice suivant.
+ function restNext(w){const items=list(),cur=items[S.index];if(!cur)return null;const s=cur.sets.find(x=>!x.completed);
+  const fr=v=>v==null?'—':Number(v).toLocaleString('fr-FR');
+  if(s)return 'série '+s.set_number+' · '+fr(s.weight)+' kg × '+(s.reps??'—');
+  const nx=items.slice(S.index+1).find(x=>x.sets.some(z=>!z.completed));return nx?C.nameOf(nx.exercise_key,S.userExercises):'fin de la séance'}
  // Série à noter (ressenti) : la dernière validée, tant que la séance continue.
  function rateInfo(w){const r=S.rest?.rate||S.rate;if(!r||!w)return null;const e=w.exercises.find(x=>x.id===r.ex),s=e?.sets.find(x=>x.set_number===r.set);if(!s?.completed)return null;return {ex:e.id,set:s.set_number,rir:s.rir,name:C.nameOf(e.exercise_key,S.userExercises)}}
  function restLeft(){if(!S.rest)return null;if(S.rest.frozen!=null)return S.rest.frozen;const left=Math.ceil((S.rest.end-now())/1000);return left>0?left:0}
@@ -272,7 +277,7 @@ function create(ctx){
    // Échauffement : premier exercice de base de la séance, tant qu'aucune série n'est validée.
    const firstBase=items.find(x=>x.plan?.role==='base');let warm=null;
    if(firstBase&&items[S.index]?.id===firstBase.id&&!firstBase.sets.some(x=>x.completed)){const ref=firstBase.sets.find(x=>x.weight!=null)?.weight??last()[firstBase.exercise_key]?.weight;warm={ex:firstBase.id,sets:C.warmup(ref)}}
-   let html=UI.session({light,warmup:warm,rate:rateInfo(w),advice,workout:w,index:S.index,elapsed:S.store.elapsedSeconds(),paused:S.store.isPaused(),pausedFor:w.paused_at?Math.round((now()-w.paused_at)/1000):0,rest:left?{remaining:left}:null,last:last(),userExercises:S.userExercises,pending:pending()});
+   let html=UI.session({light,warmup:warm,rate:rateInfo(w),advice,workout:w,index:S.index,elapsed:S.store.elapsedSeconds(),paused:S.store.isPaused(),pausedFor:w.paused_at?Math.round((now()-w.paused_at)/1000):0,rest:left?{remaining:left,total:S.rest?.total||left,next:restNext(w)}:null,last:last(),userExercises:S.userExercises,pending:pending()});
    const idle=idleMinutes();
    if(idle)html+=UI.idlePrompt(idle);
    else if(S.sheet?.type==='machine'){const e=w.exercises.find(x=>x.id===S.sheet.ex);if(e){const practiced={};for(const r of S.setLogs)if(r.completed)practiced[r.exercise_key]=(practiced[r.exercise_key]||0)+1;
@@ -388,8 +393,23 @@ function create(ctx){
     if(w.paused_at)S.store.resume(); // valider une série reprend la séance
     S.store.logSet(e.id,s.set_number,{completed:!s.completed});touch();
     if(!s.completed){S.rest=null;S.rate=null}
+    // Série validée : les séries suivantes encore vides reprennent sa charge et ses répétitions (modifiables).
+    if(s.completed)for(const x of e.sets)if(x.set_number>s.set_number&&!x.completed){const fill={};if(x.weight==null&&s.weight!=null)fill.weight=s.weight;if(x.reps==null&&s.reps!=null)fill.reps=s.reps;if(Object.keys(fill).length)S.store.logSet(e.id,x.set_number,fill)}
     if(s.completed){S.rate={ex:e.id,set:s.set_number};startRest(e.plan.rest_seconds||90,S.rate);if(e.sets.every(x=>x.completed)){const items=list(),i=items.findIndex(x=>x.id===e.id);if(i>=0&&i<items.length-1)S.index=i+1}}
     saveUi();scheduleFlush();break;
+   }
+   case 'v2-step':{
+    // − / + : charge par 2,5 kg (0 à 500), répétitions par 1 (1 à 100), secondes par 5. Les séries suivantes non validées suivent.
+    const e=w?.exercises.find(x=>x.id===d.ex),s=e?.sets.find(x=>x.set_number===Number(d.set));if(!s||s.completed)return;
+    const f=d.f==='reps'?'reps':'weight',dl=Number(d.d)||0,old=s[f];
+    // Champ vide : on reprend la série précédente, sinon la dernière fois, sinon 0 kg / bas de la fourchette (sans sauter de cran).
+    const prevSet=[...e.sets].reverse().find(x=>x.set_number<s.set_number&&x[f]!=null);
+    const base=old??prevSet?.[f]??(f==='weight'?(last()[e.exercise_key]?.weight??0):(e.plan?.reps_min??1));
+    let v=Math.round((old==null&&base>0?base:base+dl)*100)/100;
+    v=f==='weight'?Math.max(0,Math.min(500,v)):Math.max(1,Math.min(100,Math.round(v)));
+    S.store.logSet(e.id,s.set_number,{[f]:v});
+    for(const x of e.sets)if(x.set_number>s.set_number&&!x.completed&&(x[f]==null||x[f]===old))S.store.logSet(e.id,x.set_number,{[f]:v});
+    touch();scheduleFlush();break;
    }
    case 'v2-rir':{
     const e=w?.exercises.find(x=>x.id===d.ex),s=e?.sets.find(x=>x.set_number===Number(d.set));if(!s?.completed)return;
@@ -405,7 +425,7 @@ function create(ctx){
    case 'v2-resume':if(S.rest?.frozen!=null)S.rest={end:now()+S.rest.frozen*1000};S.store.resume();touch();scheduleFlush();break;
    case 'v2-idle-yes':S.store.pause(ui.lastAction);S.store.resume();touch();scheduleFlush();break;
    case 'v2-idle-no':touch();break;
-   case 'v2-rest-plus':if(S.rest?.frozen!=null)S.rest.frozen+=30;else if(S.rest)S.rest.end=Math.max(S.rest.end,now())+30e3;saveUi();break;
+   case 'v2-rest-plus':if(S.rest?.frozen!=null)S.rest.frozen+=30;else if(S.rest){S.rest.end=Math.max(S.rest.end,now())+30e3;S.rest.total=(S.rest.total||0)+30}saveUi();break;
    case 'v2-rest-skip':S.rest=null;saveUi();break;
    case 'v2-next':S.index=Math.min(S.index+1,list().length-1);touch();break;
    case 'v2-prev':S.index=Math.max(0,S.index-1);touch();break;
@@ -560,9 +580,9 @@ function create(ctx){
   if(kind==='sets'){const {e}=sessionIn(draft(),ce);const n=Number(value);if(e&&Number.isInteger(n)&&n>=1&&n<=6){e.sets=n;saveCycleExercise(e)}render()}
  }
  function tick(){
-  const left=restLeft();
+  const left=restLeft(),total=S.rest?.total||null;
   if(S.rest&&left===0){S.rest=null;saveUi();return {rest:0,done:true,elapsed:S.store?.elapsedSeconds()||0}}
-  return {rest:left,elapsed:S.store?.elapsedSeconds()||0,idle:idleMinutes()};
+  return {rest:left,total,elapsed:S.store?.elapsedSeconds()||0,idle:idleMinutes()};
  }
  // Déconnexion : le téléphone cesse de recevoir les rappels de ce compte (au mieux, sans bloquer).
  async function remindersOff(){try{if(Rem?.state().enabled)await Rem.disable()}catch{}}

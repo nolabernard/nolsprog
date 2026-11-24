@@ -17,7 +17,7 @@ const plural=(n,one,many)=>n+' '+(n>1?many:one);
 const P={play:'<path d="M8 5v14l11-7z"/>',pause:'<path d="M8 5v14M16 5v14"/>',check:'<path d="m5 12 5 5L20 7"/>',swap:'<path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
  close:'<path d="M6 6l12 12M18 6 6 18"/>',more:'<circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/>',left:'<path d="m15 18-6-6 6-6"/>',right:'<path d="m9 18 6-6-6-6"/>',up:'<path d="m6 15 6-6 6 6"/>',down:'<path d="m6 9 6 6 6-6"/>',
  later:'<path d="M12 8v4l3 2"/><path d="M3.05 11a9 9 0 1 1 .5 4"/><path d="M3 4v7h7"/>',skip:'<path d="m5 4 10 8-10 8z"/><path d="M19 5v14"/>',coach:'<path d="M12 3a7 7 0 0 0-4 12.7V19h8v-3.3A7 7 0 0 0 12 3z"/><path d="M10 22h4"/>',
- search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',plus:'<path d="M12 5v14M5 12h14"/>',trophy:'<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>'};
+ search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',plus:'<path d="M12 5v14M5 12h14"/>',minus:'<path d="M5 12h14"/>',sound:'<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/>',mute:'<path d="M4 9v6h4l5 4V5L8 9z"/><path d="m17 9 5 6M22 9l-5 6"/>',trophy:'<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>'};
 const icon=(n,cls='v2-ic')=>'<svg class="'+cls+'" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+P[n]+'</svg>';
 const ordered=w=>[...(w?.exercises||[])].sort((a,b)=>a.position-b.position);
 const totalSets=s=>(s?.exercises||[]).reduce((n,e)=>n+(Number(e.sets)||0),0);
@@ -160,18 +160,28 @@ function session({workout,index=0,elapsed=0,paused=false,pausedFor=0,rest=null,l
   +(prev?'<span class="v2-chip">Dernière fois : '+(prev.weight==null?'—':kg(prev.weight)+' kg')+' × '+(prev.reps??'—')+'</span>':'')+(advice[e.exercise_key]?'<p class="v2-advice">'+icon('coach','v2-ic v2-ic--sm')+'<span>'+esc(advice[e.exercise_key].text)+'</span></p>':'')+'</div>';
  if(light&&i===0)html+='<p class="v2-light">'+icon('coach','v2-ic v2-ic--sm')+'<span><b>Semaine allégée.</b> Moins de séries, mêmes charges : tu récupères avant le bilan.</span></p>';
  if(warmup&&warmup.ex===e.id)html+='<div class="v2-warmup"><b>Échauffement</b>'+(warmup.sets?'<ol>'+warmup.sets.map(x=>'<li>'+kg(x.weight)+' kg × '+x.reps+'</li>').join('')+'</ol><small>Puis tes séries de travail. Non comptées dans tes séries.</small>':'<small>2 séries légères pour monter en charge : 8 répétitions, puis 4. Non comptées dans tes séries.</small>')+'</div>';
- html+='<div class="v2-sets"><div class="v2-set-labels" aria-hidden="true"><span>Série</span><span>kg</span><span>'+(timed(e.exercise_key)?'Secondes':'Rép.')+'</span><span></span></div>';
+ // Séries : celles faites et à venir en lignes compactes ; la série en cours en grand, réglable au pouce (− / +) ou au clavier.
+ const tm=timed(e.exercise_key),cur=e.sets.find(x=>!x.completed),fmtW=v=>v==null?'—':kg(v);
+ const cell=(s,f,lab,ph,mode,max)=>'<input class="v2-cell v2-big" aria-label="'+lab+' série '+s.set_number+'" data-v2-field="'+f+'" data-ex="'+esc(e.id)+'" data-set="'+s.set_number+'" type="text" inputmode="'+mode+'" autocomplete="off" maxlength="'+max+'" placeholder="'+ph+'" value="'+(s[f]==null?'':esc(String(s[f]).replace('.',',')))+'">';
+ const step=(s,f,dlt,lab)=>'<button type="button" class="v2-step" data-action="v2-step" data-ex="'+esc(e.id)+'" data-set="'+s.set_number+'" data-f="'+f+'" data-d="'+dlt+'" aria-label="'+lab+'">'+icon(dlt<0?'minus':'plus')+'</button>';
+ const wStep=2.5,rStep=tm?5:1;
+ html+='<div class="v2-sets">';
  for(const s of e.sets){
   const n=s.set_number;
-  html+='<div class="v2-set'+(s.completed?' is-done':'')+'"><span class="v2-set-num">'+n+'</span>'
-   +'<input class="v2-cell" aria-label="Charge série '+n+' (kg)" data-v2-field="weight" data-ex="'+esc(e.id)+'" data-set="'+n+'" type="text" inputmode="decimal" autocomplete="off" maxlength="6" placeholder="kg" value="'+(s.weight==null?'':esc(String(s.weight).replace('.',',')))+'">'
-   +'<input class="v2-cell" aria-label="'+(timed(e.exercise_key)?'Secondes':'Répétitions')+' série '+n+'" data-v2-field="reps" data-ex="'+esc(e.id)+'" data-set="'+n+'" type="text" inputmode="numeric" autocomplete="off" maxlength="3" placeholder="'+(timed(e.exercise_key)?'s':'rép.')+'" value="'+(s.reps==null?'':esc(s.reps))+'">'
-   +'<button type="button" class="v2-ok" data-action="v2-set" data-ex="'+esc(e.id)+'" data-set="'+n+'" aria-pressed="'+s.completed+'" aria-label="'+(s.completed?'Série '+n+' validée':'Valider la série '+n)+'">'+icon('check')+'</button></div>';
+  if(s===cur){
+   html+='<div class="v2-current" aria-label="Série '+n+' sur '+e.sets.length+'"><p class="v2-current-title">Série '+n+' <small>sur '+e.sets.length+'</small></p>'
+    +'<div class="v2-steppers"><div class="v2-stepper"><span>kg</span><div>'+step(s,'weight',-wStep,'Retirer '+String(wStep).replace('.',',')+' kg')+cell(s,'weight','Charge (kg)','—','decimal',6)+step(s,'weight',wStep,'Ajouter '+String(wStep).replace('.',',')+' kg')+'</div></div>'
+    +'<div class="v2-stepper"><span>'+(tm?'secondes':'répétitions')+'</span><div>'+step(s,'reps',-rStep,tm?'Retirer 5 secondes':'Retirer une répétition')+cell(s,'reps',tm?'Secondes':'Répétitions','—','numeric',3)+step(s,'reps',rStep,tm?'Ajouter 5 secondes':'Ajouter une répétition')+'</div></div></div>'
+    +'<button type="button" class="v2-btn v2-btn--big v2-validate" data-action="v2-set" data-ex="'+esc(e.id)+'" data-set="'+n+'" aria-pressed="false">'+icon('check')+'Valider la série '+n+'</button></div>';
+  }else{
+   html+='<div class="v2-set v2-set--line'+(s.completed?' is-done':' is-next')+'"><span class="v2-set-num">'+n+'</span><span class="v2-set-val">'+fmtW(s.weight)+' kg × '+(s.reps??'—')+(tm?' s':'')+'</span>'
+    +(s.completed?'<button type="button" class="v2-ok" data-action="v2-set" data-ex="'+esc(e.id)+'" data-set="'+n+'" aria-pressed="true" aria-label="Série '+n+' validée (toucher pour la modifier)">'+icon('check')+'</button>':'<span class="v2-set-wait" aria-hidden="true"></span>')+'</div>';
+  }
  }
  html+='</div>';
  // Ressenti de la dernière série validée, en un appui (répétitions en réserve : facile ≥ 3, correct 1-2, dur 0).
  if(rate)html+='<div class="v2-rate" role="group" aria-label="Ressenti de la série '+rate.set+'"><span>Série '+rate.set+(rate.name?' · '+esc(rate.name):'')+' : c’était…</span><div>'+RATES.map(([v,t,h])=>'<button type="button" data-action="v2-rir" data-ex="'+esc(rate.ex)+'" data-set="'+rate.set+'" data-rir="'+v+'" aria-pressed="'+(rate.rir===v)+'"><b>'+t+'</b><small>'+h+'</small></button>').join('')+'</div></div>';
- const restHtml=!rest?'':'<div class="v2-rest" role="timer" aria-live="polite"><span>Repos</span><b>'+clock(rest.remaining).replace(/^0(\d):/,'$1:')+'</b><button type="button" class="v2-btn v2-btn--ghost v2-btn--sm" data-action="v2-rest-plus">+30 s</button><button type="button" class="v2-btn v2-btn--ghost v2-btn--sm" data-action="v2-rest-skip">Passer</button></div>'; // dans le pied fixe : toujours visible
+ const restHtml=!rest?'':'<div class="v2-rest" role="timer" style="--p:'+(rest.total?Math.max(0,Math.min(1,rest.remaining/rest.total)).toFixed(3):1)+'"><span class="v2-ring" aria-hidden="true"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="19"/><circle class="v2-ring-on" cx="22" cy="22" r="19" pathLength="1"/></svg></span><span class="v2-rest-txt"><span>Repos</span><b>'+clock(rest.remaining).replace(/^0(\d):/,'$1:')+'</b>'+(rest.next?'<small>Ensuite : '+esc(rest.next)+'</small>':'')+'</span><span class="v2-rest-btns"><button type="button" class="v2-btn v2-btn--ghost v2-btn--sm" data-action="v2-rest-plus">+30 s</button><button type="button" class="v2-btn v2-btn--ghost v2-btn--sm" data-action="v2-rest-skip">Passer</button></span></div>'; // dans le pied fixe : toujours visible
  const lastOne=i===list.length-1;
  const anyDone=(workout.exercises||[]).some(x=>(x.sets||[]).some(z=>z.completed));
  html+='<footer class="v2-session-foot">'+restHtml+'<button type="button" class="v2-btn v2-btn--ghost" data-action="v2-machine" data-ex="'+esc(e.id)+'">'+icon('swap')+'Machine prise</button><div class="v2-nav"><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-prev" aria-label="Exercice précédent" '+(i===0?'disabled':'')+'>'+icon('left')+'</button>'
@@ -195,6 +205,7 @@ function machineSheet({exercise,alternatives=[],canLater=true,practiced={}}={}){
 function moreSheet({exercise,anyDone=true}={}){
  const rpe=exercise?.rpe;
  return '<div class="v2-sheet-wrap"><button type="button" class="v2-veil" data-action="v2-close-sheet" aria-label="Fermer"></button><section class="v2-sheet" role="dialog" aria-modal="true" aria-label="Options de la séance"><button type="button" class="v2-grab" data-action="v2-close-sheet" aria-label="Fermer (ou fais glisser vers le bas)"><i></i></button><h2>Options</h2>'
+  +(()=>{let on=true;try{on=globalThis.localStorage?.getItem('nolsprog-sound')!=='off'}catch{}return '<button type="button" class="v2-btn v2-btn--ghost" data-action="sound-toggle" aria-pressed="'+on+'">'+icon(on?'sound':'mute')+(on?'Bips du repos : activés':'Bips du repos : coupés')+'</button>'})()
 
   +(anyDone?'<button type="button" class="v2-btn" data-action="v2-finish">Terminer la séance</button><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-abandon">Abandonner la séance</button><p class="v2-muted v2-center">Tu peux terminer sans tout valider : seules les séries validées comptent. Abandonner : rien ne compte.</p>'
    :'<button type="button" class="v2-btn v2-btn--ghost" data-action="v2-wrong-session">Ce n’est pas la bonne séance</button><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-abandon">Abandonner la séance</button><p class="v2-muted v2-center">Aucune série validée : la séance ne compte pas tant que tu n’en valides pas une.</p>')+'</section></div>';
