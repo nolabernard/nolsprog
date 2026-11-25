@@ -161,7 +161,7 @@ function session({tip=null,workout,index=0,elapsed=0,paused=false,pausedFor=0,re
  // En-tête : pictogramme (ouvre « Comment faire »), nom, position et consigne courte.
  const M=globalThis.SteroidMoves,{pattern}=moveInfo(e.exercise_key,userExercises);
  html+='<div class="v2-ex-head2"><button type="button" class="v2-ex-pic" data-action="v2-howto" aria-label="Comment faire : '+esc(name)+'">'+(M?.pic?M.pic(e.exercise_key,pattern,{size:52}):'')+'</button>'
-  +'<div class="v2-ex-id"><h1 class="v2-ex-title">'+esc(name)+'</h1><p>Exercice '+(i+1)+' sur '+list.length+' · '+reps(p.reps_min,p.reps_max)+unit(e.exercise_key)+' · <button type="button" class="v2-inline-link" data-action="v2-howto">Comment faire</button></p></div></div>';
+  +'<div class="v2-ex-id"><h1 class="v2-ex-title">'+esc(name)+'</h1><p>Exercice '+(i+1)+' sur '+list.length+' · '+reps(p.reps_min,p.reps_max)+unit(e.exercise_key)+'</p><button type="button" class="v2-inline-link" data-action="v2-howto">Comment faire</button></div></div>';
  if(light&&i===0)html+='<p class="v2-note">'+icon('coach','v2-ic v2-ic--sm')+'<span><b>Semaine allégée :</b> moins de séries, mêmes charges.</span></p>';
  if(warmup&&warmup.ex===e.id)html+='<p class="v2-note">'+icon('coach','v2-ic v2-ic--sm')+'<span><b>Échauffement :</b> '+(warmup.sets?warmup.sets.map(x=>kg(x.weight)+' kg × '+x.reps).join(', '):'2 séries légères (8 puis 4 répétitions)')+'. Non comptées.</span></p>';
  // Carte de la série

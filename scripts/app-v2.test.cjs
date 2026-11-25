@@ -76,7 +76,7 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
   };
   // Première séance : conseil de calibrage ; après une série, le ressenti se note en un appui.
   await h5.handle('v2-start',{session:h5.state().cycle.sessions[0].id});
-  assert.match(h5.todayHTML(),/Première fois sur cet exercice : trouve ta charge/);
+  assert.match(h5.todayHTML(),/Première fois : trouve ta charge/);
   { const e=h5.state().store.current().exercises[0];
     for(const n of [1,2]){h5.input({ex:e.id,set:n,field:'weight',value:'60'});h5.input({ex:e.id,set:n,field:'reps',value:'8'})}
     await h5.handle('v2-set',{ex:e.id,set:'1'});

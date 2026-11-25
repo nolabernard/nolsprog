@@ -291,7 +291,7 @@ function create(ctx){
    const items=list();S.index=Math.max(0,Math.min(S.index,items.length-1));
    const left=restLeft();
    // Conseils figés pour la séance : l'historique ne change pas avant la fin.
-   if(S.advice?.id!==w.id||S.advice.n!==w.exercises.length||w.exercises.some(e=>!(e.exercise_key in S.advice.map))){const map={};for(const e of w.exercises)map[e.exercise_key]=H.advice(e.plan,S.setLogs,normalWorkouts(),e.exercise_key)||{status:'calibrate',text:'Première fois sur cet exercice : trouve ta charge. Monte progressivement et garde celle qui te laisse 2 répétitions en réserve, puis note ton ressenti.'};S.advice={id:w.id,n:w.exercises.length,map}}
+   if(S.advice?.id!==w.id||S.advice.n!==w.exercises.length||w.exercises.some(e=>!(e.exercise_key in S.advice.map))){const map={};for(const e of w.exercises)map[e.exercise_key]=H.advice(e.plan,S.setLogs,normalWorkouts(),e.exercise_key)||{status:'calibrate',text:'Première fois : trouve ta charge, celle qui te laisse 2 répétitions en réserve.'};S.advice={id:w.id,n:w.exercises.length,map}}
    const advice=S.advice.map;
    const light=new Set(read(K.deload,[])).has(w.id);
    // Échauffement : premier exercice de base de la séance, tant qu'aucune série n'est validée.

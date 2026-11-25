@@ -88,18 +88,19 @@ function advice(plan,setLogs,workouts,key){
  if(max==null)return null;
  const top=sets.every(s=>s.reps>=max);
  const noWeight=sets.filter(s=>s.weight==null).length;
- if(noWeight===sets.length)return {status:'bodyweight',text:top?'Haut de fourchette atteint sur chaque série : ajoute de la difficulté (lest ou variante plus dure).':'Vise '+max+' répétitions sur chaque série.'};
+ if(noWeight===sets.length)return {status:'bodyweight',text:top?'Haut de fourchette partout : ajoute du lest ou une variante plus dure.':'Vise '+max+' répétitions sur chaque série.'};
  if(noWeight)return {status:'weight',text:'Note ta charge sur chaque série pour recevoir un conseil précis.'};
- const w=Math.max(...sets.map(s=>s.weight));
- if(top&&w===0)return {status:'bodyweight',text:'Haut de fourchette atteint sur chaque série : ajoute de la charge ou une variante plus dure.'};
+ // Charge de référence : celle de la dernière série (comme « Dernière fois »), pas la plus haute, pour ne pas conseiller 40 kg à quelqu'un qui a fini à 35.
+ const w=sets.at(-1).weight;
+ if(top&&w===0)return {status:'bodyweight',text:'Haut de fourchette partout : ajoute de la charge ou une variante plus dure.'};
  // Ressenti noté par série (répétitions en réserve) : il prime sur les seules répétitions.
  const rated=sets.filter(s=>s.rir!=null),easy=rated.length===sets.length&&sets.every(s=>s.rir>=3),failed=rated.some(s=>s.rir===0);
- if(top&&failed&&w>0)return {status:'hold',text:'Haut de fourchette atteint, mais une série était à l’échec : garde '+fr(w)+' kg jusqu’à ce que ce soit plus facile.'};
+ if(top&&failed&&w>0)return {status:'hold',text:'Une série était à l’échec : garde '+fr(w)+' kg jusqu’à ce que ce soit plus facile.'};
  if(!top&&easy&&w>0&&sets.every(s=>s.reps>=(Number(plan?.reps_min)||0))){const next=Number((w+increment(w)).toFixed(2));return {status:'increase',weight:next,text:'Toutes tes séries étaient faciles à '+fr(w)+' kg : tente '+fr(next)+' kg.'}}
  if(!top)return {status:'reps',text:'Garde '+fr(w)+' kg et vise '+max+' répétitions sur chaque série.'};
- if(last.rpe===10)return {status:'hold',text:'Haut de fourchette atteint, mais à l’échec : garde '+fr(w)+' kg jusqu’à ce que ce soit plus facile.'};
+ if(last.rpe===10)return {status:'hold',text:'Haut de fourchette mais à l’échec : garde '+fr(w)+' kg jusqu’à ce que ce soit plus facile.'};
  const next=Number((w+increment(w)).toFixed(2));
- return {status:'increase',weight:next,text:max+' répétitions sur chaque série à '+fr(w)+' kg : tente '+fr(next)+' kg, si la technique reste propre.'};
+ return {status:'increase',weight:next,text:max+' répétitions partout à '+fr(w)+' kg : tente '+fr(next)+' kg si la technique reste propre.'};
 }
 
 return {sessions,exercise,records,newRecords,latestRecord,advice,increment,best};

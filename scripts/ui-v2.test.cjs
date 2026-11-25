@@ -54,7 +54,7 @@ const workout={id:'w',started_at:0,exercises:[
   {id:'a',set_number:1,weight:80,reps:8,completed:true},{id:'b',set_number:2,weight:80,reps:8,completed:false},{id:'c',set_number:3,weight:null,reps:null,completed:false}]},
  {id:'x2',position:1,exercise_key:'u-1',status:'done',plan:{role:'finition',sets:1,reps_min:10,reps_max:15,rest_seconds:60},sets:[{id:'d',set_number:1,weight:null,reps:null,completed:false}]}]};
 let s=UI.session({workout,index:0,elapsed:1122,paused:false,last:{'developpe-couche-barre':{weight:80,reps:8}},userExercises:[{key:'u-1',name:'Mon exo'}]});
-assert.match(s,/Développé couché barre/);assert.match(s,/Exercice 1 sur 2 · 6 à 8 rép\. · /);
+assert.match(s,/Développé couché barre/);assert.match(s,/Exercice 1 sur 2 · 6 à 8 rép\./);
 assert.match(s,/Dernière fois <b>80 × 8<\/b>/);assert.match(s,/18:42/);
 // Série en cours en grand (− / + et Valider), séries faites et à venir en lignes compactes.
 assert.equal((s.match(/data-action="v2-set"/g)||[]).length,2,'série faite (modifiable) + série en cours');

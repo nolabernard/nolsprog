@@ -48,11 +48,11 @@ assert.equal(H.latestRecord([],[]),null);
 // Conseils (double progression), fondés sur la dernière séance de la même clé.
 const plan={sets:2,reps_min:6,reps_max:8};
 let a=H.advice(plan,logs,workouts,'dev-couche-barre');
-assert.equal(a.status,'increase');assert.equal(a.weight,85);assert.match(a.text,/85 kg/);
+assert.equal(a.status,'increase');assert.equal(a.weight,82.5);assert.match(a.text,/82,5 kg/);
 a=H.advice({sets:3,reps_min:6,reps_max:8},logs,workouts,'dev-couche-barre');
 assert.equal(a.status,'complete');assert.match(a.text,/2 séries sur 3/);
 a=H.advice({sets:2,reps_min:8,reps_max:10},logs,workouts,'dev-couche-barre');
-assert.equal(a.status,'reps');assert.match(a.text,/82,5 kg/);assert.match(a.text,/10 répétitions/);
+assert.equal(a.status,'reps');assert.match(a.text,/80 kg/);assert.match(a.text,/10 répétitions/);
 // À l'échec (ressenti 10) : on garde la charge.
 a=H.advice(plan,logs.map(r=>r.workout_id==='w2'?{...r,rpe:10}:r),workouts,'dev-couche-barre');
 assert.equal(a.status,'hold');assert.equal(a.weight,undefined);
