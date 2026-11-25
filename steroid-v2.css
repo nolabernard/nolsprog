@@ -799,3 +799,11 @@ html.theme-dark .tabbar button.tab-main:not(.active) .tab-label{color:var(--mute
 .shell:not(.immersive-shell) .tabbar .tabicon svg{width:24px!important;height:24px!important}
 .shell:not(.immersive-shell) .tabbar button.tab-main .tabicon svg{width:34px!important;height:34px!important}
 .shell:not(.immersive-shell) .tabbar button.tab-main .tab-label{font-size:12px!important}
+/* Écran de série : « Comment faire » sur sa propre ligne ; pas de chevauchement quand Facile / Correct / Dur est affiché. */
+.v2-ex-id .v2-inline-link{align-self:flex-start;min-height:0;padding:2px 0;font-size:13px}
+.v2-one .v2-card-set:has(.v2-rate2) .v2-hint{display:none}
+.v2-one .v2-card-set:has(.v2-rate2) .v2-cell.v2-big{font-size:clamp(34px,5.6vh,50px)}
+.v2-one .v2-card-set:has(.v2-rate2) .v2-stepper{padding-block:6px;gap:4px}
+.v2-one .v2-card-set:has(.v2-rate2) .v2-step{height:clamp(38px,5vh,46px)}
+.v2-one .v2-steppers{overflow:hidden}
+@media (max-height:820px){.v2-hint{display:none}}
