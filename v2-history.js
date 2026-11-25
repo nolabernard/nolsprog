@@ -90,7 +90,8 @@ function advice(plan,setLogs,workouts,key){
  const noWeight=sets.filter(s=>s.weight==null).length;
  if(noWeight===sets.length)return {status:'bodyweight',text:top?'Haut de fourchette atteint sur chaque série : ajoute de la difficulté (lest ou variante plus dure).':'Vise '+max+' répétitions sur chaque série.'};
  if(noWeight)return {status:'weight',text:'Note ta charge sur chaque série pour recevoir un conseil précis.'};
- const w=Math.max(...sets.map(s=>s.weight));
+ // Charge de référence : celle de la dernière série (comme « Dernière fois »), pas la plus haute, pour ne pas conseiller 40 kg à quelqu'un qui a fini à 35.
+ const w=sets.at(-1).weight;
  if(top&&w===0)return {status:'bodyweight',text:'Haut de fourchette atteint sur chaque série : ajoute de la charge ou une variante plus dure.'};
  // Ressenti noté par série (répétitions en réserve) : il prime sur les seules répétitions.
  const rated=sets.filter(s=>s.rir!=null),easy=rated.length===sets.length&&sets.every(s=>s.rir>=3),failed=rated.some(s=>s.rir===0);
