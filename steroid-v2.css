@@ -830,3 +830,20 @@ html.theme-dark .v2-homebtn{background:var(--raised)!important;color:var(--accen
 .v2-one .v2-steppers{flex:0 1 auto;margin-block:auto;align-items:stretch}
 .v2-one .v2-cell.v2-big{min-height:clamp(44px,8vh,70px)}
 @media (max-width:379px){.v2-prog-params{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)}.v2-prog-params label:last-child{grid-column:1/-1}}
+/* Audit UX du 26/11 : zones tactiles, textes lisibles, couleurs cohérentes, titres longs, action destructive. */
+.v2-ex-id .v2-inline-link{min-height:44px;display:inline-flex;align-items:center;margin-block:-14px -10px}
+.v2-grab{height:48px;margin-top:-12px;flex:none}
+.v2-grab i{height:5px}
+.shell:not(.immersive-shell) .tabbar .tab-label{font-size:11px!important}
+.shell:not(.immersive-shell) .tabbar button.tab-main .tab-label{font-size:12px!important}
+.v2-ring-cap{font-size:12px}
+.v2-last small{font-size:12px}
+.v2-card.v2-last{text-align:left}
+.auth-kicker,.auth-or{font-size:11px}
+.auth-form .primary,.auth-form button[type="submit"]{background:#0B4D3B;border-color:#0B4D3B;color:#fff}
+#auth-password{padding-right:104px}
+.auth-form .pw-toggle{margin:-66px 6px 22px auto;position:relative}
+.immersive-shell.is-auth .auth-glass .primary.save{background:#0B4D3B}
+.v2-one .v2-ex-title.is-long{font-size:clamp(18px,2.6vh,22px);-webkit-line-clamp:2}
+.v2-btn--danger{color:#B3261E}
+html.theme-dark .v2-btn--danger{color:#FFB4AB!important}
