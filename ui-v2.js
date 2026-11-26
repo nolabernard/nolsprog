@@ -164,7 +164,7 @@ function session({tip=null,workout,index=0,elapsed=0,paused=false,pausedFor=0,re
  // Le repos s'ouvre en plein écran (anneau, ressenti, série suivante) ; « Réduire » le ramène en barre au-dessus du pied.
  const list=ordered(workout).filter(e=>e.status!=='skipped');
  const i=Math.max(0,Math.min(index,list.length-1)),e=list[i];
- if(!e)return '<section class="v2-session"><p>Aucun exercice dans cette séance.</p><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-abandon">Abandonner la séance</button></section>';
+ if(!e)return '<section class="v2-session"><p>Aucun exercice dans cette séance.</p><button type="button" class="v2-btn v2-btn--ghost v2-btn--danger" data-action="v2-abandon">Abandonner la séance</button></section>';
  const p=e.plan||{},prev=last[e.exercise_key],name=nameOf(e.exercise_key,userExercises),tm=timed(e.exercise_key),cur=e.sets.find(x=>!x.completed);
  let html='<section class="v2-session v2-one" aria-label="Séance en cours"><header class="v2-session-top"><button type="button" class="v2-homebtn" data-action="v2-exit" aria-label="Accueil : la séance reste en cours">'+icon('left','v2-ic v2-ic--sm')+'<span>Accueil</span></button>'
   +'<button type="button" class="v2-chrono'+(paused?' is-paused':'')+'" data-action="'+(paused?'v2-resume':'v2-pause')+'" aria-label="'+(paused?'Reprendre la séance':'Mettre la séance en pause')+'">'+icon(paused?'play':'pause','v2-ic v2-ic--sm')+'<span>'+clock(elapsed)+'</span></button>'
@@ -174,7 +174,7 @@ function session({tip=null,workout,index=0,elapsed=0,paused=false,pausedFor=0,re
  // En-tête : pictogramme (ouvre « Comment faire »), nom, position et consigne courte.
  const M=globalThis.SteroidMoves,{pattern}=moveInfo(e.exercise_key,userExercises);
  html+='<div class="v2-ex-head2"><button type="button" class="v2-ex-pic" data-action="v2-howto" aria-label="Comment faire : '+esc(name)+'">'+(M?.pic?M.pic(e.exercise_key,pattern,{size:52}):'')+'</button>'
-  +'<div class="v2-ex-id"><h1 class="v2-ex-title">'+esc(name)+'</h1><p>Exercice '+(i+1)+' sur '+list.length+' · '+reps(p.reps_min,p.reps_max)+unit(e.exercise_key)+'</p><button type="button" class="v2-inline-link" data-action="v2-howto">Comment faire</button></div></div>';
+  +'<div class="v2-ex-id"><h1 class="v2-ex-title'+(String(name).length>26?' is-long':'')+'" title="'+esc(name)+'">'+esc(name)+'</h1><p>Exercice '+(i+1)+' sur '+list.length+' · '+reps(p.reps_min,p.reps_max)+unit(e.exercise_key)+'</p><button type="button" class="v2-inline-link" data-action="v2-howto">Comment faire</button></div></div>';
  if(light&&i===0)html+='<p class="v2-note">'+icon('coach','v2-ic v2-ic--sm')+'<span><b>Semaine allégée :</b> moins de séries, mêmes charges.</span></p>';
  if(warmup&&warmup.ex===e.id)html+='<p class="v2-note">'+icon('coach','v2-ic v2-ic--sm')+'<span><b>Échauffement :</b> '+(warmup.sets?warmup.sets.map(x=>kg(x.weight)+' kg × '+x.reps).join(', '):'2 séries légères (8 puis 4 répétitions)')+'. Non comptées.</span></p>';
  // Carte de la série
@@ -200,7 +200,7 @@ function session({tip=null,workout,index=0,elapsed=0,paused=false,pausedFor=0,re
  const pct=rest?.total?Math.max(0,Math.min(1,rest.remaining/rest.total)).toFixed(3):1,time=rest?clock(rest.remaining).replace(/^0(\d):/,'$1:'):'';
  html+='<footer class="v2-session-foot">'+(rest&&!restFull?'<button type="button" class="v2-rest v2-rest-bar" data-action="v2-rest-max" data-next="'+esc(rest.nextText||'')+'" style="--p:'+pct+'" role="timer" aria-label="Repos en cours : agrandir"><span class="v2-ring v2-ring--sm" aria-hidden="true"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="19"/><circle class="v2-ring-on" cx="22" cy="22" r="19" pathLength="1"/></svg></span><span>Repos</span><b class="v2-rest-time">'+time+'</b><span class="v2-rest-open">Agrandir</span></button>':'')
   +'<div class="v2-nav"><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-prev" aria-label="Exercice précédent" '+(i===0?'disabled':'')+'>'+icon('left')+'</button><button type="button" class="v2-btn v2-btn--ghost v2-btn--icon" data-action="v2-machine" data-ex="'+esc(e.id)+'" aria-label="Machine prise : remplacer ou faire plus tard">'+icon('swap')+'</button>'
-  +(lastOne?(anyDone?'<button type="button" class="v2-btn" data-action="v2-finish">Terminer la séance</button>':'<button type="button" class="v2-btn v2-btn--ghost" data-action="v2-abandon">Abandonner la séance</button>'):'<button type="button" class="v2-btn'+(cur?' v2-btn--ghost':'')+'" data-action="v2-next">Exercice suivant'+icon('right')+'</button>')+'</div>'
+  +(lastOne?(anyDone?'<button type="button" class="v2-btn" data-action="v2-finish">Terminer la séance</button>':'<button type="button" class="v2-btn v2-btn--ghost v2-btn--danger" data-action="v2-abandon">Abandonner la séance</button>'):'<button type="button" class="v2-btn'+(cur?' v2-btn--ghost':'')+'" data-action="v2-next">Exercice suivant'+icon('right')+'</button>')+'</div>'
   +(pending?'<p class="v2-sync">'+plural(pending,'modification en attente d’envoi','modifications en attente d’envoi')+'</p>':'')+'</footer>';
  // Repos plein écran
  if(restFull)html+='<div class="v2-rest v2-rest-full" role="timer" data-next="'+esc(rest.nextText||'')+'" style="--p:'+pct+'" aria-label="Repos"><div class="v2-rest-head"><span>Repos · '+esc(name)+'</span><button type="button" class="v2-iconbtn" data-action="v2-rest-min" aria-label="Réduire le repos">'+icon('down')+'</button></div>'
@@ -234,8 +234,8 @@ function moreSheet({exercise,anyDone=true,restAlert=null}={}){
   // Alerte téléphone verrouillé : null = invité ; 'off-device' = rappels non activés sur cet appareil.
   +(restAlert==='off-device'?'<p class="v2-muted v2-center">Alerte de fin de repos téléphone verrouillé : active les rappels dans Programme sur cet appareil.</p>':restAlert==null?'':'<button type="button" class="v2-btn v2-btn--ghost" data-action="rest-alert-toggle" aria-pressed="'+(restAlert==='on')+'">'+icon('clock')+(restAlert==='on'?'Alerte écran verrouillé : activée':'Alerte écran verrouillé : coupée')+'</button>')
 
-  +(anyDone?'<button type="button" class="v2-btn" data-action="v2-finish">Terminer la séance</button><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-abandon">Abandonner la séance</button><p class="v2-muted v2-center">Tu peux terminer sans tout valider : seules les séries validées comptent. Abandonner : rien ne compte.</p>'
-   :'<button type="button" class="v2-btn v2-btn--ghost" data-action="v2-wrong-session">Ce n’est pas la bonne séance</button><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-abandon">Abandonner la séance</button><p class="v2-muted v2-center">Aucune série validée : la séance ne compte pas tant que tu n’en valides pas une.</p>')+'</section></div>';
+  +(anyDone?'<button type="button" class="v2-btn" data-action="v2-finish">Terminer la séance</button><button type="button" class="v2-btn v2-btn--ghost v2-btn--danger" data-action="v2-abandon">Abandonner la séance</button><p class="v2-muted v2-center">Tu peux terminer sans tout valider : seules les séries validées comptent. Abandonner : rien ne compte.</p>'
+   :'<button type="button" class="v2-btn v2-btn--ghost" data-action="v2-wrong-session">Ce n’est pas la bonne séance</button><button type="button" class="v2-btn v2-btn--ghost v2-btn--danger" data-action="v2-abandon">Abandonner la séance</button><p class="v2-muted v2-center">Aucune série validée : la séance ne compte pas tant que tu n’en valides pas une.</p>')+'</section></div>';
 }
 
 function idlePrompt(minutes){
