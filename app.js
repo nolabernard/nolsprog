@@ -404,14 +404,14 @@ S.previousTab=S.tab;S.tab=b.dataset.tab;render();scrollToSectionTop()}});
 // Save typed set values locally as they change: closing the app must not lose a focused field.
 root.addEventListener('input',e=>{
  const el=e.target;
- if(el?.dataset?.v2Field){V2?.input({ex:el.dataset.ex,set:el.dataset.set,field:el.dataset.v2Field,value:el.value});return}
+ if(el?.dataset?.v2Field){el.dataset.len=String(el.value.length);V2?.input({ex:el.dataset.ex,set:el.dataset.set,field:el.dataset.v2Field,value:el.value});return}
  if('v2Search' in (el?.dataset||{})){V2?.change({kind:'search',value:el.value});const box=root.querySelector('.v2-results');if(box&&V2?.pickerResultsHTML)box.innerHTML=V2.pickerResultsHTML();else render();return}
 });
 window.addEventListener('online',()=>{V2?.flushNow()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&root.querySelector('.v2-sheet [data-action="v2-close-sheet"],.v2-sheet-wrap [data-action="v2-close-sheet"]')){V2?.handle('v2-close-sheet')}});
 window.addEventListener('pagehide',()=>{V2?.flushNow();if(A.session)flushSets().catch(()=>{})});
 
-root.addEventListener('change',async e=>{const el=e.target;if('v2RemTime' in (el.dataset||{})){V2?.change({kind:'rem-time',value:el.value});return}if(el.dataset?.v2Sets){V2?.change({kind:'sets',ce:el.dataset.v2Sets,value:el.value});return}if('v2Progress' in (el.dataset||{})){V2?.change({kind:'progress',value:el.value});return}if(el.dataset.profile&&A.answers){A.answers[el.dataset.profile]=el.value;return}});
+root.addEventListener('change',async e=>{const el=e.target;if('v2RemTime' in (el.dataset||{})){V2?.change({kind:'rem-time',value:el.value});return}if(el.dataset?.v2Sets){V2?.change({kind:'sets',ce:el.dataset.v2Sets,value:el.value});return}if(el.dataset?.v2Reps){V2?.change({kind:'reps',ce:el.dataset.v2Reps,value:el.value});return}if(el.dataset?.v2Rest){V2?.change({kind:'rest',ce:el.dataset.v2Rest,value:el.value});return}if('v2Progress' in (el.dataset||{})){V2?.change({kind:'progress',value:el.value});return}if(el.dataset.profile&&A.answers){A.answers[el.dataset.profile]=el.value;return}});
 root.addEventListener('submit',async e=>{
  if('v2Cardio' in (e.target?.dataset||{})){e.preventDefault();const f=new FormData(e.target);await V2?.saveCardio({type:f.get('type'),minutes:f.get('minutes'),workout:f.get('workout'),id:f.get('id')||undefined});return}
  if('v2CardioPlan' in (e.target?.dataset||{})){e.preventDefault();const f=new FormData(e.target);await V2?.addCardioPlan({type:f.get('type'),minutes:f.get('minutes'),per_week:f.get('per_week')});return}

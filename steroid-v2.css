@@ -807,3 +807,25 @@ html.theme-dark .tabbar button.tab-main:not(.active) .tab-label{color:var(--mute
 .v2-one .v2-card-set:has(.v2-rate2) .v2-step{height:clamp(38px,5vh,46px)}
 .v2-one .v2-steppers{overflow:hidden}
 @media (max-height:820px){.v2-hint{display:none}}
+/* Programme : réglages séries / répétitions / repos sur une ligne. */
+.v2-prog-list li:has(.v2-prog-move){grid-template-columns:auto minmax(0,1fr)}
+.v2-prog-move{grid-row:span 3}
+.v2-prog-name{grid-column:2}
+.v2-prog-params{grid-column:2;display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.3fr) minmax(0,1.1fr);gap:8px}
+.v2-prog-params label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:var(--muted);min-width:0}
+.v2-prog-params select{width:100%;min-height:44px;padding:0 6px;font-size:15px}
+.v2-prog-list li:has(.v2-prog-move) .v2-prog-actions{grid-column:2}
+/* Séance : bouton « Accueil » explicite (la séance reste en cours). */
+.v2-session-top{display:grid!important;grid-template-columns:1fr auto 1fr;align-items:center}
+.v2-session-top>:last-child{justify-self:end}
+.v2-homebtn{justify-self:start;display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:0 14px 0 8px;border:0;border-radius:22px;background:var(--raised);color:var(--accent);font-weight:800;font-size:14px;cursor:pointer}
+html.theme-dark .v2-homebtn{background:var(--raised)!important;color:var(--accent)!important}
+/* Chiffres kg / rép. : la taille suit le nombre de caractères (53,75 ne se coupe plus) et les panneaux ne s'étirent plus. */
+.v2-one .v2-cell.v2-big[data-len="4"]{font-size:clamp(34px,6.2vh,54px)}
+.v2-one .v2-cell.v2-big[data-len="5"]{font-size:clamp(28px,5vh,44px)}
+.v2-one .v2-cell.v2-big[data-len="6"]{font-size:clamp(24px,4.2vh,36px)}
+.v2-one .v2-steppers{align-items:center;align-content:center}
+.v2-one .v2-stepper{padding-block:clamp(12px,2.4vh,26px)}
+.v2-one .v2-steppers{flex:0 1 auto;margin-block:auto;align-items:stretch}
+.v2-one .v2-cell.v2-big{min-height:clamp(44px,8vh,70px)}
+@media (max-width:379px){.v2-prog-params{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)}.v2-prog-params label:last-child{grid-column:1/-1}}

@@ -123,6 +123,8 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  await c.handle('v2-add-ex',{session:c.state().cycle.sessions[1].id});await c.handle('v2-pick',{key:'leg-extension'});await c.handle('v2-edit-save');
  assert.equal(c.state().cycle.sessions[1].exercises.length,2);assert.equal(c.state().cycle.sessions[1].exercises[1].role,'finition');
  c.change({kind:'sets',ce:ce.id,value:'4'});await c.handle('v2-edit-save');assert.equal(c.state().cycle.sessions[1].exercises[0].sets,4);
+ c.change({kind:'reps',ce:ce.id,value:'8-12'});c.change({kind:'rest',ce:ce.id,value:'150'});c.change({kind:'rest',ce:ce.id,value:'5'});c.change({kind:'reps',ce:ce.id,value:'12-8'});await c.handle('v2-edit-save');
+ {const x=c.state().cycle.sessions[1].exercises[0];assert.deepEqual([x.reps_min,x.reps_max,x.rest_seconds],[8,12,150],'répétitions et repos modifiables, valeurs invalides ignorées')}
  await c.handle('v2-remove-ex',{ce:ce.id});await c.handle('v2-edit-save');assert.equal(c.state().cycle.sessions[1].exercises.length,1);
  // Exercice perso : créé puis choisi.
  await c.handle('v2-add-ex',{session:c.state().cycle.sessions[1].id});await c.handle('v2-create');

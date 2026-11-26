@@ -608,6 +608,7 @@ function create(ctx){
   if(kind==='rem-time'){const [h,m]=String(value).split(':').map(Number);remRun(()=>Rem.update({hour:h,minute:m}));return}
   if(kind==='search'){S.query=String(value||'');return}
   if(kind==='progress'){S.selected=value;render();return}
+  if(kind==='reps'||kind==='rest'){const {e}=sessionIn(draft(),ce);if(e){if(kind==='rest'){const n=Number(value);if(Number.isInteger(n)&&n>=15&&n<=600){e.rest_seconds=n;saveCycleExercise(e)}}else{const [a,b]=String(value).split('-').map(Number);if(Number.isInteger(a)&&Number.isInteger(b)&&a>=1&&b>=a&&b<=180){e.reps_min=a;e.reps_max=b;saveCycleExercise(e)}}}render();return}
   if(kind==='sets'){const {e}=sessionIn(draft(),ce);const n=Number(value);if(e&&Number.isInteger(n)&&n>=1&&n<=6){e.sets=n;saveCycleExercise(e)}render()}
  }
  function tick(){
