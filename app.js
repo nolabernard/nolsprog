@@ -262,9 +262,12 @@ function stampSheets(){const t=Date.now();for(const el of root.querySelectorAll(
 // Petites animations : l'écran qui change entre en fondu, la nouvelle série en cours apparaît, une série validée « pulse ».
 // Rien ne rejoue quand on touche − / + (même écran, même série). « Réduire les animations » : tout est coupé en CSS.
 let enterKey='',enterSet='',doneSets=new Set();
+let restShown=false;
 function animateScreen(){try{const main=root.querySelector('main');if(!main)return;const first=main.firstElementChild;
  const key=[A.view,S.tab,first?.className||'',root.querySelector('.v2-ex-title')?.textContent||'',root.querySelector('.v2-hello')?.textContent||''].join('|');
  if(key!==enterKey){enterKey=key;main.classList.add('v2-enter');scrollToSectionTop()} // nouvel écran : toujours en haut (Commencer, onglet, exercice)
+ else main.classList.remove('v2-enter'); // simple mise à jour du même écran (série validée, ressenti) : pas de nouvelle animation d'entrée
+ const rest=root.querySelector('.v2-rest-full');if(rest&&!restShown)rest.classList.add('v2-rest-in');restShown=!!rest;
  const cur=root.querySelector('.v2-current'),ck=cur?(root.querySelector('.v2-ex-title')?.textContent||'')+(cur.getAttribute('aria-label')||''):'';
  if(cur&&ck!==enterSet)cur.classList.add('v2-pop');enterSet=ck;
  const now=new Set([...root.querySelectorAll('.v2-set.is-done .v2-ok')].map(b=>b.dataset.ex+'|'+b.dataset.set));
