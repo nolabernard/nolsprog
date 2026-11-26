@@ -709,7 +709,8 @@ html:has(.shell.is-v2-session),html:has(.shell.is-v2-session) body{overflow:hidd
 .v2-rest-open{margin-left:auto;font-size:13px;font-weight:800;color:#B8F36B}
 .v2-ring--sm,.v2-ring--sm svg{width:40px!important;height:40px!important}
 /* Repos plein écran */
-.v2-rest-full{position:fixed;inset:0;z-index:60;display:flex!important;flex-direction:column;gap:clamp(12px,2.4vh,22px);background:#0B4D3B!important;color:#F5F0E5!important;padding:max(10px,env(safe-area-inset-top)) 18px calc(16px + env(safe-area-inset-bottom))!important;border-radius:0!important;box-sizing:border-box;overflow:hidden;animation:v2-enter .25s ease-out both}
+.v2-rest-full{position:fixed;inset:0;z-index:60;display:flex!important;flex-direction:column;gap:clamp(12px,2.4vh,22px);background:#0B4D3B!important;color:#F5F0E5!important;padding:max(10px,env(safe-area-inset-top)) 18px calc(16px + env(safe-area-inset-bottom))!important;border-radius:0!important;box-sizing:border-box;overflow:hidden}
+.v2-rest-full.v2-rest-in{animation:v2-enter .25s ease-out both}
 .v2-rest-head{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px}
 .v2-rest-head span{font-size:15px;font-weight:700;color:#C9DFD1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .v2-rest-head .v2-iconbtn{color:#F5F0E5;background:rgba(255,252,247,.12)}
@@ -729,7 +730,7 @@ html:has(.shell.is-v2-session),html:has(.shell.is-v2-session) body{overflow:hidd
 .v2-rest-next span{font-size:13px;font-weight:700;color:#5E6B63;text-transform:uppercase;letter-spacing:.04em}
 .v2-rest-next b{font-family:Archivo,Inter,sans-serif;font-weight:900;font-size:24px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .v2-rest-next button{min-height:48px;padding:0 16px;border:0;border-radius:14px;background:#EADCC6;color:#0B4D3B;font-size:16px;font-weight:800;cursor:pointer}
-@media (prefers-reduced-motion:reduce){.v2-rest-full{animation:none}.v2-rest-ring .v2-ring-on{transition:none}}
+@media (prefers-reduced-motion:reduce){.v2-rest-full.v2-rest-in{animation:none}.v2-rest-ring .v2-ring-on{transition:none}}
 /* Petits écrans */
 @media (max-height:720px){.v2-advice2{display:none}.v2-one .v2-current-title{display:none}}
 @media (max-height:620px){.v2-one .v2-steps{display:none}.v2-ex-pic{display:none}}
