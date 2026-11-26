@@ -12,6 +12,19 @@ const nameOf=(key,ux=[])=>Cat()?.byKey(key)?.name||ux.find(u=>u.key===key)?.name
 const kg=v=>v==null?'—':Number(v).toLocaleString('fr-FR',{maximumFractionDigits:2});
 const clock=sec=>{sec=Math.max(0,Math.round(sec||0));const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60,p=n=>String(n).padStart(2,'0');return h?h+':'+p(m)+':'+p(s):p(m)+':'+p(s)};
 const restText=sec=>{sec=Number(sec)||0;if(sec<60)return sec+' s';const m=Math.floor(sec/60),s=sec%60;return m+' min'+(s?' '+s:'')};
+// Réglages d'un exercice du programme : séries, répétitions (ou secondes), repos. Les valeurs actuelles restent toujours proposées.
+const REPS_PRESETS=[[4,6],[5,8],[6,8],[6,10],[8,10],[8,12],[10,12],[10,15],[12,15],[12,20],[15,20],[20,30]],SECS_PRESETS=[[20,30],[30,45],[30,60],[45,60],[60,90]],REST_PRESETS=[30,45,60,75,90,120,150,180,240,300];
+function progParams(e){
+ const tm=timed(e.exercise_key),cur=[Number(e.reps_min)||0,Number(e.reps_max)||0],id=esc(e.id);
+ const pre=tm?SECS_PRESETS:REPS_PRESETS,all=pre.some(r=>r[0]===cur[0]&&r[1]===cur[1])||!cur[0]?pre:[...pre,cur].sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+ const rest=Number(e.rest_seconds)||0,rs=REST_PRESETS.includes(rest)||!rest?REST_PRESETS:[...REST_PRESETS,rest].sort((a,b)=>a-b);
+ const label=(t,sel)=>'<label>'+t+sel+'</label>';
+ return '<div class="v2-prog-params">'
+  +label('Séries','<select class="v2-select" data-v2-sets="'+id+'">'+[1,2,3,4,5,6].map(n=>'<option '+(n===Number(e.sets)?'selected':'')+'>'+n+'</option>').join('')+'</select>')
+  +label(tm?'Secondes':'Répétitions','<select class="v2-select" data-v2-reps="'+id+'" aria-label="'+(tm?'Secondes':'Répétitions')+'">'+all.map(r=>'<option value="'+r[0]+'-'+r[1]+'"'+(r[0]===cur[0]&&r[1]===cur[1]?' selected':'')+'>'+(r[0]===r[1]?r[0]:r[0]+' à '+r[1])+'</option>').join('')+'</select>')
+  +label('Repos','<select class="v2-select" data-v2-rest="'+id+'" aria-label="Repos">'+rs.map(n=>'<option value="'+n+'"'+(n===rest?' selected':'')+'>'+restText(n)+'</option>').join('')+'</select>')
+  +'</div>';
+}
 const reps=(a,b)=>a===b?String(a):a+' à '+b;
 const plural=(n,one,many)=>n+' '+(n>1?many:one);
 const P={play:'<path d="M8 5v14l11-7z"/>',pause:'<path d="M8 5v14M16 5v14"/>',check:'<path d="m5 12 5 5L20 7"/>',swap:'<path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
@@ -153,7 +166,7 @@ function session({tip=null,workout,index=0,elapsed=0,paused=false,pausedFor=0,re
  const i=Math.max(0,Math.min(index,list.length-1)),e=list[i];
  if(!e)return '<section class="v2-session"><p>Aucun exercice dans cette séance.</p><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-abandon">Abandonner la séance</button></section>';
  const p=e.plan||{},prev=last[e.exercise_key],name=nameOf(e.exercise_key,userExercises),tm=timed(e.exercise_key),cur=e.sets.find(x=>!x.completed);
- let html='<section class="v2-session v2-one" aria-label="Séance en cours"><header class="v2-session-top"><button type="button" class="v2-iconbtn" data-action="v2-exit" aria-label="Revenir à l’accueil (la séance reste en cours)">'+icon('close')+'</button>'
+ let html='<section class="v2-session v2-one" aria-label="Séance en cours"><header class="v2-session-top"><button type="button" class="v2-homebtn" data-action="v2-exit" aria-label="Accueil : la séance reste en cours">'+icon('left','v2-ic v2-ic--sm')+'<span>Accueil</span></button>'
   +'<button type="button" class="v2-chrono'+(paused?' is-paused':'')+'" data-action="'+(paused?'v2-resume':'v2-pause')+'" aria-label="'+(paused?'Reprendre la séance':'Mettre la séance en pause')+'">'+icon(paused?'play':'pause','v2-ic v2-ic--sm')+'<span>'+clock(elapsed)+'</span></button>'
   +'<button type="button" class="v2-iconbtn" data-action="v2-more" aria-label="Plus d’options">'+icon('more')+'</button></header>'
   +'<div class="v2-steps" aria-label="Exercice '+(i+1)+' sur '+list.length+'">'+list.map((x,k)=>'<i class="'+(x.sets.every(s=>s.completed)?'is-done':k===i?'is-current':'')+'"></i>').join('')+'</div>';
@@ -173,7 +186,7 @@ function session({tip=null,workout,index=0,elapsed=0,paused=false,pausedFor=0,re
  if(rate&&!restFull)html+=rateBlock(rate,'v2-rate2');
  if(cur){
   const n=cur.set_number,tp=tip&&tip.ex===e.id&&tip.set===n?tip:null,wStep=2.5,rStep=tm?5:1;
-  const cell=(f,lab,mode,max)=>'<input class="v2-cell v2-big" aria-label="'+lab+' série '+n+'" data-v2-field="'+f+'" data-ex="'+esc(e.id)+'" data-set="'+n+'" type="text" inputmode="'+mode+'" autocomplete="off" maxlength="'+max+'" placeholder="—" value="'+(cur[f]==null?'':esc(String(cur[f]).replace('.',',')))+'">';
+  const cell=(f,lab,mode,max)=>'<input class="v2-cell v2-big" aria-label="'+lab+' série '+n+'" data-v2-field="'+f+'" data-ex="'+esc(e.id)+'" data-set="'+n+'" type="text" inputmode="'+mode+'" autocomplete="off" maxlength="'+max+'" placeholder="—" data-len="'+String(cur[f]==null?'':String(cur[f]).replace('.',',')).length+'" value="'+(cur[f]==null?'':esc(String(cur[f]).replace('.',',')))+'">';
   const step=(f,dlt,lab)=>'<button type="button" class="v2-step" data-action="v2-step" data-ex="'+esc(e.id)+'" data-set="'+n+'" data-f="'+f+'" data-d="'+dlt+'" aria-label="'+lab+'">'+icon(dlt<0?'minus':'plus')+'</button>';
   html+=(tp?'<div class="v2-tip v2-tip--'+tp.kind+'" role="status" aria-label="'+(tp.kind==='up'?'Belle marge sur la série précédente':'Série précédente trop lourde')+' : essaie '+kg(tp.weight)+' kilos">'+icon(tp.kind==='up'?'up':'down','v2-ic v2-ic--sm')+'<span>Essaie <b>'+kg(tp.weight)+' kg</b></span><button type="button" class="v2-tip-apply" data-action="v2-tip-apply">Appliquer</button></div>':'')
    +'<div class="v2-current" aria-label="Série '+n+' sur '+e.sets.length+'"><p class="v2-current-title">Série '+n+' <small>sur '+e.sets.length+'</small></p><div class="v2-steppers">'
@@ -439,7 +452,7 @@ function programme({cycle,userExercises=[],picking=null,query='',results=[],crea
   html+='<ol class="v2-prog-list" id="v2-prog-'+esc(s.id)+'">';
   s.exercises.forEach((e,k)=>{
    html+='<li><div class="v2-prog-move"><button type="button" class="v2-move" data-action="v2-move-ex" data-ce="'+esc(e.id)+'" data-dir="-1" aria-label="Monter '+esc(nameOf(e.exercise_key,userExercises))+'"'+(k===0?' disabled':'')+'>'+icon('up','v2-ic v2-ic--sm')+'</button><button type="button" class="v2-move" data-action="v2-move-ex" data-ce="'+esc(e.id)+'" data-dir="1" aria-label="Descendre '+esc(nameOf(e.exercise_key,userExercises))+'"'+(k===s.exercises.length-1?' disabled':'')+'>'+icon('down','v2-ic v2-ic--sm')+'</button></div><div class="v2-prog-name"><b>'+esc(nameOf(e.exercise_key,userExercises))+'</b><small>'+reps(e.reps_min,e.reps_max)+unit(e.exercise_key)+' · repos '+restText(e.rest_seconds)+'</small></div>'
-    +'<label class="v2-prog-sets">Séries<select class="v2-select" data-v2-sets="'+esc(e.id)+'">'+[1,2,3,4,5,6].map(n=>'<option '+(n===Number(e.sets)?'selected':'')+'>'+n+'</option>').join('')+'</select></label>'
+    +progParams(e)
     +'<div class="v2-prog-actions"><button type="button" class="v2-link" data-action="v2-edit-ex" data-ce="'+esc(e.id)+'">Changer</button><button type="button" class="v2-link v2-link--muted" data-action="v2-remove-ex" data-ce="'+esc(e.id)+'">Retirer</button></div></li>';
   });
   html+='</ol><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-add-ex" data-session="'+esc(s.id)+'">'+icon('plus')+'Ajouter un exercice</button></section>';
