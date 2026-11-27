@@ -20,8 +20,8 @@ function create(ctx){
  let ui=read(K.ui,{lastAction:null,rest:null,view:'home',index:0});
  let outbox=read(K.outbox,[]); // lignes de programme à envoyer (cycles, séances, exercices prévus, exercices perso)
  let flushTimer=null,flushing=null;
- // Guide de la première série : 0 = rien, 1 à 3 = étape. Montré une seule fois, et seulement à qui n'a encore rien validé.
- const guideStep=()=>{if(S.guide===undefined){let done=false;try{done=read(K.guide,false)===true}catch{}S.guide=done||S.setLogs.some(r=>r.completed)||W().length?0:1}return S.guide};
+ // Guide de la première série : 0 = rien, 1 à 3 = étape. Montré une seule fois, et seulement à qui n'a encore rien validé (en démo : à chaque démo, malgré l'historique fictif).
+ const guideStep=()=>{if(S.guide===undefined){let done=false;try{done=read(K.guide,false)===true}catch{}S.guide=done||(!ctx.guideAlways&&(S.setLogs.some(r=>r.completed)||W().length))?0:1}return S.guide};
  const endGuide=()=>{S.guide=0;write(K.guide,true)};
  const saveUi=()=>{ui={lastAction:ui.lastAction,rest:S.rest,view:S.view,index:S.index};write(K.ui,ui)};
  const touch=()=>{ui.lastAction=now();saveUi()};
