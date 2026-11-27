@@ -13,13 +13,16 @@ function create(ctx){
  const {storage,api,userId,now=()=>Date.now(),uuid=()=>G().crypto.randomUUID(),render=()=>{},notice=()=>{},confirm=async()=>true}=ctx;
  const C=G().SteroidCycle,H=G().SteroidHistory,Rv=G().SteroidReview,UI=G().SteroidUI,Planner=G().SteroidPlanner,Cat=G().SteroidCatalogue;
  const owner=userId||'guest';
- const K={cycle:'nolsprog-v2-cycle:'+owner,history:'nolsprog-v2-history:'+owner,ui:'nolsprog-v2-ui:'+owner,outbox:'nolsprog-v2-outbox:'+owner,deload:'nolsprog-v2-deload:'+owner,proposal:'nolsprog-v2-proposal:'+owner};
+ const K={cycle:'nolsprog-v2-cycle:'+owner,history:'nolsprog-v2-history:'+owner,ui:'nolsprog-v2-ui:'+owner,outbox:'nolsprog-v2-outbox:'+owner,deload:'nolsprog-v2-deload:'+owner,proposal:'nolsprog-v2-proposal:'+owner,guide:'nolsprog-v2-guide:'+owner};
  const read=(k,d)=>{try{const v=JSON.parse(storage.getItem(k)||'null');return v??d}catch{return d}};
  const write=(k,v)=>{try{storage.setItem(k,JSON.stringify(v))}catch{notice('Espace de stockage plein sur ce téléphone.',true)}};
  const S={cardioLogs:[],cycle:null,workouts:[],setLogs:[],userExercises:[],store:null,view:'home',index:0,sheet:null,rest:null,summary:null,metric:'weight',selected:null,tab:'exercises',open:null,truncated:false,advice:null,proposal:null,nextAnswers:null,picking:null,query:'',creating:false,building:false};
  let ui=read(K.ui,{lastAction:null,rest:null,view:'home',index:0});
  let outbox=read(K.outbox,[]); // lignes de programme à envoyer (cycles, séances, exercices prévus, exercices perso)
  let flushTimer=null,flushing=null;
+ // Guide de la première série : 0 = rien, 1 à 3 = étape. Montré une seule fois, et seulement à qui n'a encore rien validé.
+ const guideStep=()=>{if(S.guide===undefined){let done=false;try{done=read(K.guide,false)===true}catch{}S.guide=done||S.setLogs.some(r=>r.completed)||W().length?0:1}return S.guide};
+ const endGuide=()=>{S.guide=0;write(K.guide,true)};
  const saveUi=()=>{ui={lastAction:ui.lastAction,rest:S.rest,view:S.view,index:S.index};write(K.ui,ui)};
  const touch=()=>{ui.lastAction=now();saveUi()};
  const Rem=G().SteroidReminders?.create({storage,api,userId,uuid});let remBusy=false;
@@ -297,7 +300,7 @@ function create(ctx){
    // Échauffement : premier exercice de base de la séance, tant qu'aucune série n'est validée.
    const firstBase=items.find(x=>x.plan?.role==='base');let warm=null;
    if(firstBase&&items[S.index]?.id===firstBase.id&&!firstBase.sets.some(x=>x.completed)){const ref=firstBase.sets.find(x=>x.weight!=null)?.weight??last()[firstBase.exercise_key]?.weight;warm={ex:firstBase.id,sets:C.warmup(ref)}}
-   let html=UI.session({tip:S.tip&&w.exercises.some(e=>e.id===S.tip.ex&&e.sets.some(x=>x.set_number===S.tip.set&&!x.completed))?S.tip:null,light,warmup:warm,rate:rateInfo(w),advice,workout:w,index:S.index,elapsed:S.store.elapsedSeconds(),paused:S.store.isPaused(),pausedFor:w.paused_at?Math.round((now()-w.paused_at)/1000):0,rest:left?(()=>{const n=restNext(w);return {remaining:left,total:S.rest?.total||left,next:n,nextText:nextText(n),min:Boolean(S.rest?.min)}})():null,last:last(),userExercises:S.userExercises,pending:pending()});
+   let html=UI.session({tip:S.tip&&w.exercises.some(e=>e.id===S.tip.ex&&e.sets.some(x=>x.set_number===S.tip.set&&!x.completed))?S.tip:null,light,warmup:warm,rate:rateInfo(w),guide:guideStep(),advice,workout:w,index:S.index,elapsed:S.store.elapsedSeconds(),paused:S.store.isPaused(),pausedFor:w.paused_at?Math.round((now()-w.paused_at)/1000):0,rest:left?(()=>{const n=restNext(w);return {remaining:left,total:S.rest?.total||left,next:n,nextText:nextText(n),min:Boolean(S.rest?.min)}})():null,last:last(),userExercises:S.userExercises,pending:pending()});
    const idle=idleMinutes();
    if(idle)html+=UI.idlePrompt(idle);
    else if(S.sheet?.type==='machine'){const e=w.exercises.find(x=>x.id===S.sheet.ex);if(e){const practiced={};for(const r of S.setLogs)if(r.completed)practiced[r.exercise_key]=(practiced[r.exercise_key]||0)+1;
@@ -415,6 +418,7 @@ function create(ctx){
     if(!s.completed){S.rest=null;S.rate=null}
     // Série validée : les séries suivantes encore vides reprennent sa charge et ses répétitions (modifiables).
     if(s.completed)for(const x of e.sets)if(x.set_number>s.set_number&&!x.completed){const fill={};if(x.weight==null&&s.weight!=null)fill.weight=s.weight;if(x.reps==null&&s.reps!=null)fill.reps=s.reps;if(Object.keys(fill).length)S.store.logSet(e.id,x.set_number,fill)}
+    if(s.completed&&(S.guide===1||S.guide===2))S.guide=3;
     if(s.completed){S.rate={ex:e.id,set:s.set_number};startRest(e.plan.rest_seconds||90,S.rate);if(e.sets.every(x=>x.completed)){const items=list(),i=items.findIndex(x=>x.id===e.id);if(i>=0&&i<items.length-1)S.index=i+1}}
     saveUi();scheduleFlush();break;
    }
@@ -451,7 +455,7 @@ function create(ctx){
      if(rir>=3)S.tip={ex:e.id,set:next.set_number,kind:'up',weight:Number((s.weight+H.increment(s.weight)).toFixed(2))};
      else if(rir===0&&s.reps<(e.plan.reps_min||0))S.tip={ex:e.id,set:next.set_number,kind:'down',weight:Math.max(0,Number((s.weight-H.increment(s.weight)).toFixed(2)))};
     }
-    S.rate=null;if(S.rest)S.rest.rate=null;saveUi();break}
+    S.rate=null;if(S.rest)S.rest.rate=null;if(S.guide===3)endGuide();saveUi();break}
    case 'v2-pause':if(S.rest){const l=restLeft();S.rest=l?{frozen:l}:null}S.store.pause();touch();scheduleFlush();break;
    case 'v2-resume':if(S.rest?.frozen!=null)S.rest={end:now()+S.rest.frozen*1000};S.store.resume();touch();scheduleFlush();break;
    case 'v2-idle-yes':S.store.pause(ui.lastAction);S.store.resume();touch();scheduleFlush();break;
@@ -461,6 +465,9 @@ function create(ctx){
    case 'v2-next':S.index=Math.min(S.index+1,list().length-1);touch();break;
    case 'v2-prev':S.index=Math.max(0,S.index-1);touch();break;
    case 'v2-machine':S.sheet={type:'machine',ex:d.ex};break;
+   case 'v2-guide-next':{const g=guideStep();if(g===1)S.guide=2;else if(g===2)S.guide=3;else endGuide();break}
+   case 'v2-guide-skip':endGuide();break
+   case 'v2-guide-replay':S.guide=1;S.sheet=null;break
    case 'v2-more':S.sheet={type:'more'};break;
    case 'v2-later':S.store.later(d.ex);S.sheet=null;touch();scheduleFlush();break;
    case 'v2-skip-ex':S.store.skip(d.ex);S.sheet=null;S.index=Math.min(S.index,Math.max(0,list().length-1));touch();scheduleFlush();break;

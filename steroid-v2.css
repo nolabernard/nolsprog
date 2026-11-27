@@ -847,3 +847,25 @@ html.theme-dark .v2-homebtn{background:var(--raised)!important;color:var(--accen
 .v2-one .v2-ex-title.is-long{font-size:clamp(18px,2.6vh,22px);-webkit-line-clamp:2}
 .v2-btn--danger{color:#B3261E}
 html.theme-dark .v2-btn--danger{color:#FFB4AB!important}
+
+/* Guide de la première série : carte posée en bas, l'élément expliqué est entouré. */
+.v2-guide{position:fixed;left:50%;transform:translateX(-50%);bottom:max(10px,env(safe-area-inset-bottom));z-index:70;width:min(calc(100% - 20px),500px);box-sizing:border-box;display:flex;flex-direction:column;gap:8px;padding:12px 16px 14px;border-radius:24px;background:var(--surface);color:var(--text);box-shadow:0 -6px 30px rgba(7,53,40,.28),0 0 0 1px var(--line)}
+.v2-guide-top{display:flex;align-items:center;gap:10px}
+.v2-guide-dots{display:flex;gap:5px}
+.v2-guide .v2-guide-dots i{display:block;width:8px;height:8px;border-radius:50%;background:#C9D6CC!important}
+.v2-guide .v2-guide-dots i.is-past{background:var(--accent)!important}
+.v2-guide .v2-guide-dots i.is-on{width:22px;border-radius:5px;background:var(--accent)!important}
+.v2-guide-count{font-size:13px;font-weight:700;color:var(--muted)}
+.v2-guide-skip{margin-left:auto;min-height:44px;padding:0 6px;border:0;background:none;color:var(--muted);font:inherit;font-size:14px;text-decoration:underline;cursor:pointer}
+.v2-guide h2{margin:-4px 0 0;font-size:20px;line-height:1.2}
+.v2-guide p{margin:0;font-size:15px;line-height:1.4}
+.v2-guide .v2-guide-hint{color:var(--muted);font-size:14px}
+.v2-guide-next{width:100%;min-height:52px;margin-top:4px}
+.is-spot{outline:3px solid #B8F36B;outline-offset:4px;border-radius:18px}
+.v2-guide.is-top{bottom:auto;top:max(10px,env(safe-area-inset-top))}
+.v2-rate-full.is-spot{outline-offset:6px}
+html.theme-dark .v2-guide{background:#16221D;color:#F5F0E5;box-shadow:0 -6px 30px rgba(0,0,0,.55),0 0 0 1px rgba(255,252,247,.14)}
+html.theme-dark .v2-guide .v2-guide-dots i{background:rgba(255,252,247,.22)!important}
+html.theme-dark .v2-guide .v2-guide-dots i.is-past,html.theme-dark .v2-guide .v2-guide-dots i.is-on{background:#B8F36B!important}
+html.theme-dark .v2-guide-count,html.theme-dark .v2-guide .v2-guide-hint,html.theme-dark .v2-guide-skip{color:#B9C6BE}
+@media (max-height:700px){.v2-guide{gap:4px;padding:8px 14px 10px}.v2-guide h2{font-size:18px}.v2-guide p{font-size:14px}.v2-guide .v2-guide-hint{display:none}.v2-guide-next{min-height:48px}}
