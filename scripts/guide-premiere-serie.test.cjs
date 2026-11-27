@@ -48,5 +48,10 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
   await a.handle('v2-finish');await a.flushNow();
   t+=86400e3;const b=V2.create({...ctx,storage:st});await b.init();await b.handle('v2-start',{session:b.state().cycle.sessions[1].id});
   assert.doesNotMatch(b.todayHTML(),/class="v2-guide"/);}
+ // 11 : en démo (historique fictif), le guide se lance quand même, une fois.
+ {const st=memory();const a=V2.create({...ctx,storage:st});await a.init();await a.handle('v2-start',{session:a.state().cycle.sessions[0].id});
+  const ex=a.state().store.current().exercises[0];a.input({ex:ex.id,set:1,field:'weight',value:'50'});a.input({ex:ex.id,set:1,field:'reps',value:'8'});await a.handle('v2-set',{ex:ex.id,set:'1'});await a.handle('v2-finish');await a.flushNow();
+  t+=86400e3;const d=V2.create({...ctx,storage:st,guideAlways:true});await d.init();await d.handle('v2-start',{session:d.state().cycle.sessions[1].id});
+  assert.match(d.todayHTML(),/data-step="1"/);await d.handle('v2-guide-skip',{});assert.doesNotMatch(d.todayHTML(),/class="v2-guide"/);}
  console.log('guide première série : ok');
 })().catch(e=>{console.error(e);process.exit(1)});

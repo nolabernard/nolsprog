@@ -309,7 +309,7 @@ function startDemo(){
  V2owner='demo';V2state='loading';V2=null;
  const uuid=()=>globalThis.crypto.randomUUID();
  (async()=>{if(!D.seeded(localStorage))await D.seed({AppV2,base:localStorage,uuid});
-  const ctl=AppV2.create({storage:D.storage(localStorage),api:null,userId:null,legacyPlan:()=>null,answers:()=>D.ANSWERS,firstName:()=>D.FIRST_NAME,render:()=>{if(V2===ctl)render()},notice:(m,err)=>setNotice(m,err),confirm:(m,o)=>globalThis.SteroidDialog.confirm(m,o)});
+  const ctl=AppV2.create({guideAlways:true,storage:D.storage(localStorage),api:null,userId:null,legacyPlan:()=>null,answers:()=>D.ANSWERS,firstName:()=>D.FIRST_NAME,render:()=>{if(V2===ctl)render()},notice:(m,err)=>setNotice(m,err),confirm:(m,o)=>globalThis.SteroidDialog.confirm(m,o)});
   await ctl.init();if(V2owner!=='demo')return;V2=ctl;V2state='ready';render()})().catch(err=>{console.warn('Démo indisponible',err);if(V2owner==='demo')V2state='off';render()});
 }
 function enterDemo(){try{localStorage.setItem('nolsprog-demo','1')}catch{}A.demo=true;A.menuOpen=false;A.view='app';S.tab='today';V2owner=null;V2=null;render();scrollToSectionTop()}
