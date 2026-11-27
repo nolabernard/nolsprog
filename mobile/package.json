@@ -1,0 +1,16 @@
+{
+  "name": "steroid-mobile",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Coquille Capacitor (iOS + Android) autour du site STEROID, pour l'App Store et Google Play.",
+  "scripts": {
+    "web": "./build-web.sh",
+    "sync": "./build-web.sh && cap sync"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/cli": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/ios": "^7.0.0"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "appId": "com.nolabernard.steroid",
+  "appName": "STEROID",
+  "webDir": "www",
+  "backgroundColor": "#F5F0E5",
+  "ios": { "contentInset": "never" },
+  "android": { "allowMixedContent": false }
+}
