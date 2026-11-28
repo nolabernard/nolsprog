@@ -181,10 +181,19 @@ function session({tip=null,workout,index=0,hold=null,elapsed=0,paused=false,paus
  const restFull=Boolean(rest&&!rest.min);
  const dot=s=>s.completed?'<button type="button" class="v2-dot is-done" data-action="v2-set" data-ex="'+esc(e.id)+'" data-set="'+s.set_number+'" aria-pressed="true" aria-label="Série '+s.set_number+' validée : '+(s.weight==null?'—':kg(s.weight)+' kg')+' × '+(s.reps??'—')+' (toucher pour la rouvrir)">'+s.set_number+'</button>'
   :'<span class="v2-dot'+(s===cur?' is-current':'')+'" aria-hidden="true">'+s.set_number+'</span>';
- html+='<div class="v2-card-set"><div class="v2-card-row"><div class="v2-dots" role="group" aria-label="Séries">'+e.sets.map(dot).join('')+'</div>'+(prev?'<span class="v2-lastline">Dernière fois <b>'+(prev.weight==null?'—':kg(prev.weight))+' × '+(prev.reps??'—')+'</b></span>':'')+'</div>';
+ html+='<div class="v2-card-set"><div class="v2-card-row"><div class="v2-dots" role="group" aria-label="Séries">'+e.sets.map(dot).join('')+'</div>'+(prev?'<span class="v2-lastline">Dernière fois <b>'+(tm?(prev.reps??'—')+' s':(prev.weight==null?'—':kg(prev.weight))+' × '+(prev.reps??'—'))+'</b></span>':'')+'</div>';
  if(advice[e.exercise_key])html+='<p class="v2-advice2">'+esc(advice[e.exercise_key].text)+'</p>';
  if(rate&&!restFull)html+=rateBlock(rate,'v2-rate2'+(guide===3?' is-spot':''));
- if(cur){
+ if(cur&&tm){
+  // Gainage : un seul bouton. Démarrer lance le compte à rebours ; la fin ou « Arrêter » valide la série et lance le repos.
+  const n=cur.set_number,tgt=Math.max(1,Math.round(Number(p.reps_min)||30)),on=Boolean(hold&&hold.ex===e.id&&hold.set===n);
+  html+='<div class="v2-current v2-hold-card" aria-label="Tenue '+n+' sur '+e.sets.length+'"><p class="v2-current-title">Tenue '+n+' <small>sur '+e.sets.length+'</small></p>'
+   +(on?'<div class="v2-hold" role="timer" aria-label="Tenue en cours"><span class="v2-hold-time">'+clock(hold.remaining)+'</span><small>sur '+clock(hold.total)+'</small></div>'
+     +'<button type="button" class="v2-btn v2-btn--big v2-hold-stop" data-action="v2-hold-stop" data-ex="'+esc(e.id)+'" data-set="'+n+'">'+icon('pause','v2-ic v2-ic--sm')+'Arrêter</button>'
+    :'<div class="v2-hold"><span class="v2-hold-time">'+clock(tgt)+'</span><small>cible</small></div>'
+     +'<button type="button" class="v2-btn v2-btn--big v2-hold-start" data-action="v2-hold-start" data-ex="'+esc(e.id)+'" data-set="'+n+'">'+icon('clock','v2-ic v2-ic--sm')+'Démarrer</button>')
+   +'</div>';
+}else if(cur){
   const n=cur.set_number,tp=tip&&tip.ex===e.id&&tip.set===n?tip:null,wStep=2.5,rStep=tm?5:1;
   const cell=(f,lab,mode,max)=>'<input class="v2-cell v2-big" aria-label="'+lab+' série '+n+'" data-v2-field="'+f+'" data-ex="'+esc(e.id)+'" data-set="'+n+'" type="text" inputmode="'+mode+'" autocomplete="off" maxlength="'+max+'" placeholder="—" data-len="'+String(cur[f]==null?'':String(cur[f]).replace('.',',')).length+'" value="'+(cur[f]==null?'':esc(String(cur[f]).replace('.',',')))+'">';
   const step=(f,dlt,lab)=>'<button type="button" class="v2-step" data-action="v2-step" data-ex="'+esc(e.id)+'" data-set="'+n+'" data-f="'+f+'" data-d="'+dlt+'" aria-label="'+lab+'">'+icon(dlt<0?'minus':'plus')+'</button>';
