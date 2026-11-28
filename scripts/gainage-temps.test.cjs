@@ -33,4 +33,9 @@ assert.match(html,/class="v2-hold-time">00:45<\/span>/);
  const html=UI.session({workout:wl,index:0,last:{},advice:{}});
  assert.match(html,/Tenue 1 validée : 40 secondes/);assert.doesNotMatch(html,/— kg/);}
 
+// Historique : une tenue s'affiche en secondes (« 40 s »), pas en « reps ».
+{const sess={id:'w9',title:'Abdos',date:'2026-11-27T10:00:00Z',sets:1,volume:0,durationSeconds:600,cardio:[],exercises:[{key:'gainage',from:null,sets:[{weight:null,reps:40,completed:true}]}]};
+ const html=UI.progress({tab:'sessions',sessions:[sess],open:'w9',records:[]});
+ assert.match(html,/40 s/);assert.doesNotMatch(html,/40 reps/);}
+
 console.log('gainage : un bouton, tenue validée automatiquement : ok');

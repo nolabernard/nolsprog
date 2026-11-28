@@ -309,7 +309,7 @@ function cardioBlock(weeks){
 const WD=['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];
 function dayText(iso){const d=new Date(iso);return Number.isNaN(d.getTime())?'':WD[d.getDay()]+' '+d.getDate()+' '+MON[d.getMonth()]}
 // Sans charge notée : seulement les répétitions (jamais « 0 kg »).
-const setText=s=>s.weight==null?(s.reps??'—')+' reps':kg(s.weight)+' × '+(s.reps??'—');
+const setText=(s,key)=>timed(key)?(s.reps??'—')+' s':s.weight==null?(s.reps??'—')+' reps':kg(s.weight)+' × '+(s.reps??'—');
 function diffText(d){
  if(!d)return '';
  if(d.weight)return '<span class="v2-diff'+(d.weight>0?' is-up':'')+'">'+(d.weight>0?'+':'−')+kg(Math.abs(d.weight))+' kg</span>';
@@ -324,7 +324,7 @@ function sessionsHTML(list,open,userExercises,records){
   return '<button type="button" class="v2-link v2-back" data-action="v2-history-close">'+icon('left','v2-ic v2-ic--sm')+'Toutes les séances</button>'
    +'<section class="v2-card"><p class="v2-muted">'+esc(dayText(s.date))+'</p><h2 class="v2-card-title">'+esc(s.title)+'</h2><p class="v2-muted">'+[durTxt(s),plural(s.sets,'série validée','séries validées'),Math.round(s.volume).toLocaleString('fr-FR')+' kg'].filter(Boolean).join(' · ')+'</p>'
    +(records?.length?'<ul class="v2-records">'+records.map(r=>'<li>'+icon('trophy','v2-ic v2-ic--sm')+'<span>Record : '+recordText(r,userExercises)+'</span></li>').join('')+'</ul>':'')+'</section>'
-   +(s.exercises.length?'<ul class="v2-sum-list">'+s.exercises.map(e=>'<li class="v2-hist-ex"><span><b>'+esc(nameOf(e.key,userExercises))+'</b>'+(e.from?'<small>à la place de '+esc(nameOf(e.from,userExercises))+'</small>':'')+'</span><small>'+e.sets.map(setText).join(' · ')+'</small></li>').join('')+'</ul>':'<p class="v2-card v2-empty">Aucune série validée dans cette séance.</p>')
+   +(s.exercises.length?'<ul class="v2-sum-list">'+s.exercises.map(e=>'<li class="v2-hist-ex"><span><b>'+esc(nameOf(e.key,userExercises))+'</b>'+(e.from?'<small>à la place de '+esc(nameOf(e.from,userExercises))+'</small>':'')+'</span><small>'+e.sets.map(x=>setText(x,e.key)).join(' · ')+'</small></li>').join('')+'</ul>':'<p class="v2-card v2-empty">Aucune série validée dans cette séance.</p>')
    +(s.cardio.length?'<p class="v2-muted">Cardio : '+s.cardio.map(c=>esc(cardioName(c.type))+' '+c.minutes+' min').join(', ')+'</p>':'');
  }
  if(!list.length)return '<p class="v2-card v2-empty">Tes séances terminées apparaîtront ici.</p>';
@@ -352,7 +352,7 @@ function progress({regularity=null,progress,selected,metric='weight',userExercis
   +'<div class="v2-card">'+(chart(points,metric)||'<p class="v2-muted">Pas encore de valeur pour cette mesure.</p>')+'<p class="v2-muted">'+plural(points.length,'séance','séances')+(rec?' · Meilleure série : '+kg(rec.weight)+' kg × '+rec.reps:'')+'</p></div>';
  if(advice)html+='<section class="v2-card v2-advice-card"><h2 class="v2-card-title">'+icon('coach','v2-ic v2-ic--sm')+'Prochaine fois</h2><p>'+esc(advice.text)+'</p><p class="v2-muted">Un conseil, pas une obligation : c’est toi qui décides de la charge.</p></section>';
  const entries=history?.key===key?history.entries.slice(0,8):[];
- if(entries.length)html+='<section class="v2-card"><h2 class="v2-card-title">Séance par séance</h2><ul class="v2-compare">'+entries.map(e=>'<li><div><b>'+esc(dayText(e.date))+'</b>'+(e.from?'<small>à la place de '+esc(nameOf(e.from,userExercises))+'</small>':'')+'</div><span>'+e.sets.map(setText).join(' · ')+'</span>'+diffText(e.diff)+'</li>').join('')+'</ul></section>';
+ if(entries.length)html+='<section class="v2-card"><h2 class="v2-card-title">Séance par séance</h2><ul class="v2-compare">'+entries.map(e=>'<li><div><b>'+esc(dayText(e.date))+'</b>'+(e.from?'<small>à la place de '+esc(nameOf(e.from,userExercises))+'</small>':'')+'</div><span>'+e.sets.map(x=>setText(x,e.key)).join(' · ')+'</span>'+diffText(e.diff)+'</li>').join('')+'</ul></section>';
  html+='<p class="v2-muted">Seules les séries validées comptent. Un exercice remplacé garde son propre historique.</p>'+cardioBlock(cardio)+'</section>';
  return html;
 }
@@ -364,11 +364,11 @@ function reviewCard({proposal=false}={}){
 const listBlock=(title,items)=>items.length?'<section class="v2-card"><h2 class="v2-card-title">'+title+'</h2><ul class="v2-bullets">'+items.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></section>':'';
 function review({review:r,userExercises=[]}={}){
  const rec=r.recommendation,evo=[...r.evolutions].sort((a,b)=>(b.weight??0)-(a.weight??0)).slice(0,6);
- const one=x=>x.weight==null?x.reps+' reps':kg(x.weight)+' × '+x.reps;
+ const one=(x,key)=>timed(key)?x.reps+' s':x.weight==null?x.reps+' reps':kg(x.weight)+' × '+x.reps;
  return '<section class="v2-progress v2-review"><button type="button" class="v2-link v2-back" data-action="v2-review-close">'+icon('left','v2-ic v2-ic--sm')+'Accueil</button><h1 class="v2-hello">Bilan du cycle</h1>'
   +'<dl class="v2-figures v2-figures--dark"><div><b>'+r.done+'/'+r.planned+'</b> <span>séances faites</span></div><div><b>'+r.weeks+'</b> <span>'+(r.weeks>1?'semaines':'semaine')+'</span></div><div><b>'+(r.hard==null?'—':r.hard+' %')+'</b> <span>séries « Dur »</span></div></dl>'
   +listBlock('Points forts',r.strengths)+listBlock('À améliorer',r.improve)
-  +(evo.length?'<section class="v2-card"><h2 class="v2-card-title">Évolution par exercice</h2><ul class="v2-compare">'+evo.map(e=>'<li><div><b>'+esc(nameOf(e.key,userExercises))+'</b></div><span>'+one(e.from)+' → '+one(e.to)+'</span>'+(e.weight?'<span class="v2-diff'+(e.weight>0?' is-up':'')+'">'+(e.weight>0?'+':'−')+kg(Math.abs(e.weight))+' kg</span>':e.reps?'<span class="v2-diff'+(e.reps>0?' is-up':'')+'">'+(e.reps>0?'+':'−')+Math.abs(e.reps)+' rép.</span>':'<span class="v2-diff">=</span>')+'</li>').join('')+'</ul></section>':'')
+  +(evo.length?'<section class="v2-card"><h2 class="v2-card-title">Évolution par exercice</h2><ul class="v2-compare">'+evo.map(e=>'<li><div><b>'+esc(nameOf(e.key,userExercises))+'</b></div><span>'+one(e.from,e.key)+' → '+one(e.to,e.key)+'</span>'+(e.weight?'<span class="v2-diff'+(e.weight>0?' is-up':'')+'">'+(e.weight>0?'+':'−')+kg(Math.abs(e.weight))+' kg</span>':e.reps?'<span class="v2-diff'+(e.reps>0?' is-up':'')+'">'+(e.reps>0?'+':'−')+Math.abs(e.reps)+' rép.</span>':'<span class="v2-diff">=</span>')+'</li>').join('')+'</ul></section>':'')
   +'<section class="v2-card v2-advice-card"><h2 class="v2-card-title">'+icon('coach','v2-ic v2-ic--sm')+'Ma recommandation : '+esc(rec.title.toLowerCase())+'</h2><p>'+esc(rec.text)+'</p></section>'
   +'<button type="button" class="v2-btn v2-btn--big" data-action="v2-review-next">Préparer le cycle suivant</button><p class="v2-muted">Tu pourras tout modifier avant de valider. Ton historique est conservé.</p></section>';
 }
