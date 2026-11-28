@@ -177,6 +177,15 @@ const dayIndex=ms=>(new Date(ms).getDay()+6)%7;
 function weekStart(ms){const d=new Date(ms);return new Date(d.getFullYear(),d.getMonth(),d.getDate()-dayIndex(ms)).getTime()}
 function localDate(ms){const d=new Date(ms),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())}
 const parseDay=s=>{const [y,m,d]=String(s).split('-').map(Number);return new Date(y,m-1,d).getTime()};
+// Prochain jour d'entraînement après aujourd'hui, d'après les jours prévus du cycle (0 = lundi).
+// offset 1 = demain. null en mode libre (pas de jours prévus).
+function nextTrainingDay(cycle,now){
+ const days=Array.isArray(cycle?.preferred_days)&&cycle.preferred_days.length?[...cycle.preferred_days].sort((a,b)=>a-b):null;
+ if(!days)return null;
+ const t=dayIndex(now);
+ for(let k=1;k<=7;k++){const d=(t+k)%7;if(days.includes(d))return {offset:k,day:d}}
+ return null;
+}
 function rhythm(cycle,workouts,now){
  const days=Array.isArray(cycle?.preferred_days)&&cycle.preferred_days.length?[...cycle.preferred_days].sort((a,b)=>a-b):[];
  const start=weekStart(now),today=new Date(now).setHours(0,0,0,0);
@@ -221,5 +230,5 @@ async function loadCycle(api,userId){
  return {cycle:{...cy,user_exercises:userExercises||[],sessions:list,cardio:cardio||[]},truncated,workouts:done,setLogs,userExercises:userExercises||[],cardioLogs:cardioLogs||[]};
 }
 
-return {deload,deloadSets,warmup,rhythm,weekStart,localDate,cardioWeek,cardioProgress,fromEngine,fromLegacyPlan,toRows,lastPerformance,progress,cycleProgress,cycleStatus,countable,weekView,loadCycle,nameOf,parseReps};
+return {deload,deloadSets,warmup,rhythm,nextTrainingDay,weekStart,localDate,cardioWeek,cardioProgress,fromEngine,fromLegacyPlan,toRows,lastPerformance,progress,cycleProgress,cycleStatus,countable,weekView,loadCycle,nameOf,parseReps};
 });
