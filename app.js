@@ -384,6 +384,7 @@ setInterval(()=>{
  const t=V2.tick(),chrono=root.querySelector('.v2-chrono span'),rest=root.querySelector('.v2-rest .v2-rest-time');
  if(t.done){try{navigator.vibrate?.(200)}catch{}beep(1320,.4);lastBeep=null;render();return}
  if(t.rest!=null&&t.rest<=3&&t.rest>=1&&t.rest!==lastBeep){lastBeep=t.rest;beep(880,.12)}
+ if(t.hold!=null&&t.hold<=3&&t.hold>=1&&t.hold!==lastBeep){lastBeep=t.hold;beep(880,.12)}
  {const re=root.querySelector('.v2-rest');if(re&&t.total&&t.rest!=null)re.style.setProperty('--p',Math.max(0,Math.min(1,t.rest/t.total)).toFixed(3))}
  if(t.idle&&!root.querySelector('[aria-label="Tu étais en pause ?"]')){render();return}
  if(t.rest&&!rest){render();return}

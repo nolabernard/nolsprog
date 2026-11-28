@@ -28,4 +28,9 @@ assert.match(html,/class="v2-hold-time">00:45<\/span>/);
 {const html=UI.session({workout:w('developpe-couche-barre'),index:0,last:{},advice:{}});
  assert.match(html,/Charge \(kg\)/);assert.match(html,/Valider la série 1/);assert.doesNotMatch(html,/Démarrer/);}
 
+// Tenue validée : le libellé d'accessibilité donne des secondes, jamais « — kg ».
+{const wl=w('gainage');wl.exercises[0].sets[0]={...wl.exercises[0].sets[0],completed:true,reps:40};
+ const html=UI.session({workout:wl,index:0,last:{},advice:{}});
+ assert.match(html,/Tenue 1 validée : 40 secondes/);assert.doesNotMatch(html,/— kg/);}
+
 console.log('gainage : un bouton, tenue validée automatiquement : ok');

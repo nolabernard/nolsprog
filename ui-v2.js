@@ -179,7 +179,7 @@ function session({tip=null,workout,index=0,hold=null,elapsed=0,paused=false,paus
  if(warmup&&warmup.ex===e.id)html+='<p class="v2-note">'+icon('coach','v2-ic v2-ic--sm')+'<span><b>Échauffement :</b> '+(warmup.sets?warmup.sets.map(x=>kg(x.weight)+' kg × '+x.reps).join(', '):'2 séries légères (8 puis 4 répétitions)')+'. Non comptées.</span></p>';
  // Carte de la série
  const restFull=Boolean(rest&&!rest.min);
- const dot=s=>s.completed?'<button type="button" class="v2-dot is-done" data-action="v2-set" data-ex="'+esc(e.id)+'" data-set="'+s.set_number+'" aria-pressed="true" aria-label="Série '+s.set_number+' validée : '+(s.weight==null?'—':kg(s.weight)+' kg')+' × '+(s.reps??'—')+' (toucher pour la rouvrir)">'+s.set_number+'</button>'
+ const dot=s=>s.completed?'<button type="button" class="v2-dot is-done" data-action="v2-set" data-ex="'+esc(e.id)+'" data-set="'+s.set_number+'" aria-pressed="true" aria-label="'+(tm?'Tenue '+s.set_number+' validée : '+(s.reps??'—')+' secondes':'Série '+s.set_number+' validée : '+(s.weight==null?'—':kg(s.weight)+' kg')+' × '+(s.reps??'—'))+' (toucher pour la rouvrir)">'+s.set_number+'</button>'
   :'<span class="v2-dot'+(s===cur?' is-current':'')+'" aria-hidden="true">'+s.set_number+'</span>';
  html+='<div class="v2-card-set"><div class="v2-card-row"><div class="v2-dots" role="group" aria-label="Séries">'+e.sets.map(dot).join('')+'</div>'+(prev?'<span class="v2-lastline">Dernière fois <b>'+(tm?(prev.reps??'—')+' s':(prev.weight==null?'—':kg(prev.weight))+' × '+(prev.reps??'—'))+'</b></span>':'')+'</div>';
  if(advice[e.exercise_key])html+='<p class="v2-advice2">'+esc(advice[e.exercise_key].text)+'</p>';

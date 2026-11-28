@@ -208,6 +208,7 @@ function create(ctx){
  // Ce qui suit le repos : la prochaine série de l'exercice, sinon l'exercice suivant.
  function restNext(w){const items=list(),cur=items[S.index];if(!cur)return null;const s=cur.sets.find(x=>!x.completed);
   const fr=v=>v==null?'—':Number(v).toLocaleString('fr-FR');
+  if(s&&globalThis.SteroidCatalogue?.byKey(cur.exercise_key)?.unit==='s')return {label:'Tenue '+s.set_number,value:Math.round(Number(cur.plan?.reps_min)||30)+' s',edit:true};
   if(s)return {label:'Série '+s.set_number,value:fr(s.weight)+' kg × '+(s.reps??'—'),edit:true};
   const nx=items.slice(S.index+1).find(x=>x.sets.some(z=>!z.completed));return nx?{label:'Exercice suivant',value:C.nameOf(nx.exercise_key,S.userExercises)}:{label:'Fin',value:'Dernière série faite'}}
  const nextText=n=>n?(n.edit?n.label.toLowerCase()+' · '+n.value:n.value):'';
@@ -219,7 +220,7 @@ function create(ctx){
   S.hold=null;const e=current()?.exercises.find(x=>x.id===h.ex),s=e?.sets.find(x=>x.set_number===h.set);
   if(!e||!s||s.completed)return;
   S.store.logSet(e.id,h.set,{reps});S.store.logSet(e.id,h.set,{completed:true});
-  S.rate={ex:e.id,set:h.set};startRest(e.plan?.rest_seconds||90,S.rate);
+  S.rate=null;startRest(e.plan?.rest_seconds||90); // pas de ressenti « répétitions en réserve » pour une tenue
   if(e.sets.every(x=>x.completed)){const items=list(),i=items.findIndex(x=>x.id===e.id);if(i>=0&&i<items.length-1)S.index=i+1}
  }
  function restLeft(){if(!S.rest)return null;if(S.rest.frozen!=null)return S.rest.frozen;const left=Math.ceil((S.rest.end-now())/1000);return left>0?left:0}
@@ -416,7 +417,7 @@ function create(ctx){
    case 'v2-skip-undo':cancelSkip(d.id);break;
    case 'v2-close-sheet':S.sheet=null;S.picking=null;S.creating=false;break;
    case 'v2-back':S.view='session';touch();break;
-   case 'v2-exit':S.view='home';S.sheet=null;saveUi();break;
+   case 'v2-exit':S.view='home';S.sheet=null;S.hold=null;saveUi();break;
    case 'v2-set':{
     const e=w?.exercises.find(x=>x.id===d.ex),s=e?.sets.find(x=>x.set_number===Number(d.set));if(!s)return;
     if(!s.completed&&s.reps==null){notice('Indique tes répétitions pour valider la série '+s.set_number+'.',true);return}
