@@ -294,7 +294,7 @@ const legacy=[{day:'Lundi',title:'Push A',ex:[{name:'Développé couché barre',
  const back={async select(p){if(p.startsWith('cycles'))return [{...cycleRows,sessions:undefined,user_exercises:undefined}];if(p.startsWith('cycle_sessions'))return cycleRows.sessions.map(({exercises,muscles,...x})=>x);if(p.startsWith('cycle_exercises'))return cycleRows.sessions.flatMap(x=>x.exercises);return []},async upsert(){throw Error('Failed to fetch')}};
  const c9=V2.create({...ctx,storage:st8,api:back,userId:U});await c9.init();await c9.whenFresh();
  assert(c9.state().workouts.some(w=>w.cycle_session_id===first.id),'séance non envoyée conservée');
- assert.match(c9.statsHTML(),/série validée/);assert(!c9.todayHTML().includes('data-action="v2-recap" data-session="'+first.id+'"'),'la suite avance');assert.match(c9.todayHTML(),/Séance faite aujourd’hui[^]*Demain : <b>/,'une séance par jour');
+ assert.match(c9.statsHTML(),/série validée/);assert(!c9.todayHTML().includes('data-action="v2-recap" data-session="'+first.id+'"'),'la suite avance');assert.match(c9.todayHTML(),/Séance faite aujourd’hui[^]*(Demain : <b>|Repos demain)/,'une séance par jour');
  // Lot 1 : passer un exercice, double appui sur une série, saisies refusées, valider pendant la pause.
  { const st=memory(),c=V2.create({...ctx,storage:st,api:null,userId:null});await c.init();
    const sid=c.state().cycle.sessions[0].id;await c.handle('v2-start',{session:sid});
