@@ -75,7 +75,7 @@ function cycleBar(st){
  if(!st)return '';
  return '<div class="v2-cyclebar" role="group" aria-label="Avancée du programme : semaine '+st.week+' sur '+st.weeks+', '+st.done+' séances faites sur '+st.total+'"><div class="v2-cyclebar-top"><span><b>Programme</b> · semaine '+st.week+' sur '+st.weeks+'</span><b>'+st.pct+' %</b></div><div class="v2-cyclebar-track" aria-hidden="true"><i style="width:'+st.pct+'%"></i></div><p class="v2-cyclebar-foot">'+plural(st.done,'séance faite','séances faites')+' sur '+st.total+'</p></div>';
 }
-function home({next,hasHistory=false,cycle,progress=0,minutes,firstName,dateText,weekLine,record,building=false,active=null,retry=false,rhythm=null,cardio=null,last=null,deload=false,week=null,cycleStatus=null,view=null,stats=null}={}){
+function home({next,nextTraining=null,hasHistory=false,cycle,progress=0,minutes,firstName,dateText,weekLine,record,building=false,active=null,retry=false,rhythm=null,cardio=null,last=null,deload=false,week=null,cycleStatus=null,view=null,stats=null}={}){
  const head='<header class="v2-home-head"><div>'+(dateText?'<p class="v2-date">'+esc(dateText)+'</p>':'')+'<h1 class="v2-hello">'+esc(firstName?'Salut '+firstName:'Salut')+'</h1></div></header>';
  const bar=cycleBar(cycleStatus);
  if(!cycle||!next)return '<section class="v2-home">'+head+'<div class="v2-card v2-empty">'+(retry?'<h2>Programme indisponible</h2><p>Impossible de joindre ton compte. Vérifie ta connexion.</p>':'<h2>Ton programme t’attend</h2><p>Je prépare ta suite de séances à partir de tes réponses.</p>')+'<button type="button" class="v2-btn" data-action="v2-build" '+(building?'disabled':'')+'>'+(building?'Préparation…':retry?'Réessayer':'Préparer mon programme')+'</button></div></section>';
@@ -87,7 +87,7 @@ function home({next,hasHistory=false,cycle,progress=0,minutes,firstName,dateText
   // Séance du jour faite ou passée : repos, la suivante attend demain. Pas de bouton Démarrer.
   const t=next.today,skipped=t.status==='skipped';
   let rest='<section class="v2-home">'+head+bar+'<section class="v2-next v2-next--rest" aria-label="Aujourd’hui"><div class="v2-next-top"><div><p class="v2-next-kicker">'+(skipped?'Séance passée aujourd’hui':'Séance faite aujourd’hui')+'</p><h2 class="v2-next-title">'+esc(t.title)+'</h2></div>'+ring(progress,wk)+'</div>'
-   +'<p class="v2-next-after">'+icon('clock','v2-ic v2-ic--sm')+'Demain : <b>'+esc(s.title)+'</b></p></section>';
+   +'<p class="v2-next-after">'+icon('clock','v2-ic v2-ic--sm')+(nextTraining&&nextTraining.offset>1?'Repos demain. Prochaine séance : <b>'+esc(s.title)+'</b> · '+DAYS[nextTraining.day]:'Demain : <b>'+esc(s.title)+'</b>')+'</p></section>';
   rest+='<div class="v2-coach">'+icon('coach','v2-ic v2-coach-ic')+'<div><p>'+esc(skipped?(SKIP_COACH[t.reason]||SKIP_COACH.autre):'C’est fait pour aujourd’hui. Tes muscles progressent pendant la récupération : prochaine séance demain.')+'</p>'
    +(skipped?'<button type="button" class="v2-link" data-action="v2-skip-undo" data-id="'+esc(t.id)+'">Annuler, je me suis trompé</button>':'')+'</div></div>';
   return rest+extras()+'</section>';
