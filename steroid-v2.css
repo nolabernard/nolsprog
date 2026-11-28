@@ -875,3 +875,7 @@ html.theme-dark .v2-guide-count,html.theme-dark .v2-guide .v2-guide-hint,html.th
 .v2-hold-time{font-family:Archivo,Inter,sans-serif;font-weight:900;font-size:44px;font-variant-numeric:tabular-nums;color:#0B4D3B}
 .v2-hold small{color:#6B6B63}
 .v2-hold-start{margin:8px 0 12px}
+
+/* « Repos demain » : deux lignes, nom de séance insécable. */
+.v2-next-rest{display:block}
+.v2-nowrap{white-space:nowrap}

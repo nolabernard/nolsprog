@@ -87,8 +87,8 @@ function home({next,nextTraining=null,hasHistory=false,cycle,progress=0,minutes,
   // Séance du jour faite ou passée : repos, la suivante attend demain. Pas de bouton Démarrer.
   const t=next.today,skipped=t.status==='skipped';
   let rest='<section class="v2-home">'+head+bar+'<section class="v2-next v2-next--rest" aria-label="Aujourd’hui"><div class="v2-next-top"><div><p class="v2-next-kicker">'+(skipped?'Séance passée aujourd’hui':'Séance faite aujourd’hui')+'</p><h2 class="v2-next-title">'+esc(t.title)+'</h2></div>'+ring(progress,wk)+'</div>'
-   +'<p class="v2-next-after">'+icon('clock','v2-ic v2-ic--sm')+(nextTraining&&nextTraining.offset>1?'Repos demain. Prochaine séance : <b>'+esc(s.title)+'</b> · '+DAYS[nextTraining.day]:'Demain : <b>'+esc(s.title)+'</b>')+'</p></section>';
-  rest+='<div class="v2-coach">'+icon('coach','v2-ic v2-coach-ic')+'<div><p>'+esc(skipped?(SKIP_COACH[t.reason]||SKIP_COACH.autre):'C’est fait pour aujourd’hui. Tes muscles progressent pendant la récupération : prochaine séance demain.')+'</p>'
+   +'<p class="v2-next-after">'+icon('clock','v2-ic v2-ic--sm')+(nextTraining&&nextTraining.offset>1?'<span class="v2-next-rest">Repos demain.</span> <span class="v2-next-rest">Prochaine : <b class="v2-nowrap">'+esc(s.title)+'</b> · '+DAYS[nextTraining.day]+'</span>':'Demain : <b>'+esc(s.title)+'</b>')+'</p></section>';
+  rest+='<div class="v2-coach">'+icon('coach','v2-ic v2-coach-ic')+'<div><p>'+esc(skipped?(SKIP_COACH[t.reason]||SKIP_COACH.autre):'C’est fait pour aujourd’hui. Tes muscles progressent pendant la récupération : prochaine séance '+(nextTraining&&nextTraining.offset>1?'le '+DAYS[nextTraining.day]:'demain')+'.')+'</p>'
    +(skipped?'<button type="button" class="v2-link" data-action="v2-skip-undo" data-id="'+esc(t.id)+'">Annuler, je me suis trompé</button>':'')+'</div></div>';
   return rest+extras()+'</section>';
  }
