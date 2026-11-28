@@ -213,6 +213,7 @@ function create(ctx){
  const nextText=n=>n?(n.edit?n.label.toLowerCase()+' · '+n.value:n.value):'';
  // Série à noter (ressenti) : la dernière validée, tant que la séance continue.
  function rateInfo(w){const r=S.rest?.rate||S.rate;if(!r||!w)return null;const e=w.exercises.find(x=>x.id===r.ex),s=e?.sets.find(x=>x.set_number===r.set);if(!s?.completed)return null;return {ex:e.id,set:s.set_number,rir:s.rir,name:C.nameOf(e.exercise_key,S.userExercises)}}
+ function holdLeft(){if(!S.hold)return null;const left=Math.ceil((S.hold.end-now())/1000);return left>0?left:0}
  function restLeft(){if(!S.rest)return null;if(S.rest.frozen!=null)return S.rest.frozen;const left=Math.ceil((S.rest.end-now())/1000);return left>0?left:0}
  function idleMinutes(){const w=current();if(!w||w.paused_at||S.view!=='session'||!ui.lastAction)return 0;const d=now()-ui.lastAction;return d>=IDLE_MS?Math.floor(d/60e3):0}
  // Séances de semaine allégée : exclues des conseils de progression (moins de séries volontairement).
@@ -300,7 +301,7 @@ function create(ctx){
    // Échauffement : premier exercice de base de la séance, tant qu'aucune série n'est validée.
    const firstBase=items.find(x=>x.plan?.role==='base');let warm=null;
    if(firstBase&&items[S.index]?.id===firstBase.id&&!firstBase.sets.some(x=>x.completed)){const ref=firstBase.sets.find(x=>x.weight!=null)?.weight??last()[firstBase.exercise_key]?.weight;warm={ex:firstBase.id,sets:C.warmup(ref)}}
-   let html=UI.session({tip:S.tip&&w.exercises.some(e=>e.id===S.tip.ex&&e.sets.some(x=>x.set_number===S.tip.set&&!x.completed))?S.tip:null,light,warmup:warm,rate:rateInfo(w),guide:guideStep(),advice,workout:w,index:S.index,elapsed:S.store.elapsedSeconds(),paused:S.store.isPaused(),pausedFor:w.paused_at?Math.round((now()-w.paused_at)/1000):0,rest:left?(()=>{const n=restNext(w);return {remaining:left,total:S.rest?.total||left,next:n,nextText:nextText(n),min:Boolean(S.rest?.min)}})():null,last:last(),userExercises:S.userExercises,pending:pending()});
+   let html=UI.session({tip:S.tip&&w.exercises.some(e=>e.id===S.tip.ex&&e.sets.some(x=>x.set_number===S.tip.set&&!x.completed))?S.tip:null,light,warmup:warm,rate:rateInfo(w),guide:guideStep(),advice,workout:w,index:S.index,hold:S.hold&&holdLeft()!=null?{ex:S.hold.ex,set:S.hold.set,total:S.hold.total,remaining:holdLeft()}:null,elapsed:S.store.elapsedSeconds(),paused:S.store.isPaused(),pausedFor:w.paused_at?Math.round((now()-w.paused_at)/1000):0,rest:left?(()=>{const n=restNext(w);return {remaining:left,total:S.rest?.total||left,next:n,nextText:nextText(n),min:Boolean(S.rest?.min)}})():null,last:last(),userExercises:S.userExercises,pending:pending()});
    const idle=idleMinutes();
    if(idle)html+=UI.idlePrompt(idle);
    else if(S.sheet?.type==='machine'){const e=w.exercises.find(x=>x.id===S.sheet.ex);if(e){const practiced={};for(const r of S.setLogs)if(r.completed)practiced[r.exercise_key]=(practiced[r.exercise_key]||0)+1;
@@ -414,6 +415,7 @@ function create(ctx){
     // Double appui : le 2e appui (< 0,7 s) est ignoré, jamais une dévalidation silencieuse.
     const tk=e.id+'|'+s.set_number,tn=now();if(lastSetTap.k===tk&&tn-lastSetTap.t<700)return;lastSetTap={k:tk,t:tn};
     if(w.paused_at)S.store.resume(); // valider une série reprend la séance
+    if(S.hold?.ex===e.id)S.hold=null; // valider la série termine une tenue en cours
     S.store.logSet(e.id,s.set_number,{completed:!s.completed});touch();
     if(!s.completed){S.rest=null;S.rate=null}
     // Série validée : les séries suivantes encore vides reprennent sa charge et ses répétitions (modifiables).
@@ -421,6 +423,15 @@ function create(ctx){
     if(s.completed&&(S.guide===1||S.guide===2))S.guide=3;
     if(s.completed){S.rate={ex:e.id,set:s.set_number};startRest(e.plan.rest_seconds||90,S.rate);if(e.sets.every(x=>x.completed)){const items=list(),i=items.findIndex(x=>x.id===e.id);if(i>=0&&i<items.length-1)S.index=i+1}}
     saveUi();scheduleFlush();break;
+   }
+   case 'v2-hold-start':{
+    const e=w?.exercises.find(x=>x.id===d.ex),s=e?.sets.find(x=>x.set_number===Number(d.set));if(!s||s.completed)return;
+    const total=Math.max(1,Math.round(Number(e.plan?.reps_min)||30));S.hold={ex:e.id,set:s.set_number,total,end:now()+total*1000};saveUi();touch();break;
+   }
+   case 'v2-hold-stop':{
+    // Arrêt manuel : la durée réellement tenue est enregistrée (en secondes, dans le champ « sec. »).
+    const h=S.hold;if(!h)break;const e=w?.exercises.find(x=>x.id===h.ex);const held=Math.max(1,Math.min(h.total,Math.round(h.total-holdLeft())));
+    S.hold=null;if(e&&e.sets.some(x=>x.set_number===h.set&&!x.completed))S.store.logSet(e.id,h.set,{reps:held});saveUi();touch();scheduleFlush();break;
    }
    case 'v2-tip-apply':{
     // Applique la charge conseillée à la série suivante (et aux suivantes non validées qui avaient la même charge).
@@ -620,8 +631,9 @@ function create(ctx){
  }
  function tick(){
   const left=restLeft(),total=S.rest?.total||null;
+  if(S.hold&&holdLeft()===0){const h=S.hold;S.hold=null;const w=current(),e=w?.exercises.find(x=>x.id===h.ex);if(e&&e.sets.some(x=>x.set_number===h.set&&!x.completed))S.store.logSet(e.id,h.set,{reps:h.total});saveUi();scheduleFlush();return {rest:left,total,hold:0,done:true,elapsed:S.store?.elapsedSeconds()||0}}
   if(S.rest&&left===0){S.rest=null;saveUi();return {rest:0,done:true,elapsed:S.store?.elapsedSeconds()||0}}
-  return {rest:left,total,elapsed:S.store?.elapsedSeconds()||0,idle:idleMinutes()};
+  return {rest:left,total,hold:holdLeft(),elapsed:S.store?.elapsedSeconds()||0,idle:idleMinutes()};
  }
  // Déconnexion : le téléphone cesse de recevoir les rappels de ce compte (au mieux, sans bloquer).
  async function remindersOff(){try{if(Rem?.state().enabled)await Rem.disable()}catch{}}

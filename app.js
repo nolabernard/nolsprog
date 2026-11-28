@@ -387,6 +387,7 @@ setInterval(()=>{
  {const re=root.querySelector('.v2-rest');if(re&&t.total&&t.rest!=null)re.style.setProperty('--p',Math.max(0,Math.min(1,t.rest/t.total)).toFixed(3))}
  if(t.idle&&!root.querySelector('[aria-label="Tu étais en pause ?"]')){render();return}
  if(t.rest&&!rest){render();return}
+ if(t.hold!=null){const ht=root.querySelector('.v2-hold-time');if(!ht){render();return}ht.textContent=globalThis.SteroidUI.clock(t.hold)}
  if(chrono)chrono.textContent=globalThis.SteroidUI.clock(t.elapsed);
  if(rest&&t.rest!=null)rest.textContent=globalThis.SteroidUI.clock(t.rest).replace(/^0(\d):/,'$1:');
 },1000);

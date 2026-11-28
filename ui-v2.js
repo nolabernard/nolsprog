@@ -159,7 +159,7 @@ function chooser({sessions=[],current}={}){
 }
 
 const RATES=[[3,'Facile','3 reps ou + en réserve'],[2,'Correct','1 ou 2 en réserve'],[0,'Dur','plus rien en réserve']];
-function session({tip=null,workout,index=0,elapsed=0,paused=false,pausedFor=0,rest=null,last={},advice={},userExercises=[],pending=0,rate=null,light=false,warmup=null,guide=0}={}){
+function session({tip=null,workout,index=0,hold=null,elapsed=0,paused=false,pausedFor=0,rest=null,last={},advice={},userExercises=[],pending=0,rate=null,light=false,warmup=null,guide=0}={}){
  // Écran de série sur une seule page, sans défilement : en-tête, une carte (séries, ressenti, conseil, réglage, Valider), pied.
  // Le repos s'ouvre en plein écran (anneau, ressenti, série suivante) ; « Réduire » le ramène en barre au-dessus du pied.
  const list=ordered(workout).filter(e=>e.status!=='skipped');
@@ -190,8 +190,9 @@ function session({tip=null,workout,index=0,elapsed=0,paused=false,pausedFor=0,re
   const step=(f,dlt,lab)=>'<button type="button" class="v2-step" data-action="v2-step" data-ex="'+esc(e.id)+'" data-set="'+n+'" data-f="'+f+'" data-d="'+dlt+'" aria-label="'+lab+'">'+icon(dlt<0?'minus':'plus')+'</button>';
   html+=(tp?'<div class="v2-tip v2-tip--'+tp.kind+'" role="status" aria-label="'+(tp.kind==='up'?'Belle marge sur la série précédente':'Série précédente trop lourde')+' : essaie '+kg(tp.weight)+' kilos">'+icon(tp.kind==='up'?'up':'down','v2-ic v2-ic--sm')+'<span>Essaie <b>'+kg(tp.weight)+' kg</b></span><button type="button" class="v2-tip-apply" data-action="v2-tip-apply">Appliquer</button></div>':'')
    +'<div class="v2-current" aria-label="Série '+n+' sur '+e.sets.length+'"><p class="v2-current-title">Série '+n+' <small>sur '+e.sets.length+'</small></p><div class="v2-steppers'+(guide===1?' is-spot':'')+'">'
-   +'<div class="v2-stepper"><span>kg</span><div>'+step('weight',-wStep,'Retirer 2,5 kg')+cell('weight','Charge (kg)','decimal',6)+step('weight',wStep,'Ajouter 2,5 kg')+'</div><small class="v2-hint">par pas de 2,5</small></div>'
+   +(tm?'':'<div class="v2-stepper"><span>kg</span><div>'+step('weight',-wStep,'Retirer 2,5 kg')+cell('weight','Charge (kg)','decimal',6)+step('weight',wStep,'Ajouter 2,5 kg')+'</div><small class="v2-hint">par pas de 2,5</small></div>')
    +'<div class="v2-stepper"><span>'+(tm?'sec.':'rép.')+'</span><div>'+step('reps',-rStep,tm?'Retirer 5 secondes':'Retirer une répétition')+cell('reps',tm?'Secondes':'Répétitions','numeric',3)+step('reps',rStep,tm?'Ajouter 5 secondes':'Ajouter une répétition')+'</div>'+(p.reps_min!=null?'<small class="v2-hint">cible '+reps(p.reps_min,p.reps_max).replace(/\s*rép\.?$/,'')+'</small>':'')+'</div></div>'
+   +(tm?(hold&&hold.ex===e.id&&hold.set===n?'<div class="v2-hold" role="timer" aria-label="Tenue en cours"><span class="v2-hold-time">'+clock(hold.remaining)+'</span><small>sur '+clock(hold.total)+'</small><button type="button" class="v2-btn v2-btn--ghost" data-action="v2-hold-stop" data-ex="'+esc(e.id)+'" data-set="'+n+'">'+icon('pause','v2-ic v2-ic--sm')+'Arrêter la tenue</button></div>':'<button type="button" class="v2-btn v2-btn--ghost v2-hold-start" data-action="v2-hold-start" data-ex="'+esc(e.id)+'" data-set="'+n+'">'+icon('clock','v2-ic v2-ic--sm')+'Lancer la tenue'+(p.reps_min!=null?' ('+Math.round(Number(p.reps_min))+' s)':'')+'</button>'):'')
    +'<button type="button" class="v2-btn v2-btn--big v2-validate'+(guide===2?' is-spot':'')+'" data-action="v2-set" data-ex="'+esc(e.id)+'" data-set="'+n+'" aria-pressed="false">'+icon('check')+'Valider la série '+n+'</button></div>';
  }else html+='<p class="v2-ex-done">'+icon('check','v2-ic v2-ic--sm')+'<span>Toutes les séries sont faites.</span></p>';
  html+='</div>';
