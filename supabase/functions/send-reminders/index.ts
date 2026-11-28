@@ -2,7 +2,7 @@
 // GET  ?vapid=1                 → clé publique d'envoi (créée au premier appel, gardée dans public.push_config).
 // POST + x-cron-secret          → appel programmé toutes les 15 min : envoie les rappels dus.
 // POST + Authorization: Bearer  → { action: 'save', sub } / { action: 'remove', endpoint } / { test: true } pour l'utilisateur connecté.
-//                                  { action: 'rest', endpoint, at, next } / { action: 'rest-cancel', endpoint } : alerte de fin de repos
+//                                  { action: 'rest', endpoint, at, next, title?, body? } / { action: 'rest-cancel', endpoint } : alerte de fin de repos ou de tenue
 //                                  (envoyée quand l'app passe en arrière-plan pendant un repos, annulée à son retour).
 // Aucun secret dans le dépôt : la clé de service est fournie par Supabase, les autres valeurs vivent dans la base.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
@@ -88,12 +88,12 @@ async function runSchedule() {
 // Une seule alerte en attente par appareil : clé « rest:<id> » dans push_config (jeton|heure). Annuler = effacer la clé.
 // L'attente se fait par tranches de 100 s (limite de durée d'une fonction) : au-delà, la fonction se relance elle-même.
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
-async function restWait(id: string, token: string, at: number, next: string) {
+async function restWait(id: string, token: string, at: number, next: string, title = "Repos terminé", text = "") {
   const left = at - Date.now();
   if (left > 110e3) {
     await sleep(100e3);
     const secret = await config("cron_secret");
-    await fetch(Deno.env.get("SUPABASE_URL") + "/functions/v1/send-reminders", { method: "POST", headers: { "Content-Type": "application/json", "x-cron-secret": secret || "" }, body: JSON.stringify({ action: "rest-relay", id, token, at, next }) });
+    await fetch(Deno.env.get("SUPABASE_URL") + "/functions/v1/send-reminders", { method: "POST", headers: { "Content-Type": "application/json", "x-cron-secret": secret || "" }, body: JSON.stringify({ action: "rest-relay", id, token, at, next, title, text }) });
     return;
   }
   if (left > 0) await sleep(left);
@@ -102,7 +102,7 @@ async function restWait(id: string, token: string, at: number, next: string) {
   const { data: sub } = await db.from("push_subscriptions").select("*").eq("id", id).maybeSingle();
   if (!sub) return;
   await vapid();
-  await send(sub as Sub, { title: "Repos terminé", body: next ? "Ensuite : " + next : "À toi pour la série suivante.", url: "/nolsprog/", tag: "steroid-rest" }, 90); // inutile si elle arrive en retard
+  await send(sub as Sub, { title, body: text || (next ? "Ensuite : " + next : "À toi pour la série suivante."), url: "/nolsprog/", tag: "steroid-rest" }, 90); // inutile si elle arrive en retard
 }
 function background(p: Promise<unknown>) {
   const rt = (globalThis as unknown as { EdgeRuntime?: { waitUntil(p: Promise<unknown>): void } }).EdgeRuntime;
@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
     if (secret) {
       if (!same(secret, (await config("cron_secret")) || "")) return json({ error: "Refusé." }, 401);
       const cb = await req.json().catch(() => ({}));
-      if (cb.action === "rest-relay") { background(restWait(String(cb.id), String(cb.token), Number(cb.at), String(cb.next || "").slice(0, 80))); return json({ ok: true }); }
+      if (cb.action === "rest-relay") { background(restWait(String(cb.id), String(cb.token), Number(cb.at), String(cb.next || "").slice(0, 80), String(cb.title || "Repos terminé").slice(0, 40), String(cb.text || "").slice(0, 120))); return json({ ok: true }); }
       return json(await runSchedule());
     }
     const token = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
@@ -161,7 +161,7 @@ Deno.serve(async (req) => {
       if (!Number.isFinite(at) || left < 3e3 || left > 15 * 60e3) return json({ error: "Repos invalide." }, 400);
       const token = crypto.randomUUID();
       await db.from("push_config").upsert({ key: "rest:" + own.id, value: token + "|" + at }, { onConflict: "key" });
-      background(restWait(own.id, token, at, String(body.next || "").slice(0, 80)));
+      background(restWait(own.id, token, at, String(body.next || "").slice(0, 80), String(body.title || "Repos terminé").slice(0, 40), String(body.body || "").slice(0, 120)));
       return json({ ok: true });
     }
     if (body.action === "remove") {

@@ -208,12 +208,21 @@ function create(ctx){
  // Ce qui suit le repos : la prochaine série de l'exercice, sinon l'exercice suivant.
  function restNext(w){const items=list(),cur=items[S.index];if(!cur)return null;const s=cur.sets.find(x=>!x.completed);
   const fr=v=>v==null?'—':Number(v).toLocaleString('fr-FR');
+  if(s&&globalThis.SteroidCatalogue?.byKey(cur.exercise_key)?.unit==='s')return {label:'Tenue '+s.set_number,value:Math.round(Number(cur.plan?.reps_min)||30)+' s',edit:true};
   if(s)return {label:'Série '+s.set_number,value:fr(s.weight)+' kg × '+(s.reps??'—'),edit:true};
   const nx=items.slice(S.index+1).find(x=>x.sets.some(z=>!z.completed));return nx?{label:'Exercice suivant',value:C.nameOf(nx.exercise_key,S.userExercises)}:{label:'Fin',value:'Dernière série faite'}}
  const nextText=n=>n?(n.edit?n.label.toLowerCase()+' · '+n.value:n.value):'';
  // Série à noter (ressenti) : la dernière validée, tant que la séance continue.
  function rateInfo(w){const r=S.rest?.rate||S.rate;if(!r||!w)return null;const e=w.exercises.find(x=>x.id===r.ex),s=e?.sets.find(x=>x.set_number===r.set);if(!s?.completed)return null;return {ex:e.id,set:s.set_number,rir:s.rir,name:C.nameOf(e.exercise_key,S.userExercises)}}
- function holdLeft(){if(!S.hold)return null;const left=Math.ceil((S.hold.end-now())/1000);return left>0?left:0}
+ function holdLeft(){if(!S.hold)return null;if(S.hold.frozen!=null)return S.hold.frozen;const left=Math.ceil((S.hold.end-now())/1000);return left>0?left:0}
+ // Tenue terminée (fin du compte à rebours ou arrêt) : la série est validée et le repos démarre.
+ function finishHold(h,reps){
+  S.hold=null;const e=current()?.exercises.find(x=>x.id===h.ex),s=e?.sets.find(x=>x.set_number===h.set);
+  if(!e||!s||s.completed)return;
+  S.store.logSet(e.id,h.set,{reps});S.store.logSet(e.id,h.set,{completed:true});
+  S.rate=null;startRest(e.plan?.rest_seconds||90); // pas de ressenti « répétitions en réserve » pour une tenue
+  if(e.sets.every(x=>x.completed)){const items=list(),i=items.findIndex(x=>x.id===e.id);if(i>=0&&i<items.length-1)S.index=i+1}
+ }
  function restLeft(){if(!S.rest)return null;if(S.rest.frozen!=null)return S.rest.frozen;const left=Math.ceil((S.rest.end-now())/1000);return left>0?left:0}
  function idleMinutes(){const w=current();if(!w||w.paused_at||S.view!=='session'||!ui.lastAction)return 0;const d=now()-ui.lastAction;return d>=IDLE_MS?Math.floor(d/60e3):0}
  // Séances de semaine allégée : exclues des conseils de progression (moins de séries volontairement).
@@ -408,7 +417,7 @@ function create(ctx){
    case 'v2-skip-undo':cancelSkip(d.id);break;
    case 'v2-close-sheet':S.sheet=null;S.picking=null;S.creating=false;break;
    case 'v2-back':S.view='session';touch();break;
-   case 'v2-exit':S.view='home';S.sheet=null;saveUi();break;
+   case 'v2-exit':S.view='home';S.sheet=null;S.hold=null;saveUi();break;
    case 'v2-set':{
     const e=w?.exercises.find(x=>x.id===d.ex),s=e?.sets.find(x=>x.set_number===Number(d.set));if(!s)return;
     if(!s.completed&&s.reps==null){notice('Indique tes répétitions pour valider la série '+s.set_number+'.',true);return}
@@ -429,9 +438,9 @@ function create(ctx){
     const total=Math.max(1,Math.round(Number(e.plan?.reps_min)||30));S.hold={ex:e.id,set:s.set_number,total,end:now()+total*1000};saveUi();touch();break;
    }
    case 'v2-hold-stop':{
-    // Arrêt manuel : la durée réellement tenue est enregistrée (en secondes, dans le champ « sec. »).
-    const h=S.hold;if(!h)break;const e=w?.exercises.find(x=>x.id===h.ex);const held=Math.max(1,Math.min(h.total,Math.round(h.total-holdLeft())));
-    S.hold=null;if(e&&e.sets.some(x=>x.set_number===h.set&&!x.completed))S.store.logSet(e.id,h.set,{reps:held});saveUi();touch();scheduleFlush();break;
+    // Arrêt manuel : la durée réellement tenue est enregistrée, la série est validée.
+    const h=S.hold;if(!h)break;const held=Math.max(1,Math.min(h.total,Math.round(h.total-holdLeft())));
+    finishHold(h,held);saveUi();touch();scheduleFlush();break;
    }
    case 'v2-tip-apply':{
     // Applique la charge conseillée à la série suivante (et aux suivantes non validées qui avaient la même charge).
@@ -467,8 +476,8 @@ function create(ctx){
      else if(rir===0&&s.reps<(e.plan.reps_min||0))S.tip={ex:e.id,set:next.set_number,kind:'down',weight:Math.max(0,Number((s.weight-H.increment(s.weight)).toFixed(2)))};
     }
     S.rate=null;if(S.rest)S.rest.rate=null;if(S.guide===3)endGuide();saveUi();break}
-   case 'v2-pause':if(S.rest){const l=restLeft();S.rest=l?{frozen:l}:null}S.store.pause();touch();scheduleFlush();break;
-   case 'v2-resume':if(S.rest?.frozen!=null)S.rest={end:now()+S.rest.frozen*1000};S.store.resume();touch();scheduleFlush();break;
+   case 'v2-pause':if(S.hold&&S.hold.frozen==null)S.hold={...S.hold,frozen:holdLeft()};if(S.rest){const l=restLeft();S.rest=l?{frozen:l}:null}S.store.pause();touch();scheduleFlush();break;
+   case 'v2-resume':if(S.hold?.frozen!=null)S.hold={...S.hold,end:now()+S.hold.frozen*1000,frozen:null};if(S.rest?.frozen!=null)S.rest={end:now()+S.rest.frozen*1000};S.store.resume();touch();scheduleFlush();break;
    case 'v2-idle-yes':S.store.pause(ui.lastAction);S.store.resume();touch();scheduleFlush();break;
    case 'v2-idle-no':touch();break;
    case 'v2-rest-plus':if(S.rest?.frozen!=null)S.rest.frozen+=30;else if(S.rest){S.rest.end=Math.max(S.rest.end,now())+30e3;S.rest.total=(S.rest.total||0)+30}saveUi();break;
@@ -631,7 +640,7 @@ function create(ctx){
  }
  function tick(){
   const left=restLeft(),total=S.rest?.total||null;
-  if(S.hold&&holdLeft()===0){const h=S.hold;S.hold=null;const w=current(),e=w?.exercises.find(x=>x.id===h.ex);if(e&&e.sets.some(x=>x.set_number===h.set&&!x.completed))S.store.logSet(e.id,h.set,{reps:h.total});saveUi();scheduleFlush();return {rest:left,total,hold:0,done:true,elapsed:S.store?.elapsedSeconds()||0}}
+  if(S.hold&&holdLeft()===0){finishHold(S.hold,S.hold.total);saveUi();scheduleFlush();return {rest:restLeft(),total:S.rest?.total||null,hold:0,done:true,elapsed:S.store?.elapsedSeconds()||0}}
   if(S.rest&&left===0){S.rest=null;saveUi();return {rest:0,done:true,elapsed:S.store?.elapsedSeconds()||0}}
   return {rest:left,total,hold:holdLeft(),elapsed:S.store?.elapsedSeconds()||0,idle:idleMinutes()};
  }

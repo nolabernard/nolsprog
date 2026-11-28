@@ -19,7 +19,9 @@ const today={id:'w1',status:'completed',title:'Cardio + abdos'};
 const next={reason:'tomorrow',session:{id:'s1',title:'Push A',exercises:[]},planned:{id:'s1'},today:{...today,reason:null}};
 {const html=UI.home({next,cycle,nextTraining:C.nextTrainingDay(cycle,samedi),progress:0.44});
  assert.match(html,/Repos demain/,'pas de « Demain : Push A » le samedi');
- assert.match(html,/Prochaine séance : <b>Push A<\/b> · lundi/);
+ assert.match(html,/Prochaine : <b class="v2-nowrap">Push A<\/b> · lundi/);
+ assert.match(html,/prochaine séance le lundi/,'le coaching annonce le bon jour');
+ assert.doesNotMatch(html,/prochaine séance demain/);
  assert.doesNotMatch(html,/Demain : <b>Push A/);}
 {const html=UI.home({next,cycle,nextTraining:C.nextTrainingDay(cycle,vendredi),progress:0.44});
  assert.match(html,/Demain : <b>Push A<\/b>/,'vendredi : demain est bien un jour prévu');}

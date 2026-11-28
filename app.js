@@ -105,7 +105,7 @@ async function flushSets(){
   }
  }
 }
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushSets();});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushSets();if(document.visibilityState==='visible'&&V2?.inSession()){const t=V2.tick();if(t.done){try{navigator.vibrate?.(200)}catch{}beep(1320,.4);lastBeep=null}render()}});
 // Menus du bas : glisser la poignée vers le bas pour fermer (comme sur iPhone). Un appui sur la poignée ou à côté ferme aussi.
 let sheetDrag=null;
 const sheetParts=sheet=>({veil:sheet.parentElement?.querySelector('.v2-veil'),close:sheet.querySelector('[data-action="v2-close-sheet"]')});
@@ -326,9 +326,9 @@ let restAlertSent=false;
 document.addEventListener?.('visibilitychange',()=>{
  const ep=A.session&&!A.demo&&deviceEndpoint();if(!ep||!restAlertOn())return;
  if(document.visibilityState==='hidden'){
-  if(!V2?.inSession())return;const t=V2.tick();if(!(t.rest>5))return;
-  const next=root.querySelector('.v2-rest')?.dataset?.next||'';
-  restAlertSent=true;req('/functions/v1/send-reminders',{method:'POST',token:token(),keepalive:true,body:{action:'rest',endpoint:ep,at:Date.now()+t.rest*1000,next}}).catch(()=>{});
+  if(!V2?.inSession())return;const t=V2.tick();const hold=t.hold!=null&&t.hold>5;if(!hold&&!(t.rest>5))return;
+  const secs=hold?t.hold:t.rest,next=hold?'':(root.querySelector('.v2-rest')?.dataset?.next||'');
+  restAlertSent=true;req('/functions/v1/send-reminders',{method:'POST',token:token(),keepalive:true,body:{action:'rest',endpoint:ep,at:Date.now()+secs*1000,next,title:hold?'Tenue terminée':'Repos terminé',body:hold?'Ta série est validée, le repos commence.':''}}).catch(()=>{});
  }else if(restAlertSent){restAlertSent=false;req('/functions/v1/send-reminders',{method:'POST',token:token(),keepalive:true,body:{action:'rest-cancel',endpoint:ep}}).catch(()=>{})}
 });
 // Installation guidée : iPhone (Partager → Sur l'écran d'accueil), Android (bouton d'installation du navigateur). Une fois, puis masquée.
@@ -384,6 +384,7 @@ setInterval(()=>{
  const t=V2.tick(),chrono=root.querySelector('.v2-chrono span'),rest=root.querySelector('.v2-rest .v2-rest-time');
  if(t.done){try{navigator.vibrate?.(200)}catch{}beep(1320,.4);lastBeep=null;render();return}
  if(t.rest!=null&&t.rest<=3&&t.rest>=1&&t.rest!==lastBeep){lastBeep=t.rest;beep(880,.12)}
+ if(t.hold!=null&&t.hold<=3&&t.hold>=1&&t.hold!==lastBeep){lastBeep=t.hold;beep(880,.12)}
  {const re=root.querySelector('.v2-rest');if(re&&t.total&&t.rest!=null)re.style.setProperty('--p',Math.max(0,Math.min(1,t.rest/t.total)).toFixed(3))}
  if(t.idle&&!root.querySelector('[aria-label="Tu étais en pause ?"]')){render();return}
  if(t.rest&&!rest){render();return}
